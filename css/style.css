@@ -461,28 +461,28 @@ body {
 
 /* Подсветка фигур */
 .highlight-selected { 
-    background-color: rgba(0, 0, 0, 0.6) !important;
-    box-shadow: inset 0 0 0 3px rgba(36, 247, 29, 0.6), 0 0 15px rgba(36, 247, 29, 0.5) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
+    box-shadow: inset 0 0 0 3px rgba(36, 247, 29, 0), 0 0 15px rgba(36, 247, 29, 0) !important;
     position: relative;
     z-index: 10;
 }
 
 .highlight-possible { 
-    background-color: rgba(62, 134, 192, 0.1) !important;
-    box-shadow: inset 0 0 0 2px rgba(24, 63, 95, 0.3) !important;
+    background-color: rgba(62, 134, 192, 0.068) !important;
+    box-shadow: inset 0 0 0 2px rgba(24, 63, 95, 0.068) !important;
     position: relative;
     z-index: 10;
 }
 /* Для мобильных устройств - более контрастная подсветка */
 @media (max-width: 768px) {
     .highlight-selected { 
-        background-color: rgba(0, 0, 0, 0.75) !important;
-        box-shadow: inset 0 0 0 4px rgba(36, 247, 29, 0.6) !important;
+        background-color: rgba(0, 0, 0, 0) !important;
+        box-shadow: inset 0 0 0 4px rgba(36, 247, 29, 0) !important;
     }
     
     .highlight-possible { 
-        background-color: rgba(62, 134, 192,0.2) !important;
-        box-shadow: inset 0 0 0 3px rgba(24, 63, 95, 0.3) !important;
+        background-color: rgba(62, 134, 192, 0.075) !important;
+        box-shadow: inset 0 0 0 3px rgba(24, 63, 95, 0.068) !important;
     }
 }
 .square-55d63 {
