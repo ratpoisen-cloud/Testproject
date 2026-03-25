@@ -460,33 +460,75 @@ body {
 }
 
 /* Подсветка фигур */
-.highlight-selected { 
-    background-color: rgba(0, 0, 0, 0) !important;
-    box-shadow: inset 0 0 0 3px rgba(36, 247, 29, 0), 0 0 15px rgba(36, 247, 29, 0) !important;
+/* ===== ВЫБРАННАЯ ФИГУРА ===== */
+.highlight-selected {
     position: relative;
-    z-index: 10;
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 0, 0.35) !important;
 }
 
-.highlight-possible { 
-    background-color: rgba(62, 134, 192, 0.068) !important;
-    box-shadow: inset 0 0 0 2px rgba(24, 63, 95, 0.068) !important;
+/* ===== ОБЫЧНЫЕ ХОДЫ (ТОЧКИ) ===== */
+.highlight-possible {
     position: relative;
-    z-index: 10;
 }
-/* Для мобильных устройств - более контрастная подсветка */
-@media (max-width: 768px) {
-    .highlight-selected { 
-        background-color: rgba(255, 255, 255, 0) !important;
-        box-shadow: inset 0 0 0 4px rgba(36, 247, 29, 0) !important;
-    }
-    
-    .highlight-possible { 
-        background-color: rgba(62, 134, 192, 0.075) !important;
-        box-shadow: inset 0 0 0 3px rgba(24, 63, 95, 0.068) !important;
-    }
+
+/* точка */
+.highlight-possible::after {
+    content: '';
+    position: absolute;
+
+    width: 22%;
+    height: 22%;
+
+    border-radius: 50%;
+
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    pointer-events: none;
 }
-.square-55d63 {
-    transition: all 0.1s ease;
+
+/* светлая клетка → тёмная точка */
+.white-1e1d7.highlight-possible::after {
+    background: rgba(0, 0, 0, 0.45);
+}
+
+/* тёмная клетка → светлая точка */
+.black-3c85d.highlight-possible::after {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+
+/* ===== ВЗЯТИЕ ФИГУРЫ (КОНТУР КВАДРАТА) ===== */
+.highlight-capture {
+    position: relative;
+}
+
+/* контур квадрата с закруглением */
+.highlight-capture::after {
+    content: '';
+    position: absolute;
+
+    width: 80%;
+    height: 80%;
+
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    border-radius: 12%; /* лёгкое скругление как на chess.com */
+    border: 4px solid;
+
+    pointer-events: none;
+}
+
+/* контраст под цвет клетки */
+.white-1e1d7.highlight-capture::after {
+    border-color: rgba(0, 0, 0, 0.5);
+}
+
+.black-3c85d.highlight-capture::after {
+    border-color: rgba(255, 255, 255, 0.7);
 }
 
 /* АДАПТАЦИЯ ДЛЯ РАЗНЫХ ЭКРАНОВ */

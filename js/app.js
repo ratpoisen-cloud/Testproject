@@ -369,9 +369,14 @@ function selectSquare(square) {
     console.log("Possible moves:", moves); // Для отладки
     
     moves.forEach(move => {
-        const targetSquare = $(`.square-${move.to}`);
+    const targetSquare = $(`.square-${move.to}`);
+    
+    if (move.captured) {
+        targetSquare.addClass('highlight-capture');
+    } else {
         targetSquare.addClass('highlight-possible');
-    });
+    }
+});
 }
 
 // Сброс выделения и подсветки
@@ -381,7 +386,7 @@ function clearSelection() {
 }
 
 function removeHighlights() { 
-    $('#myBoard .square-55d63').removeClass('highlight-selected highlight-possible'); 
+    $('#myBoard .square-55d63').removeClass('highlight-selected highlight-possible highlight-capture'); 
 }
 
 // Десктопная логика через drag-and-drop
