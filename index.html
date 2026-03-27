@@ -6,6 +6,23 @@
     <title>Fentanyl Chess Online</title>
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <!-- PWA метатеги -->
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chess Online">
+<link rel="apple-touch-icon" href="/assets/icon-192x192.png">
+
+<!-- Service Worker регистрация -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+</script>
 </head>
 <body>
     <div class="main-container">

@@ -207,29 +207,23 @@ async function initGame(roomId) {
         console.error("Transaction error:", err);
     }
     
-    const p = (await get(playersRef)).val();
-    playerColor = p.white === uid ? 'w' : (p.black === uid ? 'b' : null);
-    
-    if (!playerColor) {
-    document.getElementById('status').innerText = "Вы наблюдатель";
-    document.getElementById('user-color').innerText = "Наблюдатель";
-    const playerBadge = document.querySelector('.player-badge');
-    if (playerBadge) {
-        playerBadge.className = 'player-badge';
-    }
-} else {
-    const playerColorText = playerColor === 'w' ? 'Белые' : 'Черные';
-    document.getElementById('user-color').innerText = playerColorText;
-    
-    // Добавляем класс для стилизации бейджа
-    const playerBadge = document.querySelector('.player-badge');
-    if (playerBadge) {
-        if (playerColor === 'w') {
-            playerBadge.className = 'player-badge white-piece';
-        } else {
-            playerBadge.className = 'player-badge black-piece';
-        }
-    }
+    const p = (await get(playersRef)).val() || {};
+playerColor = p.white === uid ? 'w' : (p.black === uid ? 'b' : null);
+
+const userColorEl = document.getElementById('user-color');
+const playerBadge = document.querySelector('.player-badge');
+
+if (userColorEl) {
+    userColorEl.innerText = playerColor 
+        ? (playerColor === 'w' ? 'Белые' : 'Чёрные') 
+        : 'Наблюдатель';
+}
+
+if (playerBadge) {
+    playerBadge.className = `player-badge ${
+        playerColor === 'w' ? 'white-piece' : 
+        playerColor === 'b' ? 'black-piece' : ''
+    }`;
 }
     
     // Инициализация доски
@@ -591,17 +585,20 @@ document.getElementById('cancel-move-btn').onclick = () => {
 function updateUI(data) {
     if (!data) return;
     
-    const isMyTurn = (playerColor === game.turn());
-    const statusEl = document.getElementById('status');
-    if (statusEl) {
-        if (game.game_over()) {
-            statusEl.innerText = data.message || getGameResultMessage();
-        } else {
-            statusEl.innerText = `Ход: ${game.turn() === 'w' ? 'Белых' : 'Черных'}`;
-        }
-    }
+    const isMyTurn = playerColor && (playerColor === game.turn());
     
     updateTurnIndicator(isMyTurn);
+    
+    // Обновляем текстовый статус игры
+    if (game.game_over()) {
+        updateGameStatusText(data.message || getGameResultMessage());
+    } else if (game.in_check()) {
+        updateGameStatusText(`ШАХ! ${game.turn() === 'w' ? 'Белым' : 'Чёрным'}`);
+    } else {
+        updateGameStatusText('♟️ Игра активна');
+    }
+    
+    // ... остальной код функции (история ходов, модальное окно и т.д.) оставь без изменений
     
     // Обновляем текстовый статус игры в новом блоке
     if (game.game_over()) {
@@ -671,7 +668,7 @@ function updateTurnIndicator(isMyTurn) {
     
     if (!playerColor) {
         turnStatus.className = 'turn-status opponent-turn';
-        turnText.innerHTML = 'РЕЖИМ НАБЛЮДАТЕЛЯ';
+        turnText.innerHTML = 'НАБЛЮДАТЕЛЬ';
         return;
     }
     
@@ -683,7 +680,6 @@ function updateTurnIndicator(isMyTurn) {
         turnText.innerHTML = 'Ход соперника';
     }
 }
-
 // Добавьте эту новую функцию после updateTurnIndicator
 function updateGameStatusText(message) {
     const statusText = document.getElementById('game-status-text');
