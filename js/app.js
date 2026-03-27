@@ -13,64 +13,36 @@ let pendingTakeback = null;
 
 const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                  ('ontouchstart' in window && window.innerWidth < 768);
-// ===== FIX: resize chessboard =====
-window.addEventListener('resize', () => {
-    if (board) {
-        requestAnimationFrame(() => board.resize());
-    }
-});
+
 // --- ИНИЦИАЛИЗАЦИЯ ---
 window.addEventListener('DOMContentLoaded', () => {
     setupAuth();
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
     if (roomId) initGame(roomId); else initLobby();
+    
+    // Инициализация тем после загрузки DOM
+    initThemeButtons();
+    loadTheme();
 });
 
 // --- АВТОРИЗАЦИЯ ---
 function setupAuth() {
     onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    const authGroup = document.getElementById('auth-buttons');
-    const userInfo = document.getElementById('user-info');
-    if (user) {
-        authGroup?.classList.add('hidden');
-        userInfo?.classList.remove('hidden');
-        
-        // Получаем имя пользователя
-        const userName = user.displayName || user.email.split('@')[0];
-        document.getElementById('user-name').innerText = userName;
-        
-        // Обработка аватара
-        const userPhoto = document.getElementById('user-photo');
-        if (user.photoURL) {
-            // Если есть фото от Google — используем его
-            userPhoto.src = user.photoURL;
-            userPhoto.style.display = 'block';
-            // Скрываем буквенный аватар
-            const letterAvatar = document.querySelector('.letter-avatar');
-            if (letterAvatar) letterAvatar.style.display = 'none';
+        currentUser = user;
+        const authGroup = document.getElementById('auth-buttons');
+        const userInfo = document.getElementById('user-info');
+        if (user) {
+            authGroup?.classList.add('hidden');
+            userInfo?.classList.remove('hidden');
+            document.getElementById('user-name').innerText = user.displayName || user.email.split('@')[0];
+            document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/35';
+            if (!new URLSearchParams(window.location.search).get('room')) loadLobby(user);
         } else {
-            // Если фото нет — показываем буквенный аватар
-            userPhoto.style.display = 'none';
-            
-            // Создаем или обновляем буквенный аватар
-            let letterAvatar = document.querySelector('.letter-avatar');
-            if (!letterAvatar) {
-                letterAvatar = document.createElement('div');
-                letterAvatar.className = 'letter-avatar';
-                userPhoto.parentNode.insertBefore(letterAvatar, userPhoto.nextSibling);
-            }
-            letterAvatar.style.display = 'flex';
-            letterAvatar.innerText = userName.charAt(0).toUpperCase();
+            authGroup?.classList.remove('hidden');
+            userInfo?.classList.add('hidden');
         }
-        
-        if (!new URLSearchParams(window.location.search).get('room')) loadLobby(user);
-    } else {
-        authGroup?.classList.remove('hidden');
-        userInfo?.classList.add('hidden');
-    }
-});
+    });
 
     document.getElementById('login-google').onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
 
@@ -207,34 +179,24 @@ async function initGame(roomId) {
         console.error("Transaction error:", err);
     }
     
-    const p = (await get(playersRef)).val() || {};
-playerColor = p.white === uid ? 'w' : (p.black === uid ? 'b' : null);
-
-const userColorEl = document.getElementById('user-color');
-const playerBadge = document.querySelector('.player-badge');
-
-if (userColorEl) {
-    userColorEl.innerText = playerColor 
-        ? (playerColor === 'w' ? 'Белые' : 'Чёрные') 
-        : 'Наблюдатель';
-}
-
-if (playerBadge) {
-    playerBadge.className = `player-badge ${
-        playerColor === 'w' ? 'white-piece' : 
-        playerColor === 'b' ? 'black-piece' : ''
-    }`;
-}
+    const p = (await get(playersRef)).val();
+    playerColor = p.white === uid ? 'w' : (p.black === uid ? 'b' : null);
+    
+    if (!playerColor) {
+        document.getElementById('status').innerText = "Вы наблюдатель";
+        document.getElementById('user-color').innerText = "Наблюдатель";
+    } else {
+        document.getElementById('user-color').innerText = playerColor === 'w' ? 'Белые' : 'Черные';
+    }
     
     // Инициализация доски
-   board = Chessboard('myBoard', {
-    draggable: !isMobile && playerColor !== null,
-    onDrop: handleDrop,
-    onDragStart: handleDragStart, // 👈 ВОТ ЭТА СТРОКА
-    position: 'start',
-    moveSpeed: 'slow',
-    pieceTheme: 'https://chessboardjs.com/img/chesspieces/neo/{piece}.png'
-});
+    board = Chessboard('myBoard', {
+        draggable: !isMobile && playerColor !== null,
+        onDrop: handleDrop,
+        position: 'start',
+        moveSpeed: 'slow',
+        pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+    });
     
     if (playerColor === 'b') board.orientation('black');
     
@@ -243,6 +205,8 @@ if (playerBadge) {
         if (isMobile && playerColor) {
             attachMobileClickHandler();
         }
+        // Применяем тему после инициализации доски
+        applyCurrentTheme();
     }, 100);
     
     // Синхронизация игры
@@ -268,11 +232,6 @@ function attachMobileClickHandler() {
     // Удаляем старые обработчики
     $('#myBoard').off('click');
     
-    // Добавляем новый обработчик на квадраты
-    $('#myBoard .square-55d63').each(function() {
-        $(this).off('click');
-    });
-    
     // Используем делегирование событий
     $('#myBoard').on('click', '.square-55d63', function(e) {
         e.stopPropagation();
@@ -285,8 +244,6 @@ function attachMobileClickHandler() {
 
 // --- МОБИЛЬНАЯ ЛОГИКА: выделение фигуры и подсветка ходов ---
 function handleMobileClick(square) {
-    console.log("Clicked square:", square); // Для отладки
-    
     // Проверки
     if (game.game_over()) return;
     if (!playerColor) return;
@@ -297,180 +254,95 @@ function handleMobileClick(square) {
     
     // Случай 1: Уже есть выбранная фигура
     if (selectedSquare) {
-        // Если кликнули на ту же фигуру - снимаем выделение
         if (selectedSquare === square) {
             clearSelection();
             return;
         }
         
-        // Пытаемся сделать ход
-const move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
-
-if (move) {
-    // откатываем (как на десктопе)
-    game.undo();
-
-    // сохраняем координаты
-    pendingMove = {
-        from: selectedSquare,
-        to: square
-    };
-
-    // показываем preview (как на десктопе)
-    game.move({
-        from: selectedSquare,
-        to: square,
-        promotion: 'q'
-    });
-
-    board.position(game.fen(), false);
-
-    game.undo();
-
-    document.getElementById('confirm-move-box')?.classList.remove('hidden');
-    clearSelection();
-} else {
-            // Ход невалидный - проверяем, может кликнули на другую свою фигуру
+        const move = game.move({ from: selectedSquare, to: square, promotion: 'q', verbose: true });
+        
+        if (move) {
+            pendingMove = move;
+            board.position(game.fen(), true);
+            document.getElementById('confirm-move-box').classList.remove('hidden');
+            clearSelection();
+        } else {
             if (piece && piece.color === playerColor) {
-                // Выбираем новую фигуру
                 selectSquare(square);
             } else {
-                // Кликнули на пустую клетку или фигуру соперника - сбрасываем выделение
                 clearSelection();
             }
         }
     } 
-    // Случай 2: Нет выбранной фигуры
     else {
-        // Если кликнули на свою фигуру - выделяем её
         if (piece && piece.color === playerColor) {
             selectSquare(square);
         }
-        // Если кликнули на чужую фигуру или пустую клетку - ничего не делаем
     }
 }
 
-// Выделение фигуры и подсветка доступных ходов
 function selectSquare(square) {
     clearSelection();
     selectedSquare = square;
     
-    // Подсветка выбранной клетки
     const selectedElement = $(`.square-${square}`);
     selectedElement.addClass('highlight-selected');
     
-    // Получаем все возможные ходы для выбранной фигуры
     const moves = game.moves({ square: square, verbose: true });
-    console.log("Possible moves:", moves); // Для отладки
-    
     moves.forEach(move => {
-    const targetSquare = $(`.square-${move.to}`);
-    
-    if (move.captured) {
-        targetSquare.addClass('highlight-capture');
-    } else {
-        targetSquare.addClass('highlight-possible');
-    }
-});
+        $(`.square-${move.to}`).addClass('highlight-possible');
+    });
 }
 
-// Сброс выделения и подсветки
 function clearSelection() {
     selectedSquare = null;
     removeHighlights();
 }
 
 function removeHighlights() { 
-    $('#myBoard .square-55d63').removeClass('highlight-selected highlight-possible highlight-capture'); 
+    $('#myBoard .square-55d63').removeClass('highlight-selected highlight-possible'); 
 }
 
-// Десктопная логика через drag-and-drop
 function handleDrop(source, target) {
-    if (game.game_over() || !playerColor || game.turn() !== playerColor || pendingMove) {
-        return 'snapback';
-    }
+    if (game.game_over() || !playerColor || game.turn() !== playerColor || pendingMove) return 'snapback';
     
-    const testMove = game.move({ from: source, to: target, promotion: 'q' });
+    const testMove = game.move({ from: source, to: target, promotion: 'q', verbose: true });
     if (testMove === null) return 'snapback';
     
     game.undo();
-    
-    // ✅ сохраняем ТОЛЬКО координаты
-    pendingMove = {
-        from: source,
-        to: target
-    };
-
-    // временно показываем позицию с ходом
-    game.move({
-        from: source,
-        to: target,
-        promotion: 'q'
-    });
-
-    board.position(game.fen(), false);
-
-    // возвращаем обратно в логику
-    game.undo();
-
-    document.getElementById('confirm-move-box')?.classList.remove('hidden');
-
-    // ✅ ВОТ СЮДА ДОБАВЛЯЕМ (ПЕРЕД return)
-    setTimeout(() => {
-        $('#myBoard .square-55d63')
-            .removeClass('highlight-selected highlight-possible highlight-capture');
-    }, 50);
-
+    pendingMove = testMove;
+    setTimeout(() => board.position(game.fen(), true), 100);
+    document.getElementById('confirm-move-box').classList.remove('hidden');
     return 'snapback';
 }
 
 function setupGameControls(gameRef, roomId) {
-    // Подтверждение хода
-   document.getElementById('confirm-btn').onclick = () => {
-    if (!pendingMove) return;
-    
-    game.move({
-        from: pendingMove.from,
-        to: pendingMove.to,
-        promotion: 'q'
-    });
-
-    const updateData = { 
-        pgn: game.pgn(), 
-        fen: game.fen(), 
-        turn: game.turn(), 
-        lastMove: Date.now() 
+    document.getElementById('confirm-btn').onclick = () => {
+        if (!pendingMove) return;
+        
+        game.move(pendingMove);
+        const updateData = { pgn: game.pgn(), fen: game.fen(), turn: game.turn(), lastMove: Date.now() };
+        
+        if (game.game_over()) { 
+            updateData.gameState = 'game_over'; 
+            updateData.message = getGameResultMessage(); 
+        }
+        
+        update(gameRef, updateData);
+        pendingMove = null;
+        document.getElementById('confirm-move-box').classList.add('hidden');
+        clearSelection();
     };
     
-    if (game.game_over()) { 
-        updateData.gameState = 'game_over'; 
-        updateData.message = getGameResultMessage(); 
-    }
+    document.getElementById('cancel-move-btn').onclick = () => {
+        if (pendingMove) {
+            pendingMove = null;
+            document.getElementById('confirm-move-box').classList.add('hidden');
+            board.position(game.fen(), true);
+            clearSelection();
+        }
+    };
     
-    update(gameRef, updateData);
-    
-    pendingMove = null;
-    document.getElementById('confirm-move-box')?.classList.add('hidden');
-    clearSelection();
-};
-    
- // Отмена неподтвержденного хода
-document.getElementById('cancel-move-btn').onclick = () => {
-    if (pendingMove) {
-        pendingMove = null;
-
-        // возвращаем доску в реальное состояние
-        board.position(game.fen(), false);
-
-        // 🔥 ВАЖНО ДЛЯ МОБИЛКИ
-        selectedSquare = null;
-
-        document.getElementById('confirm-move-box')?.classList.add('hidden');
-        clearSelection();
-    }
-};
-    
-    // Сдача
     document.getElementById('resign-btn').onclick = () => {
         if (game.game_over()) {
             alert("Игра уже окончена");
@@ -487,14 +359,12 @@ document.getElementById('cancel-move-btn').onclick = () => {
         }
     };
     
-    // Выход в лобби
     document.getElementById('exit-btn').onclick = () => {
         if (confirm("Выйти в лобби?")) {
             location.href = location.origin + location.pathname;
         }
     };
     
-    // Поделиться ссылкой
     document.getElementById('share-btn').onclick = async () => {
         const link = document.getElementById('room-link').value;
         if (navigator.share) {
@@ -509,7 +379,6 @@ document.getElementById('cancel-move-btn').onclick = () => {
         }
     };
     
-    // Запрос отмены хода
     document.getElementById('takeback-btn').onclick = () => {
         if (game.history().length === 0) {
             alert("Нет ходов для отмены");
@@ -558,7 +427,6 @@ document.getElementById('cancel-move-btn').onclick = () => {
         pendingTakeback = null;
     };
     
-    // Реванш
     document.getElementById('modal-rematch-btn').onclick = async () => {
         const modal = document.getElementById('game-modal');
         modal.classList.add('hidden');
@@ -591,59 +459,34 @@ document.getElementById('cancel-move-btn').onclick = () => {
 function updateUI(data) {
     if (!data) return;
     
-    const isMyTurn = playerColor && (playerColor === game.turn());
+    const isMyTurn = (playerColor === game.turn());
+    const statusEl = document.getElementById('status');
+    if (statusEl) {
+        if (game.game_over()) {
+            statusEl.innerText = data.message || getGameResultMessage();
+        } else {
+            statusEl.innerText = `Ход: ${game.turn() === 'w' ? 'Белых' : 'Черных'}`;
+        }
+    }
     
     updateTurnIndicator(isMyTurn);
     
-    // Обновляем текстовый статус игры
-    if (game.game_over()) {
-        updateGameStatusText(data.message || getGameResultMessage());
-    } else if (game.in_check()) {
-        updateGameStatusText(`ШАХ! ${game.turn() === 'w' ? 'Белым' : 'Чёрным'}`);
-    } else {
-        updateGameStatusText('♟️ Игра активна');
-    }
-    
-    // ... остальной код функции (история ходов, модальное окно и т.д.) оставь без изменений
-    
-    // Обновляем текстовый статус игры в новом блоке
-    if (game.game_over()) {
-        updateGameStatusText(data.message || getGameResultMessage());
-    } else if (game.in_check()) {
-        updateGameStatusText(`ШАХ! ${game.turn() === 'w' ? 'Белым' : 'Черным'}`);
-    } else {
-        updateGameStatusText('♟️ Игра активна');
-    }
-    
-    const history = game.history({ verbose: true });
+    const history = game.history();
     const moveListDiv = document.getElementById('move-list');
     if (moveListDiv) {
         moveListDiv.innerHTML = '';
         if (history.length === 0) {
             moveListDiv.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-secondary);">Нет ходов</div>';
         } else {
-            for (let i = 0; i < history.length; i++) {
+            for (let i = 0; i < history.length; i += 2) {
                 const moveNum = Math.floor(i / 2) + 1;
-                const isWhiteMove = i % 2 === 0;
-                
-                if (isWhiteMove) {
-                    moveListDiv.innerHTML += `
-                        <div style="color: var(--text-secondary);">${moveNum}.</div>
-                        <div>${history[i].san || history[i]}</div>
-                        <div></div>
-                    `;
-                } else {
-                    const lastRow = moveListDiv.lastElementChild;
-                    if (lastRow && lastRow.children.length === 3) {
-                        lastRow.children[2].innerHTML = history[i].san || history[i];
-                    } else {
-                        moveListDiv.innerHTML += `
-                            <div style="color: var(--text-secondary);">${moveNum}</div>
-                            <div></div>
-                            <div>${history[i].san || history[i]}</div>
-                        `;
-                    }
-                }
+                const whiteMove = history[i] || '';
+                const blackMove = history[i + 1] || '';
+                moveListDiv.innerHTML += `
+                    <div style="color: var(--text-secondary);">${moveNum}.</div>
+                    <div>${whiteMove}</div>
+                    <div>${blackMove}</div>
+                `;
             }
         }
         moveListDiv.scrollTop = moveListDiv.scrollHeight;
@@ -653,43 +496,121 @@ function updateUI(data) {
         document.getElementById('game-modal').classList.remove('hidden');
         document.getElementById('modal-title').innerHTML = '🏆 Игра окончена';
         document.getElementById('modal-desc').innerHTML = data.message || getGameResultMessage();
-        
-        document.getElementById('confirm-move-box').classList.add('hidden');
-        pendingMove = null;
-        clearSelection();
     }
 }
 
 function updateTurnIndicator(isMyTurn) {
-    const turnStatus = document.getElementById('turn-status');
-    const turnText = document.getElementById('turn-text');
-    
-    if (!turnStatus || !turnText) return;
+    const indicator = document.getElementById('turn-indicator');
+    const textEl = document.getElementById('turn-text');
+    if (!indicator || !textEl) return;
     
     if (game.game_over()) {
-        turnStatus.className = 'turn-status opponent-turn';
-        turnText.innerText = 'ИГРА ОКОНЧЕНА';
+        indicator.className = 'turn-indicator';
+        textEl.innerText = '🏁 ИГРА ОКОНЧЕНА';
         return;
     }
     
     if (!playerColor) {
-        turnStatus.className = 'turn-status opponent-turn';
-        turnText.innerHTML = 'НАБЛЮДАТЕЛЬ';
+        indicator.className = 'turn-indicator opponent-turn';
+        textEl.innerText = '👁️ РЕЖИМ НАБЛЮДАТЕЛЯ';
         return;
     }
     
-    if (isMyTurn) {
-        turnStatus.className = 'turn-status my-turn';
-        turnText.innerHTML = 'ВАШ ХОД';
+    indicator.className = isMyTurn ? 'turn-indicator my-turn' : 'turn-indicator opponent-turn';
+    textEl.innerText = isMyTurn ? '🎯 ВАШ ХОД' : '⏳ Ход соперника';
+}
+
+// ===== УПРАВЛЕНИЕ ТЕМАМИ ДОСКИ =====
+
+// Список доступных тем
+const themes = [
+    'theme-classic',
+    'theme-forest', 
+    'theme-ocean',
+    'theme-dark',
+    'theme-marble',
+    'theme-chesscom',
+    'theme-lime'
+];
+
+// Применение текущей темы к доске
+function applyCurrentTheme() {
+    const savedTheme = localStorage.getItem('chess-theme');
+    if (savedTheme && themes.includes(savedTheme)) {
+        document.body.classList.add(savedTheme);
     } else {
-        turnStatus.className = 'turn-status opponent-turn';
-        turnText.innerHTML = 'Ход соперника';
+        document.body.classList.add('theme-classic');
+    }
+    
+    // Обновляем активную кнопку
+    updateActiveThemeButton();
+    
+    // Перерисовываем доску для применения темы
+    if (board) {
+        const currentFen = game.fen();
+        board.position(currentFen, true);
     }
 }
-// Добавьте эту новую функцию после updateTurnIndicator
-function updateGameStatusText(message) {
-    const statusText = document.getElementById('game-status-text');
-    if (statusText) {
-        statusText.innerHTML = message;
+
+// Функция установки темы
+function setTheme(themeName) {
+    if (!themeName || !themes.includes(themeName)) {
+        themeName = 'theme-classic';
     }
+    
+    // Удаляем все существующие темы
+    themes.forEach(theme => {
+        document.body.classList.remove(theme);
+    });
+    
+    // Добавляем новую тему
+    document.body.classList.add(themeName);
+    
+    // Сохраняем в localStorage
+    localStorage.setItem('chess-theme', themeName);
+    
+    // Обновляем активную кнопку
+    updateActiveThemeButton();
+    
+    // Перерисовываем доску для применения темы
+    if (board) {
+        const currentFen = game.fen();
+        board.position(currentFen, true);
+    }
+}
+
+// Обновление активной кнопки темы
+function updateActiveThemeButton() {
+    const currentTheme = localStorage.getItem('chess-theme') || 'theme-classic';
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        if (btn.dataset.theme === currentTheme) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+// Загрузка сохраненной темы
+function loadTheme() {
+    const savedTheme = localStorage.getItem('chess-theme');
+    if (savedTheme && themes.includes(savedTheme)) {
+        document.body.classList.add(savedTheme);
+    } else {
+        document.body.classList.add('theme-classic');
+    }
+    updateActiveThemeButton();
+}
+
+// Инициализация кнопок выбора темы
+function initThemeButtons() {
+    const themeButtons = document.querySelectorAll('.theme-btn');
+    themeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const theme = btn.dataset.theme;
+            if (theme) {
+                setTheme(theme);
+            }
+        });
+    });
 }
