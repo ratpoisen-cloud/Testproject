@@ -190,6 +190,7 @@ async function initGame(roomId) {
     }
     
     // Инициализация доски
+<<<<<<< HEAD
     board = Chessboard('myBoard', {
         draggable: !isMobile && playerColor !== null,
         onDrop: handleDrop,
@@ -197,6 +198,16 @@ async function initGame(roomId) {
         moveSpeed: 'slow',
         pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
     });
+=======
+   board = Chessboard('myBoard', {
+    draggable: !isMobile && playerColor !== null,
+    onDrop: handleDrop,
+    onDragStart: handleDragStart, // 👈 ВОТ ЭТА СТРОКА
+    position: 'start',
+    moveSpeed: 'slow',
+    pieceTheme: 'https://chessboardjs.com/img/chesspieces/neo/{piece}.png'
+});
+>>>>>>> aff21e3c717090b8d3df369666bd8708386bd819
     
     if (playerColor === 'b') board.orientation('black');
     
@@ -310,9 +321,39 @@ function handleDrop(source, target) {
     if (testMove === null) return 'snapback';
     
     game.undo();
+<<<<<<< HEAD
     pendingMove = testMove;
     setTimeout(() => board.position(game.fen(), true), 100);
     document.getElementById('confirm-move-box').classList.remove('hidden');
+=======
+    
+    // ✅ сохраняем ТОЛЬКО координаты
+    pendingMove = {
+        from: source,
+        to: target
+    };
+
+    // временно показываем позицию с ходом
+    game.move({
+        from: source,
+        to: target,
+        promotion: 'q'
+    });
+
+    board.position(game.fen(), false);
+
+    // возвращаем обратно в логику
+    game.undo();
+
+    document.getElementById('confirm-move-box')?.classList.remove('hidden');
+
+    // ✅ ВОТ СЮДА ДОБАВЛЯЕМ (ПЕРЕД return)
+    setTimeout(() => {
+        $('#myBoard .square-55d63')
+            .removeClass('highlight-selected highlight-possible highlight-capture');
+    }, 50);
+
+>>>>>>> aff21e3c717090b8d3df369666bd8708386bd819
     return 'snapback';
 }
 
