@@ -1,11 +1,17 @@
 :root {
-    --bg: #1a1c1a;
-    --card: #242724;
-    --accent: #a8b59e;
-    --danger: #7e3535;
-    --text: #d1d1c1;
-    --text-secondary: #8e928e;
-    --border: #323832;
+    --bg: #0f110f;
+    --card: #1c1f1c;
+    --surface: #242724;
+    --accent: #a3c18f;
+    --accent-dark: #7e9a6b;
+    --danger: #c15a5a;
+    --success: #7eb87e;
+    --text: #e8e8d8;
+    --text-secondary: #9ca39a;
+    --border: #333833;
+
+    --highlight-my-turn: rgba(163, 193, 143, 0.35);
+    --shadow-accent: rgba(163, 193, 143, 0.25);
 }
 
 * {
@@ -32,8 +38,8 @@ body {
 }
 
 /* Переопределение цветов клеток через CSS */
-.white-1e1d7 { background-color: #e8f5e8 !important; }
-.black-3c85d { background-color: #2c5a2c !important; }
+.white-1e1d7 { background-color: #f0f4e8 !important; }
+.black-3c85d { background-color: #3e5234 !important; }
 
 /* Топ-бар */
 .top-bar {
@@ -75,23 +81,25 @@ body {
 
 /* Кнопки */
 .btn {
-    padding: 10px 20px;
+    padding: 10px 22px;
     border: none;
-    border-radius: 12px;
+    border-radius: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.92rem;
 }
 
 .btn-primary {
     background: var(--accent);
-    color: #000;
+    color: #0f110f;
+    font-weight: 700;
 }
 
 .btn-primary:hover {
-    background: #b8c5ae;
-    transform: translateY(-1px);
+    background: #b8d0a8;
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 12px var(--shadow-accent);
 }
 
 .btn-outline {
@@ -202,77 +210,156 @@ body {
 
 .board-area {
     flex: 1;
-    min-width: 0; /* Важно для flex-сжатия */
+    min-width: 0;
     position: relative;
 }
 
-/* Контейнер для доски - делаем её максимально большой */
+/* Контейнер для доски */
 #myBoard {
     width: 100%;
-    max-width: 650px; /* или твой размер */
+    max-width: 650px;
 }
-
-/* Переопределяем стили chessboardjs */
 
 #myBoard img {
     width: 100%;
     height: auto;
 }
 
-.status-box {
+/* ===== СТАТУС-ХЕДЕР НАД ДОСКОЙ (обновлено) ===== */
+.game-status-header {
+    width: 100%;
+    max-width: 660px;
     background: var(--card);
-    padding: 16px 20px;
-    border-radius: 16px;
-    margin-bottom: 16px;
-    text-align: center;
+    border-radius: 22px;
+    padding: 16px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    border: 1px solid var(--border);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.player-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 22px;
+    border-radius: 40px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.player-badge.white-piece {
+    background: linear-gradient(135deg, #a3c18f, #8eb57a);
+    color: #0f110f;
+    box-shadow: 0 3px 12px rgba(163, 193, 143, 0.3);
+}
+
+.player-badge.black-piece {
+    background: #2a2f2a;
+    color: var(--text);
     border: 1px solid var(--border);
 }
 
-.status-text {
-    color: var(--text-secondary);
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-}
-
-.badge {
-    display: inline-block;
-    background: var(--accent);
-    color: #000;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    margin-top: 6px;
-}
-
-.turn-indicator {
-    margin: 12px 0 0;
-    padding: 14px 24px;
-    border-radius: 14px;
+.player-icon {
     font-size: 1.2rem;
-    font-weight: 700;
-    transition: all 0.3s ease;
-    min-height: 58px;
+}
+
+.player-color-text {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* ===== ИНДИКАТОР ХОДА (обновлено) ===== */
+.turn-status {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 10px;
+    background: rgba(163, 193, 143, 0.12);
+    padding: 9px 26px;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 1.02rem;
+    border: 1px solid rgba(163, 193, 143, 0.25);
+    transition: all 0.3s ease;
 }
 
-.turn-indicator.my-turn {
-    background: linear-gradient(135deg, #00e676, #4caf50);
-    color: #000;
-    box-shadow: 0 0 20px rgba(0, 230, 118, 0.5);
-    animation: pulse 1.5s infinite;
+.turn-status.my-turn {
+    background: linear-gradient(135deg, rgba(163, 193, 143, 0.35), rgba(163, 193, 143, 0.15));
+    border-color: var(--accent);
+    box-shadow: 0 0 18px var(--highlight-my-turn);
+    animation: turnPulse 2s ease-in-out infinite;
 }
 
-.turn-indicator.opponent-turn {
-    background: #1f1f1f;
+.turn-status.opponent-turn {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--border);
+    opacity: 0.85;
+}
+
+.game-status-text {
+    font-size: 0.85rem;
     color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 16px;
+    border-radius: 30px;
+    letter-spacing: 0.3px;
 }
 
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
+/* Анимация */
+@keyframes turnPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(163, 193, 143, 0.4);
+    }
+    50% {
+        transform: scale(1.035);
+        box-shadow: 0 0 0 10px rgba(163, 193, 143, 0);
+    }
+}
+
+/* Подсветка фигур (обновлено) */
+.highlight-selected {
+    position: relative;
+    box-shadow: inset 0 0 0 4px rgba(163, 193, 143, 0.65) !important;
+}
+
+.highlight-possible {
+    position: relative;
+}
+
+.highlight-possible::after {
+    content: '';
+    position: absolute;
+    width: 24%;
+    height: 24%;
+    background: rgba(163, 193, 143, 0.75);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.highlight-capture {
+    position: relative;
+}
+
+.highlight-capture::after {
+    content: '';
+    position: absolute;
+    width: 82%;
+    height: 82%;
+    border: 3.5px solid rgba(193, 90, 90, 0.85);
+    border-radius: 14%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    box-shadow: 0 0 12px rgba(193, 90, 90, 0.4);
 }
 
 /* Оверлеи */
@@ -353,7 +440,7 @@ body {
     justify-content: center;
 }
 
-/* Боковая панель - фиксированная ширина */
+/* Боковая панель */
 .side-panel {
     background: var(--card);
     border-radius: 20px;
@@ -459,103 +546,7 @@ body {
     font-size: 1rem;
 }
 
-/* Подсветка фигур */
-/* ===== ВЫБРАННАЯ ФИГУРА ===== */
-.highlight-selected {
-    position: relative;
-    box-shadow: inset 0 0 0 3px rgba(255, 255, 0, 0.35) !important;
-}
-
-/* ===== ОБЫЧНЫЕ ХОДЫ (ТОЧКИ) ===== */
-.highlight-possible {
-    position: relative;
-}
-
-/* точка */
-.highlight-possible::after {
-    content: '';
-    position: absolute;
-
-    width: 22%;
-    height: 22%;
-
-    border-radius: 50%;
-
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    pointer-events: none;
-}
-
-/* светлая клетка → тёмная точка */
-.white-1e1d7.highlight-possible::after {
-    background: rgba(0, 0, 0, 0.45);
-}
-
-/* тёмная клетка → светлая точка */
-.black-3c85d.highlight-possible::after {
-    background: rgba(255, 255, 255, 0.6);
-}
-
-
-/* ===== ВЗЯТИЕ ФИГУРЫ (КОНТУР КВАДРАТА) ===== */
-.highlight-capture {
-    position: relative;
-}
-
-/* контур квадрата с закруглением */
-.highlight-capture::after {
-    content: '';
-    position: absolute;
-
-    width: 80%;
-    height: 80%;
-
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    border-radius: 12%; /* лёгкое скругление как на chess.com */
-    border: 4px solid;
-
-    pointer-events: none;
-}
-
-/* контраст под цвет клетки */
-.white-1e1d7.highlight-capture::after {
-    border-color: rgba(0, 0, 0, 0.5);
-}
-
-.black-3c85d.highlight-capture::after {
-    border-color: rgba(255, 255, 255, 0.7);
-}
-
-/* АДАПТАЦИЯ ДЛЯ РАЗНЫХ ЭКРАНОВ */
-@media (min-width: 1200px) {
-    .board-area {
-        max-width: 650px;
-    }
-    
-    .side-panel {
-        width: 340px;
-    }
-    
-    .move-list-content {
-        height: 400px;
-    }
-}
-
-@media (min-width: 1600px) {
-    .board-area {
-        max-width: 750px;
-    }
-    
-    .side-panel {
-        width: 380px;
-    }
-}
-
+/* Адаптивность */
 @media (max-width: 900px) {
     .game-layout {
         flex-direction: column;
@@ -575,20 +566,6 @@ body {
     .move-list-content {
         height: 250px;
     }
-    
-    .controls {
-        justify-content: center;
-    }
-    
-    .btn-round {
-        width: 48px;
-        height: 48px;
-        font-size: 1.3rem;
-    }
-    
-    .confirm-overlay {
-        padding: 12px 20px;
-    }
 }
 
 @media (max-width: 600px) {
@@ -605,456 +582,12 @@ body {
         align-items: stretch;
     }
     
-    .auth-group {
-        justify-content: center;
-    }
-    
-    #user-info {
-        justify-content: center;
-    }
-    
-    .turn-indicator {
-        font-size: 1rem;
-        padding: 10px 16px;
-    }
-    
-    .btn {
-        padding: 8px 16px;
-        font-size: 0.85rem;
-    }
-    
-    .controls {
-        gap: 8px;
-    }
-    
-    .controls .btn {
-        padding: 8px 14px;
-        font-size: 0.8rem;
-    }
-    
-    .side-panel {
-        padding: 16px;
-    }
-    
-    .move-list-content {
-        font-size: 0.75rem;
-        grid-template-columns: 30px 1fr 1fr;
-        gap: 4px;
-    }
-    
-    .share-container {
-        flex-direction: column;
-    }
-    
-    .share-container .btn {
-        width: 100%;
-    }
-}
-
-
-/* ===== НОВЫЕ СТИЛИ ДЛЯ ИНДИКАТОРА НАД ДОСКОЙ ===== */
-
-/* Контейнер доски */
-.board-area {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Контейнер для индикатора над доской */
-.turn-overlay {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 12px;
-}
-
-/* Индикатор хода */
-.turn-indicator {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: linear-gradient(135deg, #00e676, #4caf50);
-    color: #000;
-    padding: 10px 28px;
-    border-radius: 50px;
-    font-weight: 800;
-    font-size: 1rem;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    transition: all 0.2s ease;
-}
-
-/* Стиль для хода соперника */
-.turn-indicator.opponent-turn {
-    background: #2a2a2a;
-    color: #8a8a8a;
-    box-shadow: none;
-    border: 1px solid #3a3a3a;
-}
-
-/* Анимация пульсации для своего хода */
-.turn-indicator:not(.opponent-turn) {
-    animation: subtlePulse 1.5s infinite;
-}
-
-@keyframes subtlePulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-    }
-    50% {
-        transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
-    }
-}
-
-/* Для мобильных устройств */
-@media (max-width: 768px) {
-    .turn-indicator {
-        padding: 6px 20px;
-        font-size: 0.85rem;
-    }
-    
-    .turn-overlay {
-        margin-bottom: 8px;
-    }
-}
-
-/* Для очень маленьких экранов */
-@media (max-width: 480px) {
-    .turn-indicator {
-        padding: 4px 14px;
-        font-size: 0.75rem;
-    }
-}
-
-/* Скрываем старый индикатор, если он остался в статус-баре (на всякий случай) */
-.status-box .turn-indicator {
-    display: none;
-}
-/* ===== НОВЫЙ БЛОК СТАТУСА ВО ВСЮ ШИРИНУ ===== */
-
-.game-status-header {
-    width: 100%;
-    background: var(--card);
-    border-radius: 20px;
-    padding: 16px 24px;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-}
-
-/* Адаптивность блока под ширину доски */
-.board-area {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.game-status-header {
-    max-width: 100%;
-}
-
-/* Бейдж игрока (цвет фигур) */
-/* ===== ОБНОВЛЕННЫЙ БЛОК ЦВЕТА ФИГУР ===== */
-
-/* Бейдж игрока (цвет фигур) - меняем в зависимости от цвета */
-.player-badge {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 20px;
-    border-radius: 40px;
-    transition: all 0.3s ease;
-}
-
-/* Стиль для белых фигур (светло-зеленый, как была кнопка) */
-.player-badge.white-piece {
-    background: linear-gradient(135deg, #a8b59e, #8a9a7a);
-    color: #000;
-    box-shadow: 0 2px 8px rgba(168, 181, 158, 0.3);
-}
-
-.player-badge.white-piece .player-color-text {
-    color: #000;
-    font-weight: 700;
-}
-
-/* Стиль для черных фигур (темный из темы) */
-.player-badge.black-piece {
-    background: #2a2a2a;
-    color: var(--text);
-    border: 1px solid var(--border);
-}
-
-.player-badge.black-piece .player-color-text {
-    color: var(--text);
-    font-weight: 600;
-}
-
-/* Иконка внутри бейджа */
-.player-icon {
-    font-size: 1.2rem;
-}
-
-.player-color-text {
-    font-weight: 600;
-    font-size: 0.95rem;
-}
-
-/* ===== УНИФИЦИРОВАННЫЕ КНОПКИ В ВЕРХНЕМ БЛОКЕ ===== */
-
-/* Контейнер для кнопок в верхнем блоке */
-.game-status-header {
-    width: 100%;
-    background: var(--card);
-    border-radius: 20px;
-    padding: 16px 24px;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-}
-
-/* Кнопки в верхнем блоке - единый стиль с нижними кнопками */
-.game-status-header .btn {
-    padding: 8px 20px;
-    border-radius: 40px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
-    border: none;
-}
-
-/* Стили кнопок (повторяем стили из нижних кнопок) */
-.game-status-header .btn-primary {
-    background: var(--accent);
-    color: #000;
-}
-
-.game-status-header .btn-primary:hover {
-    background: #b8c5ae;
-    transform: translateY(-1px);
-}
-
-.game-status-header .btn-outline {
-    background: transparent;
-    color: var(--text);
-    border: 2px solid var(--border);
-}
-
-.game-status-header .btn-outline:hover {
-    background: var(--card);
-    border-color: var(--accent);
-}
-
-.game-status-header .btn-danger {
-    background: var(--danger);
-    color: white;
-}
-
-.game-status-header .btn-danger:hover {
-    background: #9e4545;
-    transform: translateY(-1px);
-}
-
-/* Адаптивность для мобильных */
-@media (max-width: 768px) {
     .game-status-header {
         padding: 12px 16px;
-        gap: 12px;
-    }
-    
-    .player-badge {
-        padding: 6px 14px;
-    }
-    
-    .player-color-text {
-        font-size: 0.85rem;
-    }
-    
-    .game-status-header .btn {
-        padding: 6px 14px;
-        font-size: 0.75rem;
     }
 }
 
-@media (max-width: 600px) {
-    .game-status-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-    
-    .player-badge {
-        justify-content: center;
-    }
-    
-    .game-status-header .btn {
-        text-align: center;
-        justify-content: center;
-    }
-}
-
-.player-icon {
-    font-size: 1.2rem;
-}
-
-.player-color-text {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--text);
-}
-
-/* Статус хода (пульсирующий) */
-.turn-status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(135deg, rgba(168, 181, 158, 0.2), rgba(168, 181, 158, 0.05));
-    padding: 8px 24px;
-    border-radius: 40px;
-    font-weight: 700;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(168, 181, 158, 0.3);
-}
-
-.turn-icon {
-    font-size: 1.1rem;
-}
-
-/* Стиль когда ваш ход (пульсация) */
-.turn-status.my-turn {
-    background: linear-gradient(135deg, rgba(168, 181, 158, 0.3), rgba(168, 181, 158, 0.15));
-    border-color: var(--accent);
-    box-shadow: 0 0 15px rgba(168, 181, 158, 0.3);
-    animation: turnPulse 1.2s ease-in-out infinite;
-}
-
-.turn-status.my-turn .turn-icon {
-    animation: iconBounce 0.8s ease-in-out infinite;
-}
-
-/* Стиль когда ход соперника */
-.turn-status.opponent-turn {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: var(--border);
-    opacity: 0.7;
-}
-
-/* Текст статуса игры */
-.game-status-text {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    background: rgba(0, 0, 0, 0.3);
-    padding: 6px 16px;
-    border-radius: 30px;
-    letter-spacing: 0.3px;
-}
-
-/* Анимации */
-@keyframes turnPulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(168, 181, 158, 0.4);
-        border-color: rgba(168, 181, 158, 0.5);
-    }
-    50% {
-        transform: scale(1.02);
-        box-shadow: 0 0 0 8px rgba(168, 181, 158, 0);
-        border-color: rgba(168, 181, 158, 0.8);
-    }
-}
-
-@keyframes iconBounce {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-2px);
-    }
-}
-
-/* Адаптивность для мобильных */
-@media (max-width: 768px) {
-    .game-status-header {
-        padding: 12px 16px;
-        gap: 12px;
-        margin-bottom: 16px;
-    }
-    
-    .player-badge {
-        padding: 6px 14px;
-    }
-    
-    .player-color-text {
-        font-size: 0.85rem;
-    }
-    
-    .turn-status {
-        padding: 6px 16px;
-        font-size: 0.85rem;
-    }
-    
-    .game-status-text {
-        font-size: 0.7rem;
-        padding: 4px 12px;
-    }
-}
-
-@media (max-width: 600px) {
-    .game-status-header {
-        flex-direction: column;
-        align-items: stretch;
-        text-align: center;
-        gap: 10px;
-    }
-    
-    .player-badge {
-        justify-content: center;
-    }
-    
-    .turn-status {
-        justify-content: center;
-    }
-    
-    .game-status-text {
-        text-align: center;
-    }
-}
-
-/* Скрываем старые ненужные элементы */
-.status-box {
-    display: none;
-}
-
-.turn-overlay {
-    display: none;
-}
-
-/* Оставляем только для совместимости, но скрываем */
-#turn-indicator {
-    display: none;
-}
-/* ===== БУКВЕННЫЙ АВАТАР ДЛЯ ПОЛЬЗОВАТЕЛЕЙ БЕЗ ФОТО ===== */
-
+/* Буквенный аватар */
 .letter-avatar {
     width: 40px;
     height: 40px;
@@ -1067,48 +600,9 @@ body {
     font-size: 1.2rem;
     color: #000;
     border: 2px solid var(--accent);
-    transition: all 0.2s ease;
 }
 
-/* Для темной темы */
 .letter-avatar {
     background: linear-gradient(135deg, #6b8c5c, #4a6a3a);
     color: white;
-}
-
-/* Обертка для аватара */
-#user-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: var(--card);
-    padding: 6px 16px 6px 10px;
-    border-radius: 50px;
-    border: 1px solid var(--border);
-}
-
-#user-photo {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid var(--accent);
-    object-fit: cover;
-}
-
-/* Адаптивность для мобильных */
-@media (max-width: 600px) {
-    .letter-avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 1rem;
-    }
-    
-    #user-photo {
-        width: 32px;
-        height: 32px;
-    }
-    
-    #user-info {
-        padding: 4px 12px 4px 8px;
-    }
 }
