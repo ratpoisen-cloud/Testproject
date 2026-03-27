@@ -227,13 +227,14 @@ if (playerBadge) {
 }
     
     // Инициализация доски
-    board = Chessboard('myBoard', {
-        draggable: !isMobile && playerColor !== null,
-        onDrop: handleDrop,
-        position: 'start',
-        moveSpeed: 'slow',
-        pieceTheme: 'https://chessboardjs.com/img/chesspieces/neo/{piece}.png'
-    });
+   board = Chessboard('myBoard', {
+    draggable: !isMobile && playerColor !== null,
+    onDrop: handleDrop,
+    onDragStart: handleDragStart, // 👈 ВОТ ЭТА СТРОКА
+    position: 'start',
+    moveSpeed: 'slow',
+    pieceTheme: 'https://chessboardjs.com/img/chesspieces/neo/{piece}.png'
+});
     
     if (playerColor === 'b') board.orientation('black');
     
@@ -399,22 +400,27 @@ function handleDrop(source, target) {
         from: source,
         to: target
     };
+
     // временно показываем позицию с ходом
-game.move({
-    from: source,
-    to: target,
-    promotion: 'q'
-});
+    game.move({
+        from: source,
+        to: target,
+        promotion: 'q'
+    });
 
-board.position(game.fen(), false);
+    board.position(game.fen(), false);
 
-// возвращаем обратно в логику
-game.undo();
-
-    // ❌ УДАЛЕНО: board.position (это критично)
+    // возвращаем обратно в логику
+    game.undo();
 
     document.getElementById('confirm-move-box')?.classList.remove('hidden');
-    
+
+    // ✅ ВОТ СЮДА ДОБАВЛЯЕМ (ПЕРЕД return)
+    setTimeout(() => {
+        $('#myBoard .square-55d63')
+            .removeClass('highlight-selected highlight-possible highlight-capture');
+    }, 50);
+
     return 'snapback';
 }
 
