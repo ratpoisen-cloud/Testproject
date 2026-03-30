@@ -62,6 +62,36 @@ if ('serviceWorker' in navigator) {
                 </div>
                 <div id="game-status-text" class="game-status-text">Игра активна</div>
             </div>
+
+            <!-- ===== НАСТРОЙКИ ДОСКИ ===== -->
+            <div class="board-settings-bar">
+                <button id="board-settings-toggle" class="btn btn-outline board-settings-btn" type="button">
+                    Настройки доски
+                </button>
+
+                <div id="board-settings-menu" class="board-settings-menu hidden">
+                    <div class="board-settings-group">
+                        <label for="theme-select">Тема доски</label>
+                        <select id="theme-select" class="board-settings-select">
+                            <option value="theme-classic">Classic</option>
+                            <option value="theme-forest">Forest</option>
+                            <option value="theme-ocean">Ocean</option>
+                            <option value="theme-dark">Dark</option>
+                            <option value="theme-marble">Marble</option>
+                            <option value="theme-chesscom">Chess.com</option>
+                            <option value="theme-lime">Lime</option>
+                            <option value="theme-middle-earth">Middle-earth</option>
+                        </select>
+                    </div>
+
+                    <div class="board-settings-group">
+                        <label for="piece-set-select">Фигурки</label>
+                        <select id="piece-set-select" class="board-settings-select" disabled>
+                            <option value="default">Скоро будет</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             
             <div class="board-wrapper">
 
@@ -180,6 +210,39 @@ if ('serviceWorker' in navigator) {
             console.log('Firebase loaded successfully');
         }
     }, 1000);
+
+    // Настройки доски
+    window.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('board-settings-toggle');
+        const menu = document.getElementById('board-settings-menu');
+        const themeSelect = document.getElementById('theme-select');
+
+        if (toggleBtn && menu) {
+            toggleBtn.addEventListener('click', () => {
+                menu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                const insideMenu = menu.contains(e.target);
+                const insideButton = toggleBtn.contains(e.target);
+
+                if (!insideMenu && !insideButton) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+
+        if (themeSelect) {
+            const savedTheme = localStorage.getItem('chess-theme') || 'theme-classic';
+            themeSelect.value = savedTheme;
+
+            themeSelect.addEventListener('change', (e) => {
+                if (window.setTheme) {
+                    window.setTheme(e.target.value);
+                }
+            });
+        }
+    });
 </script>
 </body>
 </html>
