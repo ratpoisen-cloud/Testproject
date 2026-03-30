@@ -321,6 +321,15 @@ body {
 #myBoard {
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
+/* Эффект старой першамент + гравюра */
+#myBoard {
+    filter: sepia(0.4) contrast(1.1);
+}
+#myBoard {
+    box-shadow: 
+        inset 0 0 20px rgba(0,0,0,0.6),
+        0 10px 40px rgba(0,0,0,0.8);
+}
 
 /* лёгкий "подъём" при наведении */
 .board-wrapper:hover {
