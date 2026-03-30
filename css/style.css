@@ -311,15 +311,12 @@ body {
 #myBoard {
     width: 100%;
     max-width: 650px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 #myBoard img {
     width: 100%;
     height: auto;
-}
-/* Плавное появление доски */
-#myBoard {
-    transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 /* лёгкий "подъём" при наведении */
@@ -387,10 +384,6 @@ body {
     font-size: 1.02rem;
     border: 1px solid rgba(163, 193, 143, 0.25);
     transition: all 0.3s ease;
-}
-.last-move {
-    box-shadow: inset 0 0 0 3px rgba(255, 215, 0, 0.6);
-    border-radius: 6px;
 }
 .turn-status.my-turn {
     background: linear-gradient(135deg, rgba(163, 193, 143, 0.35), rgba(163, 193, 143, 0.15));
@@ -749,28 +742,13 @@ body {
         padding: 6px 16px;
     }
 }
+
 /* === ОБЁРТКА ДОСКИ === */
 .board-wrapper {
     width: 100%;
-    max-width: 500px;
+    max-width: min(90vw, 500px);
     margin: 0 auto;
     position: relative;
-}
-
-/* ДОСКА */
-#myBoard {
-    width: 100%;
-}
-
-/* КНОПКИ ПОД ДОСКОЙ */
-.controls {
-    width: 100%;
-    max-width: 500px; /* ВАЖНО: совпадает с доской */
-    margin: 10px auto 0;
-
-    display: flex;
-    gap: 10px;
-    justify-content: center;
 }
 
 /* КНОПКИ */
@@ -778,9 +756,7 @@ body {
     flex: 1;
     max-width: 160px;
 }
-.board-wrapper {
-    max-width: min(90vw, 500px);
-}
+
 .last-move {
     box-shadow: inset 0 0 0 4px rgba(100, 180, 255, 0.6);
     border-radius: 4px;
