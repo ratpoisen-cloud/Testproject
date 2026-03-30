@@ -40,8 +40,8 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <div id="lobby-section" class="card hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h1 class="section-title" style="margin-bottom: 0;">Мои партии</h1>
+            <div class="lobby-header">
+                <h1 class="section-title section-title-tight">Мои партии</h1>
                 <button id="clear-finished-btn" class="btn btn-outline">🗑️ Очистить завершённые</button>
             </div>
             <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
@@ -110,7 +110,7 @@ if ('serviceWorker' in navigator) {
                             </div>
 
                             <!-- ===== ОВЕРЛЕЙ ЗАПРОСА ОТМЕНЫ ===== -->
-                            <div id="takeback-request-box" class="confirm-overlay hidden" style="background: none; box-shadow: none; backdrop-filter: none; padding: 0;">
+                            <div id="takeback-request-box" class="confirm-overlay confirm-overlay-plain hidden">
                                 <div class="request-card">
                                     <p>Соперник просит отменить последний ход</p>
                                     <div class="request-buttons">
@@ -121,7 +121,7 @@ if ('serviceWorker' in navigator) {
                             </div>
 
                             <!-- ===== ОВЕРЛЕЙ НИЧЬЕЙ ===== -->
-                            <div id="draw-request-box" class="confirm-overlay hidden" style="background: none; box-shadow: none; backdrop-filter: none; padding: 0;">
+                            <div id="draw-request-box" class="confirm-overlay confirm-overlay-plain hidden">
                                 <div class="request-card">
                                     <p id="draw-request-text">Соперник предлагает ничью</p>
                                     <div class="request-buttons">
@@ -135,13 +135,13 @@ if ('serviceWorker' in navigator) {
 
                         <!-- ===== КНОПКИ УПРАВЛЕНИЯ ===== -->
                         <div class="controls controls-split">
-                            <div class="controls-group controls-main">
+                            <div class="controls-group controls-safe">
                                 <button id="takeback-btn" class="btn btn-outline">Просить отмену</button>
-                                <button id="draw-btn" class="btn btn-draw">Предложить ничью</button>
+                                <button id="exit-btn" class="btn btn-outline">В лобби</button>
                             </div>
 
-                            <div class="controls-group controls-secondary">
-                                <button id="exit-btn" class="btn btn-outline">В лобби</button>
+                            <div class="controls-group controls-risky">
+                                <button id="draw-btn" class="btn btn-draw">Предложить ничью</button>
                                 <button id="resign-btn" class="btn btn-danger">Сдаться</button>
                             </div>
                         </div>
@@ -172,24 +172,24 @@ if ('serviceWorker' in navigator) {
                 <input type="email" id="email-input" placeholder="Ваша почта" class="input-field">
                 <input type="password" id="password-input" placeholder="Пароль (мин. 6 символов)" class="input-field">
                 
-                <div class="modal-buttons" style="flex-direction: column; gap: 10px;">
-                    <button id="login-email-btn" class="btn btn-primary" style="width: 100%;">Войти</button>
-                    <button id="register-email-btn" class="btn btn-outline" style="width: 100%;">Создать аккаунт</button>
-                    <button id="close-email-modal" class="btn btn-danger" style="width: 100%; background: transparent; color: var(--danger);">Отмена</button>
+                <div class="modal-buttons email-auth-actions">
+                    <button id="login-email-btn" class="btn btn-primary">Войти</button>
+                    <button id="register-email-btn" class="btn btn-outline">Создать аккаунт</button>
+                    <button id="close-email-modal" class="btn btn-danger">Отмена</button>
                 </div>
-                <p id="email-error" class="error-text hidden" style="color: var(--danger); margin-top: 15px; font-size: 0.9em;"></p>
+                <p id="email-error" class="error-text error-text-danger hidden"></p>
             </div>
         </div>
 
         <div id="game-modal" class="modal hidden">
             <div class="modal-content">
-                <h2 id="modal-title" style="margin-top: 0;">Игра окончена</h2>
-                <p id="modal-desc" class="modal-desc" style="margin: 20px 0; color: var(--text-secondary);"></p>
-                <div class="pgn-actions" style="display: flex; gap: 8px; margin-bottom: 20px;">
-                    <button id="modal-copy-pgn" class="btn btn-outline" style="flex: 1; font-size: 0.8rem; padding: 8px;">📋 Копировать</button>
-                    <button id="modal-download-pgn" class="btn btn-outline" style="flex: 1; font-size: 0.8rem; padding: 8px;">💾 Скачать .pgn</button>
+                <h2 id="modal-title" class="modal-title-reset">Игра окончена</h2>
+                <p id="modal-desc" class="modal-desc modal-desc-secondary"></p>
+                <div class="pgn-actions pgn-actions-bar">
+                    <button id="modal-copy-pgn" class="btn btn-outline pgn-action-btn">📋 Копировать</button>
+                    <button id="modal-download-pgn" class="btn btn-outline pgn-action-btn">💾 Скачать .pgn</button>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="game-modal-actions">
                     <button id="modal-rematch-btn" class="btn btn-primary btn-large">Новая партия (Реванш)</button>
                     <button id="modal-exit-btn" class="btn btn-outline">Выйти в лобби</button>
                 </div>

@@ -12,6 +12,24 @@
 
     --highlight-my-turn: rgba(163, 193, 143, 0.35);
     --shadow-accent: rgba(163, 193, 143, 0.25);
+
+    --space-4: 4px;
+    --space-8: 8px;
+    --space-12: 12px;
+    --space-16: 16px;
+    --space-24: 24px;
+    --space-32: 32px;
+
+    --radius-8: 8px;
+    --radius-12: 12px;
+    --radius-16: 16px;
+    --radius-24: 24px;
+
+    --font-size-xs: 0.8rem;
+    --font-size-sm: 0.9rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.1rem;
+    --font-size-xl: 1.8rem;
 }
 
 * {
@@ -153,15 +171,26 @@ body {
 .card {
     background: var(--card);
     padding: 28px;
-    border-radius: 24px;
+    border-radius: var(--radius-24);
     border: 1px solid var(--border);
 }
 
 .section-title {
-    font-size: 1.8rem;
+    font-size: var(--font-size-xl);
     text-align: center;
     margin-bottom: 20px;
     color: var(--accent);
+}
+
+.section-title-tight {
+    margin-bottom: 0;
+}
+
+.lobby-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
 /* ===== ЛОББИ (КОНТЕЙНЕР СПИСКА ИГР) ===== */
@@ -482,10 +511,17 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
+.confirm-overlay-plain {
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    padding: 0;
+}
+
 .request-card {
     background: var(--card);
     padding: 24px;
-    border-radius: 24px;
+    border-radius: var(--radius-24);
     border: 2px solid var(--accent);
     text-align: center;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
@@ -646,7 +682,7 @@ body {
 .modal-content {
     background: var(--card);
     padding: 32px;
-    border-radius: 24px;
+    border-radius: var(--radius-24);
     max-width: 380px;
     width: 90%;
     text-align: center;
@@ -665,6 +701,53 @@ body {
     border-radius: 12px;
     box-sizing: border-box;
     font-size: 1rem;
+}
+
+.email-auth-actions {
+    flex-direction: column;
+    gap: 10px;
+}
+
+.email-auth-actions .btn {
+    width: 100%;
+}
+
+#close-email-modal {
+    background: transparent;
+    color: var(--danger);
+}
+
+.error-text-danger {
+    color: var(--danger);
+    margin-top: 15px;
+    font-size: var(--font-size-sm);
+}
+
+.modal-title-reset {
+    margin-top: 0;
+}
+
+.modal-desc-secondary {
+    margin: 20px 0;
+    color: var(--text-secondary);
+}
+
+.pgn-actions-bar {
+    display: flex;
+    gap: var(--space-8);
+    margin-bottom: 20px;
+}
+
+.pgn-action-btn {
+    flex: 1;
+    font-size: var(--font-size-xs);
+    padding: var(--space-8);
+}
+
+.game-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
 }
 
 /* ===== БУКВЕННЫЙ АВАТАР ===== */
@@ -982,17 +1065,21 @@ body.theme-middle-earth #myBoard {
     flex-wrap: wrap;
 }
 
-.controls-main {
+.controls-safe {
     justify-content: flex-start;
 }
 
-.controls-secondary {
-    justify-content: flex-end;
+.controls-risky {
+    justify-content: flex-start;
     margin-left: auto;
 }
 
 .controls-split .btn {
-    min-width: 150px;
+    min-width: 170px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .game-bottom-panel {
@@ -1068,6 +1155,10 @@ body.theme-middle-earth #myBoard {
     .controls-group {
         width: 100%;
         justify-content: stretch;
+    }
+
+    .controls-risky {
+        margin-left: 0;
     }
 
     .controls-group .btn {
