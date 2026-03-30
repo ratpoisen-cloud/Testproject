@@ -881,3 +881,219 @@ body.theme-middle-earth #myBoard {
         width: 100%;
     }
 }
+/* ===== НОВЫЙ LAYOUT ИГРОВОЙ КОМНАТЫ ===== */
+
+.game-shell {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.game-layout {
+    display: block;
+    width: 100%;
+}
+
+.board-area {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.game-status-header {
+    max-width: 660px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.status-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.board-settings-bar {
+    width: 100%;
+    max-width: 660px;
+    margin: -8px auto 12px;
+    display: flex;
+    justify-content: flex-end;
+    position: relative;
+    min-height: 0;
+}
+
+.board-settings-icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--text);
+    font-size: 1.2rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.board-settings-icon-btn:hover {
+    border-color: var(--accent);
+    background: var(--card);
+    transform: rotate(20deg);
+}
+
+.board-settings-icon-btn:active {
+    transform: scale(0.96);
+}
+
+.board-settings-menu {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 220;
+    width: min(280px, 92vw);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.controls.controls-split {
+    width: 100%;
+    max-width: 660px;
+    margin: 18px auto 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.controls-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.controls-main {
+    justify-content: flex-start;
+}
+
+.controls-secondary {
+    justify-content: flex-end;
+    margin-left: auto;
+}
+
+.controls-split .btn {
+    min-width: 150px;
+}
+
+.game-bottom-panel {
+    width: 100%;
+    max-width: 660px;
+    margin: 18px auto 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.moves-card h3 {
+    margin: 0 0 12px 0;
+    font-size: 1.15rem;
+    color: var(--accent);
+    text-align: center;
+}
+
+.game-bottom-panel .move-list-content {
+    height: 220px;
+}
+
+.game-share-box {
+    margin-top: 0;
+}
+
+.game-share-box small {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.side-panel {
+    display: none !important;
+}
+
+@media (max-width: 900px) {
+    .board-area {
+        max-width: 100%;
+    }
+
+    .game-status-header,
+    .board-settings-bar,
+    .controls.controls-split,
+    .game-bottom-panel {
+        max-width: 660px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .game-status-header {
+        gap: 12px;
+    }
+
+    .status-actions {
+        width: 100%;
+        justify-content: space-between;
+        margin-left: 0;
+    }
+
+    .controls.controls-split {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .controls-group {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .controls-group .btn {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+
+    .board-settings-menu {
+        left: 0;
+        right: 0;
+        width: 100%;
+    }
+
+    .game-bottom-panel {
+        padding: 14px;
+    }
+
+    .game-bottom-panel .move-list-content {
+        height: 190px;
+    }
+
+    .share-container {
+        flex-direction: column;
+    }
+
+    .share-container .btn {
+        width: 100%;
+    }
+}

@@ -40,117 +40,132 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <div id="lobby-section" class="card hidden">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1 class="section-title" style="margin-bottom: 0;">Мои партии</h1>
-        <button id="clear-finished-btn" class="btn btn-outline">🗑️ Очистить завершённые</button>
-    </div>
-    <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
-    <button id="create-game-btn" class="btn btn-primary btn-large">Создать новую игру</button>
-</div>
-
-      <div id="game-section" class="hidden">
-    <div class="game-layout">
-        <div class="board-area">
-            <!-- ===== НОВЫЙ БЛОК СТАТУСА ВО ВСЮ ШИРИНУ ДОСКИ ===== -->
-            <div class="game-status-header">
-                <div class="player-badge" id="player-badge">
-                    <span class="player-icon"></span>
-                    <span id="user-color" class="player-color-text">Белые</span>
-                </div>
-                <div class="turn-status" id="turn-status">
-                    <span id="turn-text">Ваш ход</span>
-                </div>
-                <div id="game-status-text" class="game-status-text">Игра активна</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;">Мои партии</h1>
+                <button id="clear-finished-btn" class="btn btn-outline">🗑️ Очистить завершённые</button>
             </div>
+            <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
+            <button id="create-game-btn" class="btn btn-primary btn-large">Создать новую игру</button>
+        </div>
 
-            <!-- ===== НАСТРОЙКИ ДОСКИ ===== -->
-            <div class="board-settings-bar">
-                <button id="board-settings-toggle" class="btn btn-outline board-settings-btn" type="button">
-                    Настройки доски
-                </button>
+        <div id="game-section" class="hidden">
+            <div class="game-shell">
+                <div class="game-layout">
+                    <div class="board-area">
+                        <!-- ===== НОВЫЙ БЛОК СТАТУСА ВО ВСЮ ШИРИНУ ДОСКИ ===== -->
+                        <div class="game-status-header">
+                            <div class="player-badge" id="player-badge">
+                                <span class="player-icon"></span>
+                                <span id="user-color" class="player-color-text">Белые</span>
+                            </div>
 
-                <div id="board-settings-menu" class="board-settings-menu hidden">
-                    <div class="board-settings-group">
-                        <label for="theme-select">Тема доски</label>
-                        <select id="theme-select" class="board-settings-select">
-                            <option value="theme-classic">Classic</option>
-                            <option value="theme-forest">Forest</option>
-                            <option value="theme-ocean">Ocean</option>
-                            <option value="theme-dark">Dark</option>
-                            <option value="theme-marble">Marble</option>
-                            <option value="theme-chesscom">Chess.com</option>
-                            <option value="theme-lime">Lime</option>
-                            <option value="theme-middle-earth">Middle-earth</option>
-                        </select>
+                            <div class="turn-status" id="turn-status">
+                                <span id="turn-text">Ваш ход</span>
+                            </div>
+
+                            <div class="status-actions">
+                                <div id="game-status-text" class="game-status-text">Игра активна</div>
+
+                                <button id="board-settings-toggle" class="board-settings-icon-btn" type="button" aria-label="Настройки доски" title="Настройки доски">
+                                    ⚙
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ===== НАСТРОЙКИ ДОСКИ ===== -->
+                        <div class="board-settings-bar">
+                            <div id="board-settings-menu" class="board-settings-menu hidden">
+                                <div class="board-settings-group">
+                                    <label for="theme-select">Тема доски</label>
+                                    <select id="theme-select" class="board-settings-select">
+                                        <option value="theme-classic">Classic</option>
+                                        <option value="theme-forest">Forest</option>
+                                        <option value="theme-ocean">Ocean</option>
+                                        <option value="theme-dark">Dark</option>
+                                        <option value="theme-marble">Marble</option>
+                                        <option value="theme-chesscom">Chess.com</option>
+                                        <option value="theme-lime">Lime</option>
+                                        <option value="theme-middle-earth">Middle-earth</option>
+                                    </select>
+                                </div>
+
+                                <div class="board-settings-group">
+                                    <label for="piece-set-select">Фигурки</label>
+                                    <select id="piece-set-select" class="board-settings-select" disabled>
+                                        <option value="default">Скоро будет</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="board-wrapper">
+
+                            <!-- ===== ДОСКА ===== -->
+                            <div id="myBoard"></div>
+
+                            <!-- ===== ОВЕРЛЕЙ ПОДТВЕРЖДЕНИЯ ХОДА ===== -->
+                            <div id="confirm-move-box" class="confirm-overlay hidden">
+                                <button id="confirm-btn" class="btn-round btn-success">✓</button>
+                                <button id="cancel-move-btn" class="btn-round btn-danger">✕</button>
+                            </div>
+
+                            <!-- ===== ОВЕРЛЕЙ ЗАПРОСА ОТМЕНЫ ===== -->
+                            <div id="takeback-request-box" class="confirm-overlay hidden" style="background: none; box-shadow: none; backdrop-filter: none; padding: 0;">
+                                <div class="request-card">
+                                    <p>Соперник просит отменить последний ход</p>
+                                    <div class="request-buttons">
+                                        <button id="takeback-accept" class="btn-round btn-success">✓</button>
+                                        <button id="takeback-reject" class="btn-round btn-danger">✕</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===== ОВЕРЛЕЙ НИЧЬЕЙ ===== -->
+                            <div id="draw-request-box" class="confirm-overlay hidden" style="background: none; box-shadow: none; backdrop-filter: none; padding: 0;">
+                                <div class="request-card">
+                                    <p id="draw-request-text">Соперник предлагает ничью</p>
+                                    <div class="request-buttons">
+                                        <button id="draw-accept" class="btn-round btn-success">✓</button>
+                                        <button id="draw-reject" class="btn-round btn-danger">✕</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- ===== КНОПКИ УПРАВЛЕНИЯ ===== -->
+                        <div class="controls controls-split">
+                            <div class="controls-group controls-main">
+                                <button id="takeback-btn" class="btn btn-outline">Просить отмену</button>
+                                <button id="draw-btn" class="btn btn-draw">Предложить ничью</button>
+                            </div>
+
+                            <div class="controls-group controls-secondary">
+                                <button id="exit-btn" class="btn btn-outline">В лобби</button>
+                                <button id="resign-btn" class="btn btn-danger">Сдаться</button>
+                            </div>
+                        </div>
+
+                        <!-- ===== НИЖНЯЯ ПАНЕЛЬ ПАРТИИ ===== -->
+                        <div class="game-bottom-panel">
+                            <div class="moves-card">
+                                <h3>История ходов</h3>
+                                <div id="move-list" class="move-list-content"></div>
+                            </div>
+                            
+                            <div class="share-box game-share-box">
+                                <small>Пригласить друга</small>
+                                <div class="share-container">
+                                    <input type="text" id="room-link" readonly>
+                                    <button id="share-btn" class="btn btn-primary">Поделиться</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="board-settings-group">
-                        <label for="piece-set-select">Фигурки</label>
-                        <select id="piece-set-select" class="board-settings-select" disabled>
-                            <option value="default">Скоро будет</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="board-wrapper">
-
-    <!-- ===== ДОСКА ===== -->
-    <div id="myBoard"></div>
-
-    <!-- ===== ОВЕРЛЕЙ ПОДТВЕРЖДЕНИЯ ХОДА ===== -->
-    <div id="confirm-move-box" class="confirm-overlay hidden">
-        <button id="confirm-btn" class="btn-round btn-success">✓</button>
-        <button id="cancel-move-btn" class="btn-round btn-danger">✕</button>
-    </div>
-
-    <!-- ===== ОВЕРЛЕЙ ЗАПРОСА ОТМЕНЫ ===== -->
-    <div id="takeback-request-box" class="confirm-overlay hidden" style="background: none; box-shadow: none; backdrop-filter: none; padding: 0;">
-        <div class="request-card">
-            <p>Соперник просит отменить последний ход</p>
-            <div class="request-buttons">
-                <button id="takeback-accept" class="btn-round btn-success">✓</button>
-                <button id="takeback-reject" class="btn-round btn-danger">✕</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== ОВЕРЛЕЙ НИЧЬЕЙ ===== -->
-    <div id="draw-request-box" class="confirm-overlay hidden" style="background: none; box-shadow: none; backdrop-filter: none; padding: 0;">
-        <div class="request-card">
-            <p id="draw-request-text">Соперник предлагает ничью</p>
-            <div class="request-buttons">
-                <button id="draw-accept" class="btn-round btn-success">✓</button>
-                <button id="draw-reject" class="btn-round btn-danger">✕</button>
-            </div>
-        </div>
-    </div>
-
-</div>
-            <!-- ===== КНОПКИ УПРАВЛЕНИЯ ===== -->
-            <div class="controls">
-    <button id="resign-btn" class="btn btn-danger">Сдаться</button>
-    <button id="takeback-btn" class="btn btn-outline">Просить отмену</button>
-    <button id="draw-btn" class="btn btn-draw">Предложить ничью</button>
-    <button id="exit-btn" class="btn btn-outline">В лобби</button>
-</div>
-        </div>
-
-        <!-- ===== БОКОВАЯ ПАНЕЛЬ ===== -->
-        <div class="side-panel">
-            <h3>История ходов</h3>
-            <div id="move-list" class="move-list-content"></div>
-            
-            <div class="share-box">
-                <small>Пригласить друга</small>
-                <div class="share-container">
-                    <input type="text" id="room-link" readonly>
-                    <button id="share-btn" class="btn btn-primary">Поделиться</button>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+
         <div id="email-modal" class="modal hidden">
             <div class="modal-content">
                 <h3>Вход или Регистрация</h3>
@@ -171,9 +186,9 @@ if ('serviceWorker' in navigator) {
                 <h2 id="modal-title" style="margin-top: 0;">Игра окончена</h2>
                 <p id="modal-desc" class="modal-desc" style="margin: 20px 0; color: var(--text-secondary);"></p>
                 <div class="pgn-actions" style="display: flex; gap: 8px; margin-bottom: 20px;">
-            <button id="modal-copy-pgn" class="btn btn-outline" style="flex: 1; font-size: 0.8rem; padding: 8px;">📋 Копировать</button>
-            <button id="modal-download-pgn" class="btn btn-outline" style="flex: 1; font-size: 0.8rem; padding: 8px;">💾 Скачать .pgn</button>
-        </div>
+                    <button id="modal-copy-pgn" class="btn btn-outline" style="flex: 1; font-size: 0.8rem; padding: 8px;">📋 Копировать</button>
+                    <button id="modal-download-pgn" class="btn btn-outline" style="flex: 1; font-size: 0.8rem; padding: 8px;">💾 Скачать .pgn</button>
+                </div>
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <button id="modal-rematch-btn" class="btn btn-primary btn-large">Новая партия (Реванш)</button>
                     <button id="modal-exit-btn" class="btn btn-outline">Выйти в лобби</button>
@@ -200,7 +215,7 @@ if ('serviceWorker' in navigator) {
     <script src="js/ui.js"></script>
     <script src="js/game-core.js"></script>
     <script src="js/app.js"></script>
-    <!-- Добавьте эту строку после всех скриптов, перед закрывающим body -->
+
 <script>
     // Проверка загрузки Firebase функций
     setTimeout(() => {
