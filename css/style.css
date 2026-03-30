@@ -38,8 +38,8 @@ body {
 }
 
 /* ===== ЦВЕТА КЛЕТОК ДОСКИ ===== */
-.white-1e1d7 { background-color: rgba(240, 217, 181, 0.85) !important; }
-.black-3c85d { background-color: rgba(181, 136, 99, 0.85) !important; }
+.white-1e1d7 { background-color: #f0f4e8 !important; }
+.black-3c85d { background-color: #3e5234 !important; }
 
 /* ===== ТОП-БАР И АВТОРИЗАЦИЯ ===== */
 .top-bar {
@@ -321,34 +321,12 @@ body {
 #myBoard {
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
-/* Эффект старой першамент + гравюра */
-#myBoard {
-    filter: sepia(0.4) contrast(1.1);
-}
-#myBoard {
-    box-shadow: 
-        inset 0 0 20px rgba(0,0,0,0.6),
-        0 10px 40px rgba(0,0,0,0.8);
-}
 
 /* лёгкий "подъём" при наведении */
 .board-wrapper:hover {
     transform: translateY(-2px);
 }
-#myBoard {
-    background: url('../assets/img/middle-earth-map.jpg') center/cover no-repeat;
-    border: 8px solid #3b2b1f;
-    box-shadow: 0 0 30px rgba(0,0,0,0.7);
-}
 
-/* клетки полупрозрачные */
-.white-1e1d7 {
-    background-color: rgba(240, 217, 181, 0.85) !important;
-}
-
-.black-3c85d {
-    background-color: rgba(181, 136, 99, 0.85) !important;
-}
 /* ===== СТАТУС-ХЕДЕР НАД ДОСКОЙ ===== */
 .game-status-header {
     width: 100%;
