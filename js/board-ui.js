@@ -100,20 +100,18 @@ window.handleDrop = function(source, target) {
         return 'snapback';
     }
     
-    const move = window.game.move({ from: source, to: target, promotion: 'q' });
+    const preview = window.buildMovePreview(source, target, 'q');
     
-    if (move === null) {
+    if (!preview) {
         window.dragSourceSquare = null;
         return 'snapback';
     }
     
     // Сохраняем ход
-    window.pendingMove = { from: source, to: target };
+    window.pendingMove = preview;
     
     // Показываем ход на доске
-    window.game.move({ from: source, to: target, promotion: 'q' });
-    window.updateBoardPosition(window.game.fen(), true);
-    window.game.undo();
+    window.updateBoardPosition(preview.previewFen, true);
     
     // Показываем оверлей подтверждения
     document.getElementById('confirm-move-box')?.classList.remove('hidden');
@@ -151,14 +149,12 @@ window.handleMobileClick = function(square) {
             return;
         }
         
-        const move = window.game.move({ from: window.selectedSquare, to: square, promotion: 'q' });
+        const preview = window.buildMovePreview(window.selectedSquare, square, 'q');
         
-        if (move) {
-            window.pendingMove = { from: window.selectedSquare, to: square };
+        if (preview) {
+            window.pendingMove = preview;
             // Показываем ход на доске
-            window.game.move({ from: window.selectedSquare, to: square, promotion: 'q' });
-            window.updateBoardPosition(window.game.fen(), true);
-            window.game.undo();
+            window.updateBoardPosition(preview.previewFen, true);
             document.getElementById('confirm-move-box').classList.remove('hidden');
             window.clearSelection();
         } else {
@@ -204,6 +200,22 @@ window.updateBoardPosition = function(fen, animate = true) {
     if (window.board) {
         window.board.position(fen, animate);
     }
+};
+
+// Создание безопасного предпросмотра хода без изменения основной партии
+window.buildMovePreview = function(from, to, promotion = 'q') {
+    const previewGame = new Chess(window.game.fen());
+    const move = previewGame.move({ from, to, promotion });
+
+    if (!move) return null;
+
+    return {
+        from,
+        to,
+        promotion,
+        san: move.san,
+        previewFen: previewGame.fen()
+    };
 };
 
 // Полная очистка подсветки
