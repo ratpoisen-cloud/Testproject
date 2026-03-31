@@ -834,11 +834,6 @@ body {
     position: relative;
 }
 
-/* КНОПКИ */
-.controls button {
-    flex: 1;
-    max-width: 160px;
-}
 
 .last-move {
     box-shadow: inset 0 0 0 4px rgba(100, 180, 255, 0.6);
@@ -1048,33 +1043,28 @@ body.theme-middle-earth #myBoard {
     gap: 14px;
 }
 
+/* ===== КНОПКИ УПРАВЛЕНИЯ ПОД ДОСКОЙ ===== */
 .controls.controls-split {
     width: 100%;
     max-width: 660px;
-    margin: 18px auto 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-}
-
-.controls-group {
+    margin: var(--space-16) auto 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-12);
 }
 
-.controls-safe {
-    justify-content: flex-start;
+.controls-group {
+    display: contents;
 }
 
+.controls-safe,
 .controls-risky {
-    justify-content: flex-start;
-    margin-left: auto;
+    margin-left: 0;
 }
 
 .controls-split .btn {
+    width: 100%;
+    max-width: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1082,9 +1072,10 @@ body.theme-middle-earth #myBoard {
 
 .btn-control-size {
     width: 100%;
-    padding: var(--space-12) var(--space-24);
-    min-height: calc(var(--space-24) + var(--space-16));
+    min-height: 44px;
+    padding: 10px 16px;
     font-size: var(--font-size-sm);
+    line-height: 1.2;
 }
 
 .game-bottom-panel {
@@ -1153,17 +1144,22 @@ body.theme-middle-earth #myBoard {
     }
 
     .controls.controls-split {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
+        gap: var(--space-8);
     }
 
     .controls-group {
-        width: 100%;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: auto;
     }
 
     .controls-risky {
         margin-left: 0;
+    }
+
+    .btn-control-size {
+        min-height: 44px;
+        padding: 10px 16px;
+        font-size: var(--font-size-sm);
     }
 
     .board-settings-menu {
