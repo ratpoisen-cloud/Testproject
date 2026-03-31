@@ -70,7 +70,6 @@ if ('serviceWorker' in navigator) {
                                     ⚙
                                 </button>
                             </div>
-                        </div>
 
                         <!-- ===== НАСТРОЙКИ ДОСКИ ===== -->
                         <div class="board-settings-bar">
@@ -95,46 +94,38 @@ if ('serviceWorker' in navigator) {
                                         <option value="default">Скоро будет</option>
                                     </select>
                                 </div>
-                            </div>
-                        </div>
                         
-                        <div class="board-shell">
-                            <div class="board-frame">
-                                <div class="board-wrapper">
+                        <div class="board-wrapper">
 
-                                    <!-- ===== ДОСКА ===== -->
-                                    <div id="myBoard"></div>
+                            <!-- ===== ДОСКА ===== -->
+                            <div id="myBoard"></div>
 
-                                    <!-- ===== ОВЕРЛЕЙ ПОДТВЕРЖДЕНИЯ ХОДА ===== -->
-                                    <div id="confirm-move-box" class="confirm-overlay hidden">
-                                        <button id="confirm-btn" class="btn-round btn-success">✓</button>
-                                        <button id="cancel-move-btn" class="btn-round btn-danger">✕</button>
-                                    </div>
-
-                                    <!-- ===== ОВЕРЛЕЙ ЗАПРОСА ОТМЕНЫ ===== -->
-                                    <div id="takeback-request-box" class="confirm-overlay confirm-overlay-plain hidden">
-                                        <div class="request-card">
-                                            <p>Соперник просит отменить последний ход</p>
-                                            <div class="request-buttons">
-                                                <button id="takeback-accept" class="btn-round btn-success">✓</button>
-                                                <button id="takeback-reject" class="btn-round btn-danger">✕</button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- ===== ОВЕРЛЕЙ НИЧЬЕЙ ===== -->
-                                    <div id="draw-request-box" class="confirm-overlay confirm-overlay-plain hidden">
-                                        <div class="request-card">
-                                            <p id="draw-request-text">Соперник предлагает ничью</p>
-                                            <div class="request-buttons">
-                                                <button id="draw-accept" class="btn-round btn-success">✓</button>
-                                                <button id="draw-reject" class="btn-round btn-danger">✕</button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
+                            <!-- ===== ОВЕРЛЕЙ ПОДТВЕРЖДЕНИЯ ХОДА ===== -->
+                            <div id="confirm-move-box" class="confirm-overlay hidden">
+                                <button id="confirm-btn" class="btn-round btn-success">✓</button>
+                                <button id="cancel-move-btn" class="btn-round btn-danger">✕</button>
                             </div>
+
+                            <!-- ===== ОВЕРЛЕЙ ЗАПРОСА ОТМЕНЫ ===== -->
+                            <div id="takeback-request-box" class="confirm-overlay confirm-overlay-plain hidden">
+                                <div class="request-card">
+                                    <p>Соперник просит отменить последний ход</p>
+                                    <div class="request-buttons">
+                                        <button id="takeback-accept" class="btn-round btn-success">✓</button>
+                                        <button id="takeback-reject" class="btn-round btn-danger">✕</button>
+                                    </div>
+                                </div>
+
+                            <!-- ===== ОВЕРЛЕЙ НИЧЬЕЙ ===== -->
+                            <div id="draw-request-box" class="confirm-overlay confirm-overlay-plain hidden">
+                                <div class="request-card">
+                                    <p id="draw-request-text">Соперник предлагает ничью</p>
+                                    <div class="request-buttons">
+                                        <button id="draw-accept" class="btn-round btn-success">✓</button>
+                                        <button id="draw-reject" class="btn-round btn-danger">✕</button>
+                                    </div>
+                                </div>
+
                         </div>
 
                         <!-- ===== КНОПКИ УПРАВЛЕНИЯ ===== -->
@@ -148,14 +139,12 @@ if ('serviceWorker' in navigator) {
                                <button id="draw-btn" class="btn btn-draw btn-control-size">Предложить ничью</button>
                                 <button id="resign-btn" class="btn btn-danger btn-control-size">Сдаться</button>
                             </div>
-                        </div>
 
                         <!-- ===== НИЖНЯЯ ПАНЕЛЬ ПАРТИИ ===== -->
                         <div class="game-bottom-panel">
                             <div class="moves-card">
                                 <h3>История ходов</h3>
                                 <div id="move-list" class="move-list-content"></div>
-                            </div>
                             
                             <div class="share-box game-share-box">
                                 <small>Пригласить друга</small>
@@ -163,8 +152,6 @@ if ('serviceWorker' in navigator) {
                                     <input type="text" id="room-link" readonly>
                                     <button id="share-btn" class="btn btn-primary">Поделиться</button>
                                 </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
