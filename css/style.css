@@ -30,6 +30,8 @@
     --font-size-md: 1rem;
     --font-size-lg: 1.1rem;
     --font-size-xl: 1.8rem;
+
+    --game-column-width: 760px;
 }
 
 * {
@@ -337,7 +339,7 @@ body {
 
 #myBoard {
     width: 100%;
-    max-width: 650px;
+    max-width: 100%;
     margin: 0 auto;
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
@@ -829,7 +831,7 @@ body {
 /* === ОБЁРТКА ДОСКИ === */
 .board-wrapper {
     width: 100%;
-    max-width: min(90vw, 500px);
+    max-width: var(--game-column-width);
     margin: 0 auto;
     position: relative;
 }
@@ -965,12 +967,12 @@ body.theme-middle-earth #myBoard {
 
 .board-area {
     width: 100%;
-    max-width: 760px;
+    max-width: var(--game-column-width);
     margin: 0 auto;
 }
 
 .game-status-header {
-    max-width: 660px;
+    max-width: var(--game-column-width);
     margin-left: auto;
     margin-right: auto;
 }
@@ -984,7 +986,7 @@ body.theme-middle-earth #myBoard {
 
 .board-settings-bar {
     width: 100%;
-    max-width: 660px;
+    max-width: var(--game-column-width);
     margin: -8px auto 12px;
     display: flex;
     justify-content: flex-end;
@@ -1037,7 +1039,7 @@ body.theme-middle-earth #myBoard {
 /* ===== КНОПКИ ПОД ДОСКОЙ ===== */
 .controls.controls-split {
     width: 100%;
-    max-width: 660px;
+    max-width: var(--game-column-width);
     margin: var(--space-16) auto 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1071,7 +1073,7 @@ body.theme-middle-earth #myBoard {
 
 .game-bottom-panel {
     width: 100%;
-    max-width: 660px;
+    max-width: var(--game-column-width);
     margin: 18px auto 0;
     background: var(--card);
     border: 1px solid var(--border);
@@ -1117,13 +1119,17 @@ body.theme-middle-earth #myBoard {
     .board-settings-bar,
     .controls.controls-split,
     .game-bottom-panel {
-        max-width: 660px;
+        max-width: var(--game-column-width);
         margin-left: auto;
         margin-right: auto;
     }
 }
 
 @media (max-width: 600px) {
+    .main-container {
+        padding: 8px;
+    }
+
     .game-status-header {
         gap: 12px;
     }
@@ -1132,6 +1138,23 @@ body.theme-middle-earth #myBoard {
         width: 100%;
         justify-content: space-between;
         margin-left: 0;
+    }
+
+    .board-area {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .board-wrapper {
+        width: calc(100% + 16px);
+        max-width: none;
+        margin-left: -8px;
+        margin-right: -8px;
+    }
+
+    #myBoard {
+        width: 100%;
+        max-width: 100%;
     }
 
     .controls.controls-split {
