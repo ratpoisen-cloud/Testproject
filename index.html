@@ -135,14 +135,14 @@ if ('serviceWorker' in navigator) {
 
                         <!-- ===== КНОПКИ УПРАВЛЕНИЯ ===== -->
                         <div class="controls controls-split">
-                            <div class="controls-group controls-main">
-                                <button id="takeback-btn" class="btn btn-outline">Просить отмену</button>
-                                <button id="draw-btn" class="btn btn-draw">Предложить ничью</button>
+                            <div class="controls-group controls-safe">
+                                <button id="takeback-btn" class="btn btn-outline btn-control-size">Просить отмену</button>
+                                <button id="exit-btn" class="btn btn-outline btn-control-size">В лобби</button>
                             </div>
 
-                            <div class="controls-group controls-secondary">
-                                <button id="exit-btn" class="btn btn-outline">В лобби</button>
-                                <button id="resign-btn" class="btn btn-danger">Сдаться</button>
+                            <div class="controls-group controls-risky">
+                               <button id="draw-btn" class="btn btn-draw btn-control-size">Предложить ничью</button>
+                                <button id="resign-btn" class="btn btn-danger btn-control-size">Сдаться</button>
                             </div>
                         </div>
 
@@ -172,10 +172,10 @@ if ('serviceWorker' in navigator) {
                 <input type="email" id="email-input" placeholder="Ваша почта" class="input-field">
                 <input type="password" id="password-input" placeholder="Пароль (мин. 6 символов)" class="input-field">
                 
-                <div class="modal-buttons modal-buttons-stack">
-                    <button id="login-email-btn" class="btn btn-primary btn-block">Войти</button>
-                    <button id="register-email-btn" class="btn btn-outline btn-block">Создать аккаунт</button>
-                    <button id="close-email-modal" class="btn btn-danger btn-block btn-danger-ghost">Отмена</button>
+                <div class="modal-buttons email-auth-actions">
+                    <button id="login-email-btn" class="btn btn-primary">Войти</button>
+                    <button id="register-email-btn" class="btn btn-outline">Создать аккаунт</button>
+                    <button id="close-email-modal" class="btn btn-danger">Отмена</button>
                 </div>
                 <p id="email-error" class="error-text error-text-danger hidden"></p>
             </div>
@@ -189,7 +189,7 @@ if ('serviceWorker' in navigator) {
                     <button id="modal-copy-pgn" class="btn btn-outline pgn-action-btn">📋 Копировать</button>
                     <button id="modal-download-pgn" class="btn btn-outline pgn-action-btn">💾 Скачать .pgn</button>
                 </div>
-                <div class="modal-actions-stack">
+                <div class="game-modal-actions">
                     <button id="modal-rematch-btn" class="btn btn-primary btn-large">Новая партия (Реванш)</button>
                     <button id="modal-exit-btn" class="btn btn-outline">Выйти в лобби</button>
                 </div>
