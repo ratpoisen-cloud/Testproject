@@ -30,7 +30,9 @@
     --font-size-md: 1rem;
     --font-size-lg: 1.1rem;
     --font-size-xl: 1.8rem;
-}
+    /* ===== BOARD FRAME ===== */
+--board-frame-color: #b58863; /* fallback (classic dark square) */
+--board-frame-size: 14px;}
 
 * {
     box-sizing: border-box;
@@ -338,11 +340,13 @@ body {
 }
 
 #myBoard {
-    width: 100%;
+    position: relative;
+    border: var(--board-frame-size) solid var(--board-frame-color);
+    border-radius: var(--radius-16);
+    box-sizing: content-box;
     max-width: 650px;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    width: 100%;
 }
-
 #myBoard img {
     width: 100%;
     height: auto;
@@ -844,35 +848,42 @@ body {
 /* Классическая */
 body.theme-classic .white-1e1d7 { background-color: #f0f4e8 !important; }
 body.theme-classic .black-3c85d { background-color: #3e5234 !important; }
+body.theme-classic { --board-frame-color: #b58863; }
 
 /* Лесная */
 body.theme-forest .white-1e1d7 { background-color: #e8eddc !important; }
 body.theme-forest .black-3c85d { background-color: #4c6b3c !important; }
+body.theme-forest { --board-frame-color: #6b8c5c; }
 
 /* Океан */
 body.theme-ocean .white-1e1d7 { background-color: #dceaf4 !important; }
 body.theme-ocean .black-3c85d { background-color: #3c5f77 !important; }
+body.theme-ocean { --board-frame-color: #4a6a8c; }
 
 /* Тёмная */
 body.theme-dark .white-1e1d7 { background-color: #8c8c8c !important; }
 body.theme-dark .black-3c85d { background-color: #2f2f2f !important; }
+body.theme-dark { --board-frame-color: #444; }
 
 /* Мрамор */
 body.theme-marble .white-1e1d7 { background-color: #f3f3f1 !important; }
 body.theme-marble .black-3c85d { background-color: #8a8f95 !important; }
+body.theme-marble { --board-frame-color: #8a8a8a; }
 
 /* Chess.com-подобная */
 body.theme-chesscom .white-1e1d7 { background-color: #eeeed2 !important; }
 body.theme-chesscom .black-3c85d { background-color: #769656 !important; }
+body.theme-chesscom { --board-frame-color: #769656; }
 
 /* Лайм */
 body.theme-lime .white-1e1d7 { background-color: #f2ffe6 !important; }
 body.theme-lime .black-3c85d { background-color: #8db600 !important; }
+body.theme-lime { --board-frame-color: #8bc34a; }
 
 /* Middle-earth */
 body.theme-middle-earth .white-1e1d7 { background-color: rgba(240, 217, 181, 0.82) !important; }
 body.theme-middle-earth .black-3c85d { background-color: rgba(181, 136, 99, 0.82) !important; }
-
+body.theme-middle-earth { --board-frame-color: rgba(181, 136, 99, 0.95); }
 body.theme-middle-earth #myBoard {
     background: url('../assets/img/middle-earth-map.jpg') center/cover no-repeat;
     border: 8px solid #3b2b1f;
@@ -886,6 +897,7 @@ body.theme-middle-earth #myBoard {
 .theme-btn.active {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgba(163, 193, 143, 0.18);
+
 }
 /* ===== НАСТРОЙКИ ДОСКИ ===== */
 .board-settings-bar {
