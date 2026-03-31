@@ -31,7 +31,9 @@
     --font-size-lg: 1.1rem;
     --font-size-xl: 1.8rem;
 
-    --game-column-width: 760px;
+    --game-layout-gap: 20px;
+    --game-main-column-width: min(68vw, 760px);
+    --game-side-column-width: min(32vw, 360px);
 }
 
 * {
@@ -47,8 +49,8 @@ body {
     min-height: 100vh;
 }
 
-.hidden { 
-    display: none !important; 
+.hidden {
+    display: none !important;
 }
 
 .main-container {
@@ -133,7 +135,6 @@ body {
     border-color: var(--accent);
 }
 
-/* Кнопка "Предложить ничью" */
 .btn-draw {
     background: #e8dcc8;
     color: #3a3a2a;
@@ -321,47 +322,82 @@ body {
     opacity: 0.7;
 }
 
-/* ===== ИГРОВАЯ ОБЛАСТЬ ===== */
-.game-layout {
+/* ===== ИГРОВОЙ LAYOUT ===== */
+.game-shell {
+    width: 100%;
     display: flex;
-    gap: 24px;
-    align-items: flex-start;
+    justify-content: center;
 }
 
-.board-area {
-    flex: 1;
+.game-layout-2col {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, var(--game-main-column-width)) minmax(280px, var(--game-side-column-width));
+    gap: var(--game-layout-gap);
+    align-items: start;
+}
+
+.game-main-column,
+.game-side-column {
     min-width: 0;
+}
+
+.game-main-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.game-side-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+/* ===== ОСНОВНАЯ КОЛОНКА ===== */
+.board-area {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    min-width: 0;
+}
+
+.game-status-header,
+.board-settings-bar,
+.board-wrapper {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* ===== ДОСКА ===== */
+.board-wrapper {
     position: relative;
-    max-width: var(--game-column-width);
-    margin-left: auto;
-    margin-right: auto;
 }
 
 #myBoard {
     width: 100%;
     max-width: 100%;
-    margin: 0 auto;
+    margin: 0;
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 #myBoard img {
     width: 100%;
     height: auto;
+    display: block;
 }
 
-/* лёгкий "подъём" при наведении */
 .board-wrapper:hover {
     transform: translateY(-2px);
 }
 
-/* ===== СТАТУС-ХЕДЕР ===== */
+/* ===== СТАТУС-БЛОК ===== */
 .game-status-header {
-    width: 100%;
-    max-width: 660px;
     background: var(--card);
     border-radius: 22px;
     padding: 16px 24px;
-    margin-bottom: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -402,7 +438,6 @@ body {
     font-size: 0.95rem;
 }
 
-/* ===== ИНДИКАТОР ХОДА ===== */
 .turn-status {
     display: flex;
     align-items: center;
@@ -436,6 +471,13 @@ body {
     padding: 6px 16px;
     border-radius: 30px;
     letter-spacing: 0.3px;
+}
+
+.status-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
 }
 
 @keyframes turnPulse {
@@ -495,6 +537,11 @@ body {
     position: relative;
     box-shadow: inset 0 0 0 4px rgba(163, 193, 143, 0.85) !important;
     background-color: rgba(163, 193, 143, 0.2) !important;
+}
+
+.last-move {
+    box-shadow: inset 0 0 0 4px rgba(100, 180, 255, 0.6);
+    border-radius: 4px;
 }
 
 /* ===== ОВЕРЛЕИ ===== */
@@ -573,49 +620,133 @@ body {
     transform: scale(0.95);
 }
 
-/* ===== КНОПКИ УПРАВЛЕНИЯ ===== */
-.controls {
+/* ===== НАСТРОЙКИ ДОСКИ ===== */
+.board-settings-bar {
     display: flex;
-    gap: 12px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+    min-height: 0;
+    margin-top: -8px;
+}
+
+.board-settings-menu {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 220;
+    width: min(280px, 92vw);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.board-settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.board-settings-group label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.board-settings-select {
     width: 100%;
-    max-width: 660px;
-    margin-left: auto;
-    margin-right: auto;
+    padding: 10px 12px;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 12px;
+    font-size: 0.92rem;
+    outline: none;
 }
 
-.controls button {
-    transition: all 0.15s ease;
+.board-settings-select:focus {
+    border-color: var(--accent);
 }
 
-.controls button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+.board-settings-icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--text);
+    font-size: 1.2rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.controls button:active {
+.board-settings-icon-btn:hover {
+    border-color: var(--accent);
+    background: var(--card);
+    transform: rotate(20deg);
+}
+
+.board-settings-icon-btn:active {
     transform: scale(0.96);
 }
 
-/* ===== БОКОВАЯ ПАНЕЛЬ ===== */
-.side-panel {
+/* ===== ПРАВАЯ КОЛОНКА ===== */
+.controls.controls-split,
+.game-bottom-panel {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+}
+
+.controls.controls-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-12);
+}
+
+.controls-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-12);
+}
+
+.controls-split .btn {
+    width: 100%;
+    max-width: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-control-size {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: var(--font-size-sm);
+    line-height: 1.2;
+}
+
+.game-bottom-panel {
     background: var(--card);
-    border-radius: 20px;
-    padding: 20px;
-    width: 320px;
-    flex-shrink: 0;
     border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
-.side-panel h3 {
-    margin: 0 0 8px 0;
-    font-size: 1.2rem;
+.moves-card h3 {
+    margin: 0 0 12px 0;
+    font-size: 1.15rem;
     color: var(--accent);
     text-align: center;
 }
@@ -638,15 +769,19 @@ body {
     border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-.share-box {
-    margin-top: auto;
+.game-share-box {
+    margin-top: 0;
 }
 
-.share-box small {
+.game-share-box small {
     display: block;
     margin-bottom: 8px;
     color: var(--text-secondary);
     font-size: 0.75rem;
+}
+
+.share-box {
+    margin-top: auto;
 }
 
 .share-container {
@@ -669,6 +804,11 @@ body {
 .share-container .btn {
     padding: 10px 16px;
     white-space: nowrap;
+}
+
+/* ===== СКРЫТАЯ СТАРАЯ БОКОВАЯ ПАНЕЛЬ ===== */
+.side-panel {
+    display: none !important;
 }
 
 /* ===== МОДАЛЬНЫЕ ОКНА ===== */
@@ -768,79 +908,6 @@ body {
     border: 2px solid var(--accent);
 }
 
-/* ===== АДАПТИВНОСТЬ ===== */
-@media (max-width: 900px) {
-    .game-layout {
-        flex-direction: column;
-        gap: 20px;
-    }
-    
-    .board-area {
-        max-width: 100%;
-        width: 100%;
-    }
-    
-    .side-panel {
-        width: 100%;
-        max-width: 100%;
-    }
-    
-    .move-list-content {
-        height: 250px;
-    }
-}
-
-@media (max-width: 600px) {
-    .main-container {
-        padding: 12px;
-    }
-    
-    .card {
-        padding: 20px;
-    }
-    
-    .top-bar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .game-status-header {
-        padding: 12px 16px;
-    }
-    
-    .game-item {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .game-actions {
-        width: 100%;
-        justify-content: flex-end;
-        margin-top: 10px;
-    }
-    
-    .game-meta {
-        gap: 8px;
-    }
-    
-    .play-btn, .delete-btn {
-        padding: 6px 16px;
-    }
-}
-
-/* === ОБЁРТКА ДОСКИ === */
-.board-wrapper {
-    width: 100%;
-    max-width: var(--game-column-width);
-    margin: 0 auto;
-    position: relative;
-}
-
-.last-move {
-    box-shadow: inset 0 0 0 4px rgba(100, 180, 255, 0.6);
-    border-radius: 4px;
-}
-
 /* ===== ТЕМЫ ДОСКИ ===== */
 body.theme-classic .white-1e1d7 { background-color: #f0f4e8 !important; }
 body.theme-classic .black-3c85d { background-color: #3e5234 !important; }
@@ -874,263 +941,92 @@ body.theme-middle-earth #myBoard {
     filter: sepia(0.22) contrast(1.05);
 }
 
-/* Активная тема */
 .theme-btn.active {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgba(163, 193, 143, 0.18);
 }
 
-/* ===== НАСТРОЙКИ ДОСКИ ===== */
-.board-settings-bar {
-    width: 100%;
-    max-width: 660px;
-    margin: 0 auto 14px;
-    display: flex;
-    justify-content: flex-end;
-    position: relative;
-}
-
-.board-settings-btn {
-    min-width: 170px;
-}
-
-.board-settings-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 220;
-    width: min(280px, 92vw);
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 14px;
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.board-settings-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.board-settings-group label {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-.board-settings-select {
-    width: 100%;
-    padding: 10px 12px;
-    background: #1a1a1a;
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 12px;
-    font-size: 0.92rem;
-    outline: none;
-}
-
-.board-settings-select:focus {
-    border-color: var(--accent);
-}
-
-@media (max-width: 600px) {
-    .board-settings-bar {
-        justify-content: stretch;
+/* ===== DESKTOP / LANDSCAPE ===== */
+@media (orientation: landscape) {
+    .board-wrapper {
+        width: min(100%, calc(100vh - 220px));
     }
 
-    .board-settings-btn {
+    #myBoard {
         width: 100%;
-    }
-
-    .board-settings-menu {
-        left: 0;
-        right: 0;
-        width: 100%;
-    }
-}
-
-/* ===== НОВЫЙ LAYOUT ИГРОВОЙ КОМНАТЫ ===== */
-.game-shell {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.game-layout {
-    display: block;
-    width: 100%;
-}
-
-.board-area {
-    width: 100%;
-    max-width: var(--game-column-width);
-    margin: 0 auto;
-}
-
-.game-status-header {
-    max-width: var(--game-column-width);
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.status-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-left: auto;
-}
-
-.board-settings-bar {
-    width: 100%;
-    max-width: var(--game-column-width);
-    margin: -8px auto 12px;
-    display: flex;
-    justify-content: flex-end;
-    position: relative;
-    min-height: 0;
-}
-
-.board-settings-icon-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: rgba(0, 0, 0, 0.25);
-    color: var(--text);
-    font-size: 1.2rem;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.board-settings-icon-btn:hover {
-    border-color: var(--accent);
-    background: var(--card);
-    transform: rotate(20deg);
-}
-
-.board-settings-icon-btn:active {
-    transform: scale(0.96);
-}
-
-.board-settings-menu {
-    position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 220;
-    width: min(280px, 92vw);
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 14px;
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-/* ===== КНОПКИ ПОД ДОСКОЙ ===== */
-.controls.controls-split {
-    width: 100%;
-    max-width: var(--game-column-width);
-    margin: var(--space-16) auto 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-12);
-}
-
-.controls-group {
-    display: contents;
-}
-
-.controls-safe,
-.controls-risky {
-    margin-left: 0;
-}
-
-.controls-split .btn {
-    width: 100%;
-    max-width: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-control-size {
-    width: 100%;
-    min-height: 44px;
-    padding: 10px 16px;
-    font-size: var(--font-size-sm);
-    line-height: 1.2;
-}
-
-.game-bottom-panel {
-    width: 100%;
-    max-width: var(--game-column-width);
-    margin: 18px auto 0;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 22px;
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.moves-card h3 {
-    margin: 0 0 12px 0;
-    font-size: 1.15rem;
-    color: var(--accent);
-    text-align: center;
-}
-
-.game-bottom-panel .move-list-content {
-    height: 220px;
-}
-
-.game-share-box {
-    margin-top: 0;
-}
-
-.game-share-box small {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-secondary);
-    font-size: 0.75rem;
-}
-
-.side-panel {
-    display: none !important;
-}
-
-@media (max-width: 900px) {
-    .board-area {
         max-width: 100%;
     }
+}
 
+/* ===== PORTRAIT И УЗКИЕ ЭКРАНЫ ===== */
+@media (max-width: 900px), (orientation: portrait) {
+    .game-layout-2col {
+        grid-template-columns: 1fr;
+    }
+
+    .game-main-column,
+    .game-side-column {
+        width: 100%;
+    }
+
+    .board-area,
     .game-status-header,
     .board-settings-bar,
+    .board-wrapper,
     .controls.controls-split,
     .game-bottom-panel {
-        max-width: 660px;
+        max-width: 100%;
         margin-left: auto;
         margin-right: auto;
     }
+
+    .board-wrapper {
+        width: 100%;
+    }
+
+    #myBoard {
+        width: 100%;
+        max-width: 100%;
+    }
 }
 
+/* ===== MOBILE ===== */
 @media (max-width: 600px) {
     .main-container {
         padding: 8px;
     }
 
+    .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    .game-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .game-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+
+    .game-meta {
+        gap: 8px;
+    }
+
+    .play-btn,
+    .delete-btn {
+        padding: 6px 16px;
+    }
+
     .game-status-header {
+        padding: 12px 16px;
         gap: 12px;
     }
 
@@ -1159,24 +1055,12 @@ body.theme-middle-earth #myBoard {
     }
 
     .controls.controls-split {
-        width: 100%;
-        max-width: 100%;
         grid-template-columns: 1fr;
         gap: var(--space-8);
     }
 
     .controls-group {
-        width: auto;
-    }
-
-    .controls-risky {
-        margin-left: 0;
-    }
-
-    .btn-control-size {
-        min-height: 44px;
-        padding: 10px 16px;
-        font-size: var(--font-size-sm);
+        grid-template-columns: 1fr;
     }
 
     .board-settings-menu {
@@ -1186,12 +1070,11 @@ body.theme-middle-earth #myBoard {
     }
 
     .game-bottom-panel {
-        width: 100%;
-        max-width: 100%;
         padding: 14px;
     }
 
-    .game-bottom-panel .move-list-content {
+    .game-bottom-panel .move-list-content,
+    .move-list-content {
         height: 190px;
     }
 
