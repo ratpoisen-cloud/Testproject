@@ -32,7 +32,9 @@
     --font-size-xl: 1.8rem;
     /* ===== BOARD FRAME ===== */
 --board-frame-color: #b58863; /* fallback (classic dark square) */
---board-frame-size: 18px;}
+--board-frame-size: 18px;
+    --board-coord-color: #f0f4e8;
+}
 
 * {
     box-sizing: border-box;
@@ -348,6 +350,7 @@ body {
     box-sizing: border-box;
     background: transparent;
 }
+
 #myBoard img {
     display: block;
     width: 100%;
@@ -832,16 +835,25 @@ body {
     }
 }
 
-/* === ОБЁРТКА ДОСКИ === */
+/* === ОБЩИЙ КОНТЕЙНЕР ДОСКИ === */
+.board-shell {
+    width: 100%;
+    max-width: 660px;
+    margin: 0 auto;
+}
+
+.board-frame {
+    width: 100%;
+    padding: var(--board-frame-size);
+    background: var(--board-frame-color);
+    box-sizing: border-box;
+}
+
 .board-wrapper {
     width: 100%;
-    max-width: min(90vw, 500px);
-    margin: 0 auto;
+    margin: 0;
     position: relative;
-    box-sizing: border-box;
-    overflow: visible;
     background: transparent;
-    box-shadow: 0 0 0 var(--board-frame-size) var(--board-frame-color);
 }
 
 
@@ -854,45 +866,44 @@ body {
 /* Классическая */
 body.theme-classic .white-1e1d7 { background-color: #f0f4e8 !important; }
 body.theme-classic .black-3c85d { background-color: #3e5234 !important; }
-body.theme-classic { --board-frame-color: #3e5234; }
+body.theme-classic { --board-frame-color: #3e5234; --board-coord-color: #f0f4e8; }
 
 /* Лесная */
 body.theme-forest .white-1e1d7 { background-color: #e8eddc !important; }
 body.theme-forest .black-3c85d { background-color: #4c6b3c !important; }
-body.theme-forest { --board-frame-color: #4c6b3c; }
+body.theme-forest { --board-frame-color: #4c6b3c; --board-coord-color: #e8eddc; }
 
 /* Океан */
 body.theme-ocean .white-1e1d7 { background-color: #dceaf4 !important; }
 body.theme-ocean .black-3c85d { background-color: #3c5f77 !important; }
-body.theme-ocean { --board-frame-color: #3c5f77; }
+body.theme-ocean { --board-frame-color: #3c5f77; --board-coord-color: #dceaf4; }
 
 /* Тёмная */
 body.theme-dark .white-1e1d7 { background-color: #8c8c8c !important; }
 body.theme-dark .black-3c85d { background-color: #2f2f2f !important; }
-body.theme-dark { --board-frame-color: #2f2f2f; }
+body.theme-dark { --board-frame-color: #2f2f2f; --board-coord-color: #8c8c8c; }
 
 /* Мрамор */
 body.theme-marble .white-1e1d7 { background-color: #f3f3f1 !important; }
 body.theme-marble .black-3c85d { background-color: #8a8f95 !important; }
-body.theme-marble { --board-frame-color: #8a8f95; }
+body.theme-marble { --board-frame-color: #8a8f95; --board-coord-color: #f3f3f1; }
 
 /* Chess.com-подобная */
 body.theme-chesscom .white-1e1d7 { background-color: #eeeed2 !important; }
 body.theme-chesscom .black-3c85d { background-color: #769656 !important; }
-body.theme-chesscom { --board-frame-color: #769656; }
+body.theme-chesscom { --board-frame-color: #769656; --board-coord-color: #eeeed2; }
 
 /* Лайм */
 body.theme-lime .white-1e1d7 { background-color: #f2ffe6 !important; }
 body.theme-lime .black-3c85d { background-color: #8db600 !important; }
-body.theme-lime { --board-frame-color: #8db600; }
+body.theme-lime { --board-frame-color: #8db600; --board-coord-color: #f2ffe6; }
 
 /* Middle-earth */
 body.theme-middle-earth .white-1e1d7 { background-color: rgba(240, 217, 181, 0.82) !important; }
 body.theme-middle-earth .black-3c85d { background-color: rgba(181, 136, 99, 0.82) !important; }
-body.theme-middle-earth { --board-frame-color: rgba(181, 136, 99, 0.95); }
+body.theme-middle-earth { --board-frame-color: rgba(181, 136, 99, 0.95); --board-coord-color: rgba(240, 217, 181, 0.92); }
 body.theme-middle-earth #myBoard {
     background: url('../assets/img/middle-earth-map.jpg') center/cover no-repeat;
-    border: 8px solid #3b2b1f;
     box-shadow:
         inset 0 0 20px rgba(0,0,0,0.45),
         0 10px 30px rgba(0,0,0,0.45);
@@ -1151,6 +1162,10 @@ body.theme-middle-earth #myBoard {
 }
 
 @media (max-width: 600px) {
+    .board-frame {
+        padding: 14px;
+    }
+
     .game-status-header {
         gap: 12px;
     }
@@ -1200,11 +1215,5 @@ body.theme-middle-earth #myBoard {
 
     .share-container .btn {
         width: 100%;
-    }
-}
-@media (max-width: 600px) {
-    #myBoard {
-        width: 100%;
-        max-width: 100%;
     }
 }
