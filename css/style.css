@@ -32,6 +32,7 @@
     --font-size-xl: 1.8rem;
 
     --game-column-width: 760px;
+    --section-gap: var(--space-16);
 }
 
 * {
@@ -60,6 +61,11 @@ body {
 /* ===== ЦВЕТА КЛЕТОК ДОСКИ ===== */
 .white-1e1d7 { background-color: #f0f4e8 !important; }
 .black-3c85d { background-color: #3e5234 !important; }
+
+.white-1e1d7,
+.black-3c85d {
+    transition: background 0.2s ease;
+}
 
 /* ===== ТОП-БАР И АВТОРИЗАЦИЯ ===== */
 .top-bar {
@@ -108,6 +114,19 @@ body {
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.92rem;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 .btn-primary {
@@ -342,6 +361,11 @@ body {
     max-width: 100%;
     margin: 0 auto;
     transition: transform 0.2s ease, opacity 0.2s ease;
+    border-radius: var(--radius-16);
+    overflow: hidden;
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.45),
+        inset 0 0 12px rgba(0, 0, 0, 0.3);
 }
 
 #myBoard img {
@@ -357,18 +381,18 @@ body {
 /* ===== СТАТУС-ХЕДЕР ===== */
 .game-status-header {
     width: 100%;
-    max-width: 660px;
+    max-width: var(--game-column-width);
     background: var(--card);
     border-radius: 22px;
     padding: 16px 24px;
-    margin-bottom: 20px;
+    margin-bottom: var(--section-gap);
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
     border: 1px solid var(--border);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
 .player-badge {
@@ -845,6 +869,11 @@ body {
 body.theme-classic .white-1e1d7 { background-color: #f0f4e8 !important; }
 body.theme-classic .black-3c85d { background-color: #3e5234 !important; }
 
+.white-1e1d7,
+.black-3c85d {
+    transition: background 0.2s ease;
+}
+
 body.theme-forest .white-1e1d7 { background-color: #e8eddc !important; }
 body.theme-forest .black-3c85d { background-color: #4c6b3c !important; }
 
@@ -869,9 +898,9 @@ body.theme-middle-earth .black-3c85d { background-color: rgba(181, 136, 99, 0.82
 body.theme-middle-earth #myBoard {
     background: url('../assets/img/middle-earth-map.jpg') center/cover no-repeat;
     box-shadow:
-        inset 0 0 20px rgba(0,0,0,0.45),
-        0 10px 30px rgba(0,0,0,0.45);
-    filter: sepia(0.22) contrast(1.05);
+        inset 0 0 30px rgba(0,0,0,0.55),
+        0 12px 40px rgba(0,0,0,0.5);
+    filter: sepia(0.3) contrast(1.1);
 }
 
 /* Активная тема */
@@ -883,7 +912,7 @@ body.theme-middle-earth #myBoard {
 /* ===== НАСТРОЙКИ ДОСКИ ===== */
 .board-settings-bar {
     width: 100%;
-    max-width: 660px;
+    max-width: var(--game-column-width);
     margin: 0 auto 14px;
     display: flex;
     justify-content: flex-end;
@@ -967,7 +996,7 @@ body.theme-middle-earth #myBoard {
 
 .board-area {
     width: 100%;
-    max-width: var(--game-column-width);
+    max-width: 760px;
     margin: 0 auto;
 }
 
@@ -1040,10 +1069,13 @@ body.theme-middle-earth #myBoard {
 .controls.controls-split {
     width: 100%;
     max-width: var(--game-column-width);
-    margin: var(--space-16) auto 0;
+    margin: var(--section-gap) auto 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-12);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-16);
+    padding: var(--space-12);
 }
 
 .controls-group {
@@ -1074,7 +1106,7 @@ body.theme-middle-earth #myBoard {
 .game-bottom-panel {
     width: 100%;
     max-width: var(--game-column-width);
-    margin: 18px auto 0;
+    margin: var(--section-gap) auto 0;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 22px;
@@ -1082,6 +1114,7 @@ body.theme-middle-earth #myBoard {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 .moves-card h3 {
@@ -1119,17 +1152,13 @@ body.theme-middle-earth #myBoard {
     .board-settings-bar,
     .controls.controls-split,
     .game-bottom-panel {
-        max-width: var(--game-column-width);
+        max-width: 660px;
         margin-left: auto;
         margin-right: auto;
     }
 }
 
 @media (max-width: 600px) {
-    .main-container {
-        padding: 8px;
-    }
-
     .game-status-header {
         gap: 12px;
     }
@@ -1138,23 +1167,6 @@ body.theme-middle-earth #myBoard {
         width: 100%;
         justify-content: space-between;
         margin-left: 0;
-    }
-
-    .board-area {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .board-wrapper {
-        width: calc(100% + 16px);
-        max-width: none;
-        margin-left: -8px;
-        margin-right: -8px;
-    }
-
-    #myBoard {
-        width: 100%;
-        max-width: 100%;
     }
 
     .controls.controls-split {
