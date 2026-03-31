@@ -32,7 +32,7 @@
     --font-size-xl: 1.8rem;
     /* ===== BOARD FRAME ===== */
 --board-frame-color: #b58863; /* fallback (classic dark square) */
---board-frame-size: 14px;}
+--board-frame-size: 18px;}
 
 * {
     box-sizing: border-box;
@@ -342,10 +342,13 @@ body {
 #myBoard {
     position: relative;
     border: var(--board-frame-size) solid var(--board-frame-color);
-    border-radius: var(--radius-16);
-    box-sizing: content-box;
-    max-width: 650px;
+    border-radius: 0;
+
+    box-sizing: border-box; /* ВАЖНО */
     width: 100%;
+    max-width: 650px;
+
+    margin: 0 auto; /* центрирование */
 }
 #myBoard img {
     width: 100%;
@@ -848,27 +851,27 @@ body {
 /* Классическая */
 body.theme-classic .white-1e1d7 { background-color: #f0f4e8 !important; }
 body.theme-classic .black-3c85d { background-color: #3e5234 !important; }
-body.theme-classic { --board-frame-color: #b58863; }
+body.theme-classic { --board-frame-color: #3e5234; }
 
 /* Лесная */
 body.theme-forest .white-1e1d7 { background-color: #e8eddc !important; }
 body.theme-forest .black-3c85d { background-color: #4c6b3c !important; }
-body.theme-forest { --board-frame-color: #6b8c5c; }
+body.theme-forest { --board-frame-color: #4c6b3c; }
 
 /* Океан */
 body.theme-ocean .white-1e1d7 { background-color: #dceaf4 !important; }
 body.theme-ocean .black-3c85d { background-color: #3c5f77 !important; }
-body.theme-ocean { --board-frame-color: #4a6a8c; }
+body.theme-ocean { --board-frame-color: #3c5f77; }
 
 /* Тёмная */
 body.theme-dark .white-1e1d7 { background-color: #8c8c8c !important; }
 body.theme-dark .black-3c85d { background-color: #2f2f2f !important; }
-body.theme-dark { --board-frame-color: #444; }
+body.theme-dark { --board-frame-color: #2f2f2f; }
 
 /* Мрамор */
 body.theme-marble .white-1e1d7 { background-color: #f3f3f1 !important; }
 body.theme-marble .black-3c85d { background-color: #8a8f95 !important; }
-body.theme-marble { --board-frame-color: #8a8a8a; }
+body.theme-marble { --board-frame-color: #8a8f95; }
 
 /* Chess.com-подобная */
 body.theme-chesscom .white-1e1d7 { background-color: #eeeed2 !important; }
@@ -878,7 +881,7 @@ body.theme-chesscom { --board-frame-color: #769656; }
 /* Лайм */
 body.theme-lime .white-1e1d7 { background-color: #f2ffe6 !important; }
 body.theme-lime .black-3c85d { background-color: #8db600 !important; }
-body.theme-lime { --board-frame-color: #8bc34a; }
+body.theme-lime { --board-frame-color: #8db600; }
 
 /* Middle-earth */
 body.theme-middle-earth .white-1e1d7 { background-color: rgba(240, 217, 181, 0.82) !important; }
@@ -1194,5 +1197,11 @@ body.theme-middle-earth #myBoard {
 
     .share-container .btn {
         width: 100%;
+    }
+}
+@media (max-width: 600px) {
+    #myBoard {
+        width: 100%;
+        max-width: 100%;
     }
 }
