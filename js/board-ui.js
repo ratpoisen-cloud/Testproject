@@ -3,25 +3,25 @@
 
 window.PIECE_SET_STORAGE_KEY = 'chess-piece-set';
 window.PIECE_SETS = {
-    alpha: {
-        label: 'Classic (Alpha CDN)',
-        theme: 'https://chessboardjs.com/img/chesspieces/alpha/{piece}.png'
-    },
-    custom: {
-        label: 'Custom (assets/pieces/custom)',
-        theme: 'assets/pieces/custom/{piece}.png'
-    }
+    set1: { label: 'Набор 1', theme: 'assets/pieces/set1/{piece}.png' },
+    set2: { label: 'Набор 2', theme: 'assets/pieces/set2/{piece}.png' },
+    set3: { label: 'Набор 3', theme: 'assets/pieces/set3/{piece}.png' },
+    set4: { label: 'Набор 4', theme: 'assets/pieces/set4/{piece}.png' },
+    set5: { label: 'Набор 5', theme: 'assets/pieces/set5/{piece}.png' },
+    set6: { label: 'Набор 6', theme: 'assets/pieces/set6/{piece}.png' },
+    set7: { label: 'Набор 7', theme: 'assets/pieces/set7/{piece}.png' },
+    set8: { label: 'Набор 8', theme: 'assets/pieces/set8/{piece}.png' }
 };
 
 window.getCurrentPieceTheme = function() {
-    const setName = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || 'alpha';
+    const setName = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || 'set1';
     const selectedSet = window.PIECE_SETS[setName];
 
     if (selectedSet && selectedSet.theme) {
         return selectedSet.theme;
     }
 
-    return window.PIECE_SETS.alpha.theme;
+    return window.PIECE_SETS.set1.theme;
 };
 
 window.getBoardConfig = function() {
@@ -56,7 +56,7 @@ window.rebuildBoardWithCurrentState = function() {
 
 window.applyPieceSet = function(setName) {
     const exists = Boolean(window.PIECE_SETS[setName]);
-    const safeSetName = exists ? setName : 'alpha';
+    const safeSetName = exists ? setName : 'set1';
 
     localStorage.setItem(window.PIECE_SET_STORAGE_KEY, safeSetName);
 
@@ -70,8 +70,16 @@ window.applyPieceSet = function(setName) {
 window.initPieceSetControls = function(pieceSetSelect) {
     if (!pieceSetSelect) return;
 
-    const savedSet = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || 'alpha';
-    pieceSetSelect.value = window.PIECE_SETS[savedSet] ? savedSet : 'alpha';
+    pieceSetSelect.innerHTML = '';
+    Object.entries(window.PIECE_SETS).forEach(([setId, setConfig]) => {
+        const option = document.createElement('option');
+        option.value = setId;
+        option.textContent = setConfig.label;
+        pieceSetSelect.appendChild(option);
+    });
+
+    const savedSet = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || 'set1';
+    pieceSetSelect.value = window.PIECE_SETS[savedSet] ? savedSet : 'set1';
 
     pieceSetSelect.addEventListener('change', (e) => {
         const appliedSetName = window.applyPieceSet(e.target.value);
