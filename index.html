@@ -6,21 +6,21 @@
 
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="icon" href="/favicon.ico?v=2" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/icon-32x32.png?v=2">
-<link rel="icon" type="image/png" sizes="16x16" href="/assets/icon-16x16.png?v=2">
-<link rel="apple-touch-icon" href="/assets/icon-192x192.png?v=2">
+    <link rel="icon" href="favicon.ico?v=3" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32x32.png?v=3">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16x16.png?v=3">
+    <link rel="apple-touch-icon" href="assets/icon-192x192.png?v=3">
 
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Chess Online">
-    <link rel="apple-touch-icon" href="/assets/icon-192x192.png">
+    <link rel="apple-touch-icon" href="assets/icon-192x192.png?v=3">
 
     <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('sw.js')
           .then(reg => console.log('SW registered:', reg))
           .catch(err => console.log('SW error:', err));
       });
@@ -94,8 +94,9 @@
 
                                     <div class="board-settings-group">
                                         <label for="piece-set-select">Фигурки</label>
-                                        <select id="piece-set-select" class="board-settings-select" disabled>
-                                            <option value="default">Скоро будет</option>
+                                        <select id="piece-set-select" class="board-settings-select">
+                                            <option value="default">Classic (Alpha)</option>
+                                            <option value="custom">Custom URL шаблон</option>
                                         </select>
                                     </div>
                                 </div>
@@ -236,6 +237,7 @@
             const toggleBtn = document.getElementById('board-settings-toggle');
             const menu = document.getElementById('board-settings-menu');
             const themeSelect = document.getElementById('theme-select');
+            const pieceSetSelect = document.getElementById('piece-set-select');
 
             if (toggleBtn && menu) {
                 toggleBtn.addEventListener('click', () => {
@@ -261,6 +263,10 @@
                         window.setTheme(e.target.value);
                     }
                 });
+            }
+
+            if (pieceSetSelect && window.initPieceSetControls) {
+                window.initPieceSetControls(pieceSetSelect);
             }
         });
     </script>
