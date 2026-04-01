@@ -5,7 +5,9 @@ window.PIECE_SET_STORAGE_KEY = 'chess-piece-set';
 window.DEFAULT_PIECE_SET = 'cdn';
 window.PIECE_SETS = {
     cdn: { label: 'Стандартные (CDN)', theme: 'https://chessboardjs.com/img/chesspieces/alpha/{piece}.png' },
-    custom: { label: 'Кастомные (assets)', theme: 'assets/pieces/custom/{piece}.svg' }
+    custom: { label: 'chessnut', theme: 'assets/pieces/custom/{piece}.svg' },
+    custom: { label: '2', theme: 'assets/pieces/custom/{piece}.svg' },
+    custom: { label: '3', theme: 'assets/pieces/custom/{piece}.svg' }
 };
 
 window.getCurrentPieceTheme = function() {
