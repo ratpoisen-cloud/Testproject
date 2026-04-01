@@ -2,26 +2,21 @@
 // Отвечает за: инициализацию доски, подсветку клеток, drag-and-drop для десктопа, клики для мобилы
 
 window.PIECE_SET_STORAGE_KEY = 'chess-piece-set';
+window.DEFAULT_PIECE_SET = 'cdn';
 window.PIECE_SETS = {
-    set1: { label: 'Набор 1', theme: 'assets/pieces/set1/{piece}.png' },
-    set2: { label: 'Набор 2', theme: 'assets/pieces/set2/{piece}.png' },
-    set3: { label: 'Набор 3', theme: 'assets/pieces/set3/{piece}.png' },
-    set4: { label: 'Набор 4', theme: 'assets/pieces/set4/{piece}.png' },
-    set5: { label: 'Набор 5', theme: 'assets/pieces/set5/{piece}.png' },
-    set6: { label: 'Набор 6', theme: 'assets/pieces/set6/{piece}.png' },
-    set7: { label: 'Набор 7', theme: 'assets/pieces/set7/{piece}.png' },
-    set8: { label: 'Набор 8', theme: 'assets/pieces/set8/{piece}.png' }
+    cdn: { label: 'Стандартные (CDN)', theme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png' },
+    custom: { label: 'Кастомные (assets)', theme: 'assets/pieces/custom/{piece}.svg' }
 };
 
 window.getCurrentPieceTheme = function() {
-    const setName = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || 'set1';
+    const setName = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || window.DEFAULT_PIECE_SET;
     const selectedSet = window.PIECE_SETS[setName];
 
     if (selectedSet && selectedSet.theme) {
         return selectedSet.theme;
     }
 
-    return window.PIECE_SETS.set1.theme;
+    return window.PIECE_SETS[window.DEFAULT_PIECE_SET].theme;
 };
 
 window.getBoardConfig = function() {
@@ -56,7 +51,7 @@ window.rebuildBoardWithCurrentState = function() {
 
 window.applyPieceSet = function(setName) {
     const exists = Boolean(window.PIECE_SETS[setName]);
-    const safeSetName = exists ? setName : 'set1';
+    const safeSetName = exists ? setName : window.DEFAULT_PIECE_SET;
 
     localStorage.setItem(window.PIECE_SET_STORAGE_KEY, safeSetName);
 
@@ -78,8 +73,8 @@ window.initPieceSetControls = function(pieceSetSelect) {
         pieceSetSelect.appendChild(option);
     });
 
-    const savedSet = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || 'set1';
-    pieceSetSelect.value = window.PIECE_SETS[savedSet] ? savedSet : 'set1';
+    const savedSet = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || window.DEFAULT_PIECE_SET;
+    pieceSetSelect.value = window.PIECE_SETS[savedSet] ? savedSet : window.DEFAULT_PIECE_SET;
 
     pieceSetSelect.addEventListener('change', (e) => {
         const appliedSetName = window.applyPieceSet(e.target.value);
