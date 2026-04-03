@@ -6,6 +6,77 @@ window.setupGameControls = function(gameRef, roomId) {
         return snap.val() || null;
     };
 
+    const runRematch = async () => {
+        document.getElementById('game-modal')?.classList.add('hidden');
+
+        const playersData = (await get(window.getPlayersRef(roomId))).val();
+        if (!playersData?.white || !playersData?.black) {
+            window.notify("Не удалось создать реванш: данные игроков недоступны", "error");
+            return;
+        }
+        const newId = window.generateRoomId();
+
+        await set(window.getGameRef(newId), {
+            players: {
+                white: playersData.black,
+                whiteName: playersData.blackName,
+                black: playersData.white,
+                blackName: playersData.whiteName
+            },
+            pgn: new Chess().pgn(),
+            fen: 'start',
+            gameState: 'active',
+            createdAt: Date.now()
+        });
+
+        location.href = location.origin + location.pathname + `?room=${newId}`;
+    };
+
+    const bindPgnCopyButton = (buttonId) => {
+        const button = document.getElementById(buttonId);
+        if (!button) return;
+        button.onclick = async () => {
+            const pgn = window.game?.pgn?.();
+            if (!pgn) {
+                window.notify("Нет данных партии", "warning");
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(pgn);
+                const originalText = button.innerText;
+                button.innerText = '✅ Ок!';
+                setTimeout(() => {
+                    button.innerText = originalText;
+                }, 2000);
+            } catch (error) {
+                console.error(error);
+                window.notify("Не удалось скопировать PGN", "error");
+            }
+        };
+    };
+
+    const bindPgnDownloadButton = (buttonId) => {
+        const button = document.getElementById(buttonId);
+        if (!button) return;
+        button.onclick = () => {
+            const pgn = window.game?.pgn?.();
+            if (!pgn) {
+                window.notify("Нет данных партии", "warning");
+                return;
+            }
+
+            const blob = new Blob([pgn], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `game_${roomId || 'chess'}.pgn`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        };
+    };
+
     // Подтверждение хода
     document.getElementById('confirm-btn').onclick = async () => {
     if (!window.pendingMove) return;
@@ -281,28 +352,15 @@ document.getElementById('draw-reject').onclick = () => {
     }
 };
     // Реванш
-    document.getElementById('modal-rematch-btn').onclick = async () => {
-        const modal = document.getElementById('game-modal');
-        modal.classList.add('hidden');
-        
-        const playersData = (await get(window.getPlayersRef(roomId))).val();
-        const newId = window.generateRoomId();
-        
-        await set(window.getGameRef(newId), {
-            players: {
-                white: playersData.black,
-                whiteName: playersData.blackName,
-                black: playersData.white,
-                blackName: playersData.whiteName
-            },
-            pgn: new Chess().pgn(),
-            fen: 'start',
-            gameState: 'active',
-            createdAt: Date.now()
-        });
-        
-        location.href = location.origin + location.pathname + `?room=${newId}`;
-    };
+    const modalRematchBtn = document.getElementById('modal-rematch-btn');
+    if (modalRematchBtn) {
+        modalRematchBtn.onclick = runRematch;
+    }
+
+    const inlineRematchBtn = document.getElementById('inline-rematch-btn');
+    if (inlineRematchBtn) {
+        inlineRematchBtn.onclick = runRematch;
+    }
     
     // Выход из модального окна
     document.getElementById('modal-exit-btn').onclick = () => {
@@ -318,41 +376,9 @@ document.getElementById('draw-reject').onclick = () => {
         window.enterReviewMode(maxPly);
     };
 
-    // --- Логика копирования PGN из модалки ---
-    const modalCopyBtn = document.getElementById('modal-copy-pgn');
-    if (modalCopyBtn) {
-        modalCopyBtn.onclick = () => {
-            const pgn = window.game.pgn();
-            if (!pgn) {
-                window.notify("Нет данных партии", "warning");
-                return;
-            }
-
-            navigator.clipboard.writeText(pgn).then(() => {
-                const originalText = modalCopyBtn.innerText;
-                modalCopyBtn.innerText = '✅ Ок!';
-                setTimeout(() => modalCopyBtn.innerText = originalText, 2000);
-            });
-        };
-    }
-
-    // --- Логика скачивания PGN из модалки ---
-    const modalDownloadBtn = document.getElementById('modal-download-pgn');
-    if (modalDownloadBtn) {
-        modalDownloadBtn.onclick = () => {
-            const pgn = window.game.pgn();
-            if (!pgn) return;
-
-            const blob = new Blob([pgn], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `game_${roomId || 'chess'}.pgn`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        };
-    }
+    bindPgnCopyButton('modal-copy-pgn');
+    bindPgnCopyButton('inline-copy-pgn');
+    bindPgnDownloadButton('modal-download-pgn');
+    bindPgnDownloadButton('inline-download-pgn');
 
 };

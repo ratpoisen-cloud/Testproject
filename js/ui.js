@@ -9,6 +9,7 @@ window.updateUI = function(data) {
     
     window.updateTurnIndicator(isMyTurn);
     window.updateMoveHistory();
+    window.updateFinishedGameActions(data);
     window.updateGameModal(data);
 };
 
@@ -171,6 +172,18 @@ window.updateReviewControlsState = function() {
     if (liveBtn) {
         liveBtn.disabled = !window.reviewMode || isFinishedGame;
     }
+};
+
+window.updateFinishedGameActions = function(data) {
+    const finishedActions = document.getElementById('finished-game-actions');
+    if (!finishedActions) return;
+
+    const isFinishedGame =
+        window.game?.game_over?.() ||
+        data?.gameState === 'game_over' ||
+        window.lastKnownGameState === 'game_over';
+
+    finishedActions.classList.toggle('hidden', !isFinishedGame);
 };
 
 // Обновление модального окна окончания игры

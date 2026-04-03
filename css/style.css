@@ -885,6 +885,20 @@ body {
     min-height: 0;
 }
 
+.finished-game-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+    padding: var(--space-12);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-12);
+    background: rgba(0, 0, 0, 0.16);
+}
+
+.finished-game-actions .btn {
+    width: 100%;
+}
+
 .moves-card {
     display: flex;
     flex-direction: column;
