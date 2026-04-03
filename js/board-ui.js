@@ -2,17 +2,40 @@
 // Отвечает за: инициализацию доски, подсветку клеток, drag-and-drop для десктопа, клики для мобилы
 
 window.PIECE_SET_STORAGE_KEY = 'chess-piece-set';
-window.DEFAULT_PIECE_SET = 'cdn';
+window.DEFAULT_PIECE_SET = 'alpha';
+window.LEGACY_PIECE_SET_MIGRATIONS = {
+    cdn: 'alpha'
+};
 window.PIECE_SETS = {
-    cdn: { label: 'Стандартные (CDN)', theme: 'https://chessboardjs.com/img/chesspieces/alpha/{piece}.png' },
-    alpha: { label: 'alpha', theme: 'assets/pieces/alpha/{piece}.svg' },
+    alpha: { label: 'Стандартные', theme: 'assets/pieces/alpha/{piece}.svg' },
     chessnut: { label: 'chessnut', theme: 'assets/pieces/chessnut/{piece}.svg' },
     pixel: { label: 'pixel', theme: 'assets/pieces/pixel/{piece}.svg' },
     tatiana: { label: 'tatiana', theme: 'assets/pieces/tatiana/{piece}.svg' }
 };
 
+window.getNormalizedPieceSet = function(setName) {
+    if (!setName) {
+        return window.DEFAULT_PIECE_SET;
+    }
+
+    return window.LEGACY_PIECE_SET_MIGRATIONS[setName] || setName;
+};
+
+window.getStoredPieceSet = function() {
+    const rawSetName = localStorage.getItem(window.PIECE_SET_STORAGE_KEY);
+    const normalizedSetName = window.getNormalizedPieceSet(rawSetName || window.DEFAULT_PIECE_SET);
+    const exists = Boolean(window.PIECE_SETS[normalizedSetName]);
+    const safeSetName = exists ? normalizedSetName : window.DEFAULT_PIECE_SET;
+
+    if (rawSetName !== safeSetName) {
+        localStorage.setItem(window.PIECE_SET_STORAGE_KEY, safeSetName);
+    }
+
+    return safeSetName;
+};
+
 window.getCurrentPieceTheme = function() {
-    const setName = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || window.DEFAULT_PIECE_SET;
+    const setName = window.getStoredPieceSet();
     const selectedSet = window.PIECE_SETS[setName];
 
     if (selectedSet && selectedSet.theme) {
@@ -54,8 +77,9 @@ window.rebuildBoardWithCurrentState = function() {
 };
 
 window.applyPieceSet = function(setName) {
-    const exists = Boolean(window.PIECE_SETS[setName]);
-    const safeSetName = exists ? setName : window.DEFAULT_PIECE_SET;
+    const normalizedSetName = window.getNormalizedPieceSet(setName);
+    const exists = Boolean(window.PIECE_SETS[normalizedSetName]);
+    const safeSetName = exists ? normalizedSetName : window.DEFAULT_PIECE_SET;
 
     localStorage.setItem(window.PIECE_SET_STORAGE_KEY, safeSetName);
 
@@ -77,8 +101,7 @@ window.initPieceSetControls = function(pieceSetSelect) {
         pieceSetSelect.appendChild(option);
     });
 
-    const savedSet = localStorage.getItem(window.PIECE_SET_STORAGE_KEY) || window.DEFAULT_PIECE_SET;
-    pieceSetSelect.value = window.PIECE_SETS[savedSet] ? savedSet : window.DEFAULT_PIECE_SET;
+    pieceSetSelect.value = window.getStoredPieceSet();
 
     pieceSetSelect.addEventListener('change', (e) => {
         const appliedSetName = window.applyPieceSet(e.target.value);
