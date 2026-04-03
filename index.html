@@ -207,8 +207,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
     
-    <!-- Firebase модуль -->
-    <script type="module" src="js/firebase-config.js"></script>
+    <!-- Supabase SDK + конфиг -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
     
     <!-- Наши модули -->
     <script src="js/utils.js"></script>
@@ -224,9 +225,9 @@
     <script>
         setTimeout(() => {
             if (typeof ref === 'undefined') {
-                console.error('Firebase functions not loaded!');
+                console.error('Data adapter not loaded!');
             } else {
-                console.log('Firebase loaded successfully');
+                console.log('Supabase adapter loaded successfully');
             }
         }, 1000);
 

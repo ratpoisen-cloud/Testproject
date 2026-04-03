@@ -42,7 +42,13 @@ window.setupAuth = function() {
     });
 
     // Google вход
-    document.getElementById('login-google').onclick = () => signInWithPopup(window.auth, new GoogleAuthProvider());
+    document.getElementById('login-google').onclick = async () => {
+        try {
+            await signInWithPopup(window.auth, new GoogleAuthProvider());
+        } catch (err) {
+            alert('Ошибка входа через Google: ' + (err.message || err));
+        }
+    };
 
     // Email модальное окно
     const emailModal = document.getElementById('email-modal');
@@ -89,10 +95,17 @@ window.setupAuth = function() {
         if (pass.length < 6) return showError("Пароль должен быть от 6 символов");
 
         try {
-            await createUserWithEmailAndPassword(window.auth, email, pass);
+            const authResult = await createUserWithEmailAndPassword(window.auth, email, pass);
             emailModal.classList.add('hidden');
             document.getElementById('email-input').value = '';
             document.getElementById('password-input').value = '';
+
+            // Supabase: при включенном Email Confirmation сессия может не создаться сразу
+            if (!authResult?.session) {
+                alert('Аккаунт создан. Подтвердите email, затем выполните вход.');
+                return;
+            }
+
             alert("Аккаунт успешно создан!");
         } catch (err) {
             if (err.code === 'auth/email-already-in-use') {

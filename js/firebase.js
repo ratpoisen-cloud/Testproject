@@ -1,75 +1,289 @@
-// ==================== FIREBASE ОПЕРАЦИИ ====================
-// Отвечает за: все взаимодействия с Firebase (чтение, запись, транзакции)
+// ==================== DATA LAYER (SUPABASE ADAPTER) ====================
+// Отвечает за: операции чтения/записи и realtime-подписки.
+// Важно: сохраняем старые имена функций (Firebase-style), чтобы не ломать UI/игровую логику.
 
-// Импортируем Firebase функции из глобального объекта window
-// Они доступны после загрузки firebase-config.js (type="module")
+(function initDataAdapter() {
+    const supabase = window.supabaseClient;
 
-// Ссылки на Firebase
-window.getGameRef = function(roomId) {
-    return ref(window.db, `games/${roomId}`);
-};
-
-window.getPlayersRef = function(roomId) {
-    return ref(window.db, `games/${roomId}/players`);
-};
-
-window.getTakebackRef = function(roomId) {
-    return ref(window.db, `games/${roomId}/takebackRequest`);
-};
-// Ссылка на запрос ничьей
-window.getDrawRef = function(roomId) {
-    return ref(window.db, `games/${roomId}/drawRequest`);
-};
-// Создание игры
-window.createGame = async function(roomId, pgn, fen) {
-    const now = Date.now();
-    return await set(ref(window.db, `games/${roomId}`), { 
-        pgn: pgn, 
-        fen: fen,
-        gameState: 'active',
-        createdAt: now,
-        lastMoveTime: now  // Добавляем время последнего хода (при создании = время создания)
-    });
-};
-// Обновление игры
-window.updateGame = function(gameRef, data) {
-    return update(gameRef, data);
-};
-
-// Добавление игрока (транзакция)
-window.addPlayerToGame = async function(playersRef, uid, uName) {
-    try {
-        await runTransaction(playersRef, (p) => {
-            if (!p) return { white: uid, whiteName: uName };
-            if (p.white === uid || p.black === uid) return;
-            if (!p.black) return { ...p, black: uid, blackName: uName };
-            return;
-        });
-    } catch (err) {
-        console.error("Transaction error:", err);
+    if (!supabase) {
+        console.error('Supabase client не инициализирован. Проверьте подключение js/supabase-config.js');
+        return;
     }
-};
 
-// Слежение за играми в лобби
-window.watchGames = function(callback) {
-    return onValue(ref(window.db, `games`), callback);
-};
+    const gameChannels = new Map();
+    const gamesChannels = new Set();
 
-// Слежение за конкретной игрой
-window.watchGame = function(gameRef, callback) {
-    return onValue(gameRef, callback);
-};
+    const toDbGame = (roomId, game) => {
+        if (!game) return null;
+        return {
+            room_id: roomId,
+            players: game.players || null,
+            pgn: game.pgn || '',
+            fen: game.fen || 'start',
+            game_state: game.gameState || 'active',
+            message: game.message || null,
+            last_move_time: game.lastMoveTime || game.createdAt || Date.now(),
+            created_at: game.createdAt || Date.now(),
+            takeback_request: game.takebackRequest || null,
+            draw_request: game.drawRequest || null,
+            turn: game.turn || null,
+            last_move: game.lastMove || null,
+            resign: game.resign || null
+        };
+    };
 
-// Дожидаемся загрузки Firebase функций
-window.waitForFirebase = function() {
-    return new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-            if (typeof ref !== 'undefined' && typeof set !== 'undefined' && 
-                typeof onValue !== 'undefined' && typeof runTransaction !== 'undefined' &&
-                typeof update !== 'undefined' && typeof get !== 'undefined') {
-                clearInterval(checkInterval);
-                resolve();
-            }
-        }, 100);
+    const fromDbGame = (row) => {
+        if (!row) return null;
+        return {
+            players: row.players || null,
+            pgn: row.pgn || '',
+            fen: row.fen || 'start',
+            gameState: row.game_state || 'active',
+            message: row.message || null,
+            lastMoveTime: row.last_move_time || row.created_at || null,
+            createdAt: row.created_at || null,
+            takebackRequest: row.takeback_request || null,
+            drawRequest: row.draw_request || null,
+            turn: row.turn || null,
+            lastMove: row.last_move || null,
+            resign: row.resign || null
+        };
+    };
+
+    const toDbPatch = (data) => {
+        const patch = {};
+        if (Object.prototype.hasOwnProperty.call(data, 'players')) patch.players = data.players;
+        if (Object.prototype.hasOwnProperty.call(data, 'pgn')) patch.pgn = data.pgn;
+        if (Object.prototype.hasOwnProperty.call(data, 'fen')) patch.fen = data.fen;
+        if (Object.prototype.hasOwnProperty.call(data, 'gameState')) patch.game_state = data.gameState;
+        if (Object.prototype.hasOwnProperty.call(data, 'message')) patch.message = data.message;
+        if (Object.prototype.hasOwnProperty.call(data, 'lastMoveTime')) patch.last_move_time = data.lastMoveTime;
+        if (Object.prototype.hasOwnProperty.call(data, 'createdAt')) patch.created_at = data.createdAt;
+        if (Object.prototype.hasOwnProperty.call(data, 'takebackRequest')) patch.takeback_request = data.takebackRequest;
+        if (Object.prototype.hasOwnProperty.call(data, 'drawRequest')) patch.draw_request = data.drawRequest;
+        if (Object.prototype.hasOwnProperty.call(data, 'turn')) patch.turn = data.turn;
+        if (Object.prototype.hasOwnProperty.call(data, 'lastMove')) patch.last_move = data.lastMove;
+        if (Object.prototype.hasOwnProperty.call(data, 'resign')) patch.resign = data.resign;
+        return patch;
+    };
+
+    const makeSnapshot = (value) => ({
+        val: () => value,
+        exists: () => value !== null && value !== undefined
     });
-};
+
+    const isGameRoot = (path) => /^games\/[^/]+$/.test(path);
+    const isGamesRoot = (path) => path === 'games';
+
+    // Firebase-style ref(db, path)
+    window.ref = function ref(_db, path) {
+        return { path, type: 'path' };
+    };
+
+    window.getGameRef = function getGameRef(roomId) {
+        return { path: `games/${roomId}`, roomId, type: 'game' };
+    };
+
+    window.getPlayersRef = function getPlayersRef(roomId) {
+        return { path: `games/${roomId}/players`, roomId, field: 'players', type: 'field' };
+    };
+
+    window.getTakebackRef = function getTakebackRef(roomId) {
+        return { path: `games/${roomId}/takebackRequest`, roomId, field: 'takebackRequest', type: 'field' };
+    };
+
+    window.getDrawRef = function getDrawRef(roomId) {
+        return { path: `games/${roomId}/drawRequest`, roomId, field: 'drawRequest', type: 'field' };
+    };
+
+    window.get = async function get(refObj) {
+        if (!refObj?.path) return makeSnapshot(null);
+
+        if (isGamesRoot(refObj.path)) {
+            const { data, error } = await supabase.from('games').select('*');
+            if (error) {
+                console.error('get(games) error:', error);
+                return makeSnapshot(null);
+            }
+            const mapped = {};
+            (data || []).forEach((row) => { mapped[row.room_id] = fromDbGame(row); });
+            return makeSnapshot(Object.keys(mapped).length ? mapped : null);
+        }
+
+        if (isGameRoot(refObj.path)) {
+            const roomId = refObj.roomId || refObj.path.split('/')[1];
+            const { data, error } = await supabase.from('games').select('*').eq('room_id', roomId).maybeSingle();
+            if (error) {
+                console.error('get(game) error:', error);
+                return makeSnapshot(null);
+            }
+            return makeSnapshot(fromDbGame(data));
+        }
+
+        if (refObj.type === 'field') {
+            const gameSnap = await window.get(window.getGameRef(refObj.roomId));
+            const game = gameSnap.val();
+            return makeSnapshot(game ? game[refObj.field] ?? null : null);
+        }
+
+        return makeSnapshot(null);
+    };
+
+    window.set = async function set(refObj, value) {
+        if (!refObj?.path) return;
+
+        if (isGameRoot(refObj.path)) {
+            const roomId = refObj.roomId || refObj.path.split('/')[1];
+            if (value === null) {
+                const { error } = await supabase.from('games').delete().eq('room_id', roomId);
+                if (error) throw error;
+                return;
+            }
+            const row = toDbGame(roomId, value);
+            const { error } = await supabase.from('games').upsert(row, { onConflict: 'room_id' });
+            if (error) throw error;
+            return;
+        }
+
+        if (refObj.type === 'field') {
+            const patch = {};
+            patch[refObj.field] = value;
+            return window.update(window.getGameRef(refObj.roomId), patch);
+        }
+    };
+
+    window.update = async function update(refObj, data) {
+        if (!refObj?.roomId) return;
+        const patch = toDbPatch(data || {});
+        const { error } = await supabase.from('games').update(patch).eq('room_id', refObj.roomId);
+        if (error) throw error;
+    };
+
+    window.updateGame = function updateGame(gameRef, data) {
+        return window.update(gameRef, data);
+    };
+
+    // MVP: легковесная транзакция через read-modify-write.
+    // Для production/high-concurrency лучше заменить на RPC с FOR UPDATE.
+    window.runTransaction = async function runTransaction(playersRef, updater) {
+        const snap = await window.get(playersRef);
+        const current = snap.val();
+        const next = updater(current);
+        if (next === undefined) return { committed: false, snapshot: makeSnapshot(current) };
+        await window.update(window.getGameRef(playersRef.roomId), { players: next });
+        return { committed: true, snapshot: makeSnapshot(next) };
+    };
+
+    window.addPlayerToGame = async function addPlayerToGame(playersRef, uid, uName) {
+        try {
+            await window.runTransaction(playersRef, (p) => {
+                if (!p) return { white: uid, whiteName: uName };
+                if (p.white === uid || p.black === uid) return undefined;
+                if (!p.black) return { ...p, black: uid, blackName: uName };
+                return undefined;
+            });
+        } catch (err) {
+            console.error('Transaction error:', err);
+        }
+    };
+
+    window.createGame = async function createGame(roomId, pgn, fen) {
+        const now = Date.now();
+        return window.set(window.getGameRef(roomId), {
+            pgn,
+            fen,
+            gameState: 'active',
+            createdAt: now,
+            lastMoveTime: now
+        });
+    };
+
+    window.watchGames = function watchGames(callback) {
+        const emitGames = async () => {
+            const snap = await window.get(window.ref(window.db, 'games'));
+            callback(snap);
+        };
+
+        emitGames();
+
+        const channel = supabase
+            .channel(`games-lobby-${Math.random().toString(36).slice(2)}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'games' }, emitGames)
+            .subscribe();
+
+        gamesChannels.add(channel);
+
+        return () => {
+            channel.unsubscribe();
+            gamesChannels.delete(channel);
+        };
+    };
+
+    window.watchGame = function watchGame(gameRef, callback) {
+        const roomId = gameRef.roomId;
+
+        const emitGame = async () => {
+            const snap = await window.get(window.getGameRef(roomId));
+            callback(snap);
+        };
+
+        emitGame();
+
+        const channel = supabase
+            .channel(`game-${roomId}-${Math.random().toString(36).slice(2)}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'games',
+                filter: `room_id=eq.${roomId}`
+            }, emitGame)
+            .subscribe();
+
+        if (!gameChannels.has(roomId)) gameChannels.set(roomId, []);
+        gameChannels.get(roomId).push(channel);
+
+        return () => {
+            channel.unsubscribe();
+            const arr = gameChannels.get(roomId) || [];
+            gameChannels.set(roomId, arr.filter((c) => c !== channel));
+        };
+    };
+
+    window.onValue = function onValue(refObj, callback) {
+        if (refObj.type === 'game' || isGameRoot(refObj.path || '')) {
+            return window.watchGame(refObj, callback);
+        }
+
+        if (refObj.type === 'field') {
+            const emitField = async () => {
+                const snap = await window.get(refObj);
+                callback(snap);
+            };
+            emitField();
+
+            return window.watchGame(window.getGameRef(refObj.roomId), async () => {
+                const snap = await window.get(refObj);
+                callback(snap);
+            });
+        }
+
+        if (isGamesRoot(refObj.path || '')) {
+            return window.watchGames(callback);
+        }
+
+        return () => {};
+    };
+
+    window.watchFirebaseCleanup = function watchFirebaseCleanup() {
+        for (const channel of gamesChannels) channel.unsubscribe();
+        for (const roomChannels of gameChannels.values()) {
+            roomChannels.forEach((channel) => channel.unsubscribe());
+        }
+        gamesChannels.clear();
+        gameChannels.clear();
+    };
+
+    window.waitForFirebase = function waitForFirebase() {
+        return Promise.resolve();
+    };
+})();

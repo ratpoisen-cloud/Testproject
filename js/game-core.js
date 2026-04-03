@@ -10,11 +10,38 @@ window.currentRoomId = null;
 window.pendingTakeback = null;
 window.dragSourceSquare = null; // Добавляем переменную для drag-and-drop
 
+
+// Проверка доступа: при текущих RLS игра доступна только авторизованным пользователям
+window.requireAuthForGame = async function() {
+    if (window.currentUser) return window.currentUser;
+
+    let user = null;
+    if (window.supabaseClient?.auth?.getUser) {
+        const { data } = await window.supabaseClient.auth.getUser();
+        user = data?.user ? {
+            ...data.user,
+            uid: data.user.id,
+            displayName: data.user.user_metadata?.full_name || data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Игрок',
+            photoURL: data.user.user_metadata?.avatar_url || null
+        } : null;
+    }
+
+    if (!user) {
+        alert('Чтобы играть онлайн, сначала войдите через Google или Email.');
+        return null;
+    }
+
+    return user;
+};
+
 // Лобби
 window.initLobby = function() {
     document.getElementById('lobby-section').classList.remove('hidden');
     document.getElementById('game-section').classList.add('hidden');
-    document.getElementById('create-game-btn').onclick = () => {
+    document.getElementById('create-game-btn').onclick = async () => {
+        const user = await window.requireAuthForGame();
+        if (!user) return;
+
         const id = window.generateRoomId();
         location.href = location.origin + location.pathname + `?room=${id}`;
     };
@@ -105,13 +132,15 @@ item.innerHTML = `
 
 // Инициализация игры
 window.initGame = async function(roomId) {
+    const user = await window.requireAuthForGame();
+    if (!user) {
+        location.href = location.origin + location.pathname;
+        return;
+    }
+
     document.getElementById('game-section').classList.remove('hidden');
     document.getElementById('lobby-section').classList.add('hidden');
     document.getElementById('room-link').value = window.location.href;
-    
-    const user = await new Promise(res => { 
-        const unsub = onAuthStateChanged(window.auth, u => { unsub(); res(u); }); 
-    });
     
     const uid = window.getUserId(user);
     const uName = window.getUserName(user);
