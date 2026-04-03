@@ -47,12 +47,20 @@
                 <button id="clear-finished-btn" class="btn btn-outline">🗑️ Очистить завершённые</button>
             </div>
             <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
-            <div id="create-color-toggle" class="auth-group">
-                <button id="create-color-white" class="btn btn-outline" type="button" data-color="w">Белые</button>
-                <button id="create-color-black" class="btn btn-outline" type="button" data-color="b">Чёрные</button>
-                <button id="create-color-random" class="btn btn-outline" type="button" data-color="random">Случайно</button>
-            </div>
             <button id="create-game-btn" class="btn btn-primary btn-large">Создать новую игру</button>
+        </div>
+
+        <div id="create-game-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="create-game-modal-title">
+            <div class="modal-content create-game-modal-content">
+                <h3 id="create-game-modal-title" class="modal-title-reset">Выберите сторону</h3>
+                <p class="modal-desc-secondary">За кого хотите играть в новой партии?</p>
+                <div class="create-game-modal-actions">
+                    <button class="btn btn-outline" type="button" data-create-color="w">Белые</button>
+                    <button class="btn btn-outline" type="button" data-create-color="b">Чёрные</button>
+                    <button class="btn btn-primary" type="button" data-create-color="random">Случайно</button>
+                    <button id="create-game-modal-cancel" class="btn btn-outline" type="button">Отмена</button>
+                </div>
+            </div>
         </div>
 
         <div id="game-section" class="hidden">
