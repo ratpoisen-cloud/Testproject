@@ -134,10 +134,15 @@ window.confirmAction = function({
         const messageEl = document.getElementById('ui-confirm-message');
         const confirmBtn = document.getElementById('ui-confirm-ok');
         const cancelBtn = document.getElementById('ui-confirm-cancel');
+        const opener = document.activeElement;
 
         if (!titleEl || !messageEl || !confirmBtn || !cancelBtn) {
             resolve(window.confirm(message));
             return;
+        }
+
+        if (typeof window.confirmAction._activeCleanup === 'function') {
+            window.confirmAction._activeCleanup(false);
         }
 
         titleEl.textContent = title;
@@ -147,12 +152,21 @@ window.confirmAction = function({
         confirmBtn.classList.toggle('btn-danger', danger);
         confirmBtn.classList.toggle('btn-primary', !danger);
 
+        let isClosed = false;
         const close = (result) => {
+            if (isClosed) return;
+            isClosed = true;
             modal.classList.add('hidden');
             confirmBtn.removeEventListener('click', onConfirm);
             cancelBtn.removeEventListener('click', onCancel);
             modal.removeEventListener('click', onBackdrop);
             document.removeEventListener('keydown', onEscape);
+            if (window.confirmAction._activeCleanup === close) {
+                window.confirmAction._activeCleanup = null;
+            }
+            if (opener && typeof opener.focus === 'function' && document.contains(opener)) {
+                opener.focus();
+            }
             resolve(result);
         };
 
@@ -171,5 +185,7 @@ window.confirmAction = function({
         document.addEventListener('keydown', onEscape);
 
         modal.classList.remove('hidden');
+        window.confirmAction._activeCleanup = close;
+        cancelBtn.focus();
     });
 };

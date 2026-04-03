@@ -1236,6 +1236,7 @@ body.theme-middle-earth #myBoard {
 .ui-toast-success { border-color: var(--success); }
 .ui-toast-error { border-color: var(--danger); }
 .ui-toast-warning { border-color: #d1a85f; }
+.ui-toast-info { border-color: #7aa9d8; background: rgba(20, 28, 36, 0.98); }
 
 .ui-confirm-modal {
     z-index: 1300;
