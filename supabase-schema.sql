@@ -107,3 +107,64 @@ begin
     alter publication supabase_realtime add table public.games;
   end if;
 end $$;
+
+-- Атомарное добавление игрока в комнату (устраняет race condition read-modify-write).
+-- Важно: функция работает как SECURITY DEFINER, поэтому явно проверяет, что p_uid = auth.uid().
+create or replace function public.join_game_player(
+  p_room_id text,
+  p_uid text,
+  p_name text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_players jsonb;
+  v_next_players jsonb;
+begin
+  if p_room_id is null or p_uid is null then
+    raise exception 'room_id и uid обязательны';
+  end if;
+
+  if auth.uid() is null or auth.uid()::text <> p_uid then
+    raise exception 'uid must match auth.uid()';
+  end if;
+
+  select players
+  into v_players
+  from public.games
+  where room_id = p_room_id
+  for update;
+
+  if not found then
+    raise exception 'game % not found', p_room_id;
+  end if;
+
+  if v_players is null then
+    v_next_players := jsonb_build_object(
+      'white', p_uid,
+      'whiteName', coalesce(p_name, 'Игрок')
+    );
+  elsif v_players->>'white' = p_uid or v_players->>'black' = p_uid then
+    return v_players;
+  elsif coalesce(v_players->>'black', '') = '' then
+    v_next_players := v_players || jsonb_build_object(
+      'black', p_uid,
+      'blackName', coalesce(p_name, 'Игрок')
+    );
+  else
+    return v_players;
+  end if;
+
+  update public.games
+  set players = v_next_players
+  where room_id = p_room_id;
+
+  return v_next_players;
+end;
+$$;
+
+revoke all on function public.join_game_player(text, text, text) from public;
+grant execute on function public.join_game_player(text, text, text) to authenticated;
