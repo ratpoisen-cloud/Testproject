@@ -27,7 +27,7 @@ window.requireAuthForGame = async function() {
     }
 
     if (!user) {
-        alert('Чтобы играть онлайн, сначала войдите через Google или Email.');
+        window.notify('Чтобы играть онлайн, сначала войдите через Google или Email.', 'warning', 3200);
         return null;
     }
 
@@ -196,22 +196,28 @@ window.deleteGame = async function(gameId, userId) {
     const gameData = (await get(gameRef)).val();
     
     if (!gameData) {
-        alert("Игра не найдена");
+        window.notify("Игра не найдена", "error");
         return;
     }
     
     const players = gameData.players;
     if (players && (players.white === userId || players.black === userId)) {
-        const confirmDelete = confirm(`Удалить игру ${gameId}?\nЭто действие нельзя отменить.`);
+        const confirmDelete = await window.confirmAction({
+            title: "Удаление партии",
+            message: `Удалить игру ${gameId}? Это действие нельзя отменить.`,
+            confirmText: "Удалить",
+            cancelText: "Отмена",
+            danger: true
+        });
         if (confirmDelete) {
             await set(gameRef, null);
-            alert("Игра удалена");
+            window.notify("Игра удалена", "success");
             if (window.currentUser) {
                 window.loadLobby(window.currentUser);
             }
         }
     } else {
-        alert("У вас нет прав на удаление этой игры");
+        window.notify("У вас нет прав на удаление этой игры", "error", 3200);
     }
 };
 // Функция отправки запроса на ничью
@@ -225,7 +231,7 @@ window.sendDrawRequest = async function(gameRef, roomId) {
     };
     
     await window.updateGame(gameRef, { drawRequest: request });
-    alert("Запрос на ничью отправлен сопернику");
+    window.notify("Запрос на ничью отправлен сопернику", "success");
 };
 
 // Функция принятия ничьей
@@ -244,7 +250,7 @@ window.acceptDraw = async function(gameRef, roomId) {
     await window.updateGame(gameRef, updateData);
     document.getElementById('draw-request-box').classList.add('hidden');
     window.pendingDraw = null;
-    alert("Игра закончилась ничьей");
+    window.notify("Игра закончилась ничьей", "success");
 };
 
 // Функция отклонения ничьей
@@ -252,7 +258,7 @@ window.rejectDraw = async function(gameRef, roomId) {
     await window.updateGame(gameRef, { drawRequest: null });
     document.getElementById('draw-request-box').classList.add('hidden');
     window.pendingDraw = null;
-    alert("Соперник отклонил запрос на ничью");
+    window.notify("Соперник отклонил запрос на ничью", "info");
 };
 // Функция массового удаления завершённых игр
 window.clearFinishedGames = async function(userId) {
@@ -272,12 +278,12 @@ window.clearFinishedGames = async function(userId) {
     }
     
     if (deletedCount > 0) {
-        alert(`Удалено ${deletedCount} завершённых игр`);
+        window.notify(`Удалено ${deletedCount} завершённых игр`, "success", 3200);
         if (window.currentUser) {
             window.loadLobby(window.currentUser);
         }
     } else {
-        alert("Нет завершённых игр для удаления");
+        window.notify("Нет завершённых игр для удаления", "info");
     }
 };
 
@@ -286,9 +292,17 @@ window.initClearFinishedButton = function(userId) {
     const clearBtn = document.getElementById('clear-finished-btn');
     if (clearBtn) {
         clearBtn.onclick = () => {
-            if (confirm("Удалить все завершённые игры? Это действие нельзя отменить.")) {
-                window.clearFinishedGames(userId);
-            }
+            window.confirmAction({
+                title: "Очистить завершённые",
+                message: "Удалить все завершённые игры? Это действие нельзя отменить.",
+                confirmText: "Удалить всё",
+                cancelText: "Отмена",
+                danger: true
+            }).then((confirmed) => {
+                if (confirmed) {
+                    window.clearFinishedGames(userId);
+                }
+            });
         };
     }
 };

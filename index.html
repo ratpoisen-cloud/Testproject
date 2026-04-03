@@ -202,6 +202,19 @@
 
     </div>
 
+    <div id="ui-toast-root" class="ui-toast-root" aria-live="polite" aria-atomic="true"></div>
+
+    <div id="ui-confirm-modal" class="modal hidden ui-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="ui-confirm-title">
+        <div class="modal-content ui-confirm-content">
+            <h3 id="ui-confirm-title">Подтверждение</h3>
+            <p id="ui-confirm-message" class="modal-desc modal-desc-secondary">Продолжить?</p>
+            <div class="modal-buttons ui-confirm-actions">
+                <button id="ui-confirm-cancel" class="btn btn-outline">Отмена</button>
+                <button id="ui-confirm-ok" class="btn btn-danger">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Библиотеки -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>

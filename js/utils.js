@@ -94,3 +94,82 @@ window.formatTimeAgo = function(timestamp) {
         return `${date.getDate()}.${date.getMonth() + 1}`;
     }
 };
+
+
+// Базовые встроенные UI-уведомления (этап 1: замена alert/confirm)
+window.notify = function(message, type = 'info', duration = 2600) {
+    const root = document.getElementById('ui-toast-root');
+    if (!root) return;
+
+    const toast = document.createElement('div');
+    toast.className = `ui-toast ui-toast-${type}`;
+    toast.textContent = message;
+    root.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+
+    const hide = () => {
+        toast.classList.remove('is-visible');
+        setTimeout(() => toast.remove(), 180);
+    };
+
+    setTimeout(hide, duration);
+};
+
+window.confirmAction = function({
+    title = 'Подтверждение',
+    message = 'Продолжить?',
+    confirmText = 'Подтвердить',
+    cancelText = 'Отмена',
+    danger = false
+} = {}) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('ui-confirm-modal');
+        if (!modal) {
+            resolve(window.confirm(message));
+            return;
+        }
+
+        const titleEl = document.getElementById('ui-confirm-title');
+        const messageEl = document.getElementById('ui-confirm-message');
+        const confirmBtn = document.getElementById('ui-confirm-ok');
+        const cancelBtn = document.getElementById('ui-confirm-cancel');
+
+        if (!titleEl || !messageEl || !confirmBtn || !cancelBtn) {
+            resolve(window.confirm(message));
+            return;
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        confirmBtn.textContent = confirmText;
+        cancelBtn.textContent = cancelText;
+        confirmBtn.classList.toggle('btn-danger', danger);
+        confirmBtn.classList.toggle('btn-primary', !danger);
+
+        const close = (result) => {
+            modal.classList.add('hidden');
+            confirmBtn.removeEventListener('click', onConfirm);
+            cancelBtn.removeEventListener('click', onCancel);
+            modal.removeEventListener('click', onBackdrop);
+            document.removeEventListener('keydown', onEscape);
+            resolve(result);
+        };
+
+        const onConfirm = () => close(true);
+        const onCancel = () => close(false);
+        const onBackdrop = (e) => {
+            if (e.target === modal) close(false);
+        };
+        const onEscape = (e) => {
+            if (e.key === 'Escape') close(false);
+        };
+
+        confirmBtn.addEventListener('click', onConfirm, { once: true });
+        cancelBtn.addEventListener('click', onCancel, { once: true });
+        modal.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onEscape);
+
+        modal.classList.remove('hidden');
+    });
+};

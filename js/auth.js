@@ -46,7 +46,7 @@ window.setupAuth = function() {
         try {
             await signInWithPopup(window.auth, new GoogleAuthProvider());
         } catch (err) {
-            alert('Ошибка входа через Google: ' + (err.message || err));
+            window.notify('Ошибка входа через Google: ' + (err.message || err), 'error', 3600);
         }
     };
 
@@ -102,11 +102,11 @@ window.setupAuth = function() {
 
             // Supabase: при включенном Email Confirmation сессия может не создаться сразу
             if (!authResult?.session) {
-                alert('Аккаунт создан. Подтвердите email, затем выполните вход.');
+                window.notify('Аккаунт создан. Подтвердите email, затем выполните вход.', 'info', 3600);
                 return;
             }
 
-            alert("Аккаунт успешно создан!");
+            window.notify("Аккаунт успешно создан!", "success");
         } catch (err) {
             if (err.code === 'auth/email-already-in-use') {
                 showError("Эта почта уже зарегистрирована");

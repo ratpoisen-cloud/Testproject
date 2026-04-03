@@ -80,10 +80,17 @@ window.setupGameControls = function(gameRef, roomId) {
     // Сдача
     document.getElementById('resign-btn').onclick = async () => {
         if (window.game.game_over()) {
-            alert("Игра уже окончена");
+            window.notify("Игра уже окончена", "warning");
             return;
         }
-        if (confirm("Вы уверены, что хотите сдаться?")) {
+        const shouldResign = await window.confirmAction({
+            title: "Сдаться?",
+            message: "Вы уверены, что хотите сдаться?",
+            confirmText: "Сдаться",
+            cancelText: "Отмена",
+            danger: true
+        });
+        if (shouldResign) {
             const winner = window.playerColor === 'w' ? 'Черные' : 'Белые';
             const players = await resolvePlayersForHeaders();
             const metadata = window.applyGameHeaders(window.game, {
@@ -102,8 +109,14 @@ window.setupGameControls = function(gameRef, roomId) {
     };
     
     // Выход в лобби
-    document.getElementById('exit-btn').onclick = () => {
-        if (confirm("Выйти в лобби?")) {
+    document.getElementById('exit-btn').onclick = async () => {
+        const shouldExit = await window.confirmAction({
+            title: "Выйти в лобби?",
+            message: "Текущая партия останется сохранённой.",
+            confirmText: "Выйти",
+            cancelText: "Остаться"
+        });
+        if (shouldExit) {
             location.href = location.origin + location.pathname;
         }
     };
@@ -119,22 +132,22 @@ window.setupGameControls = function(gameRef, roomId) {
             }
         } else {
             navigator.clipboard.writeText(link);
-            alert('Ссылка скопирована!');
+            window.notify('Ссылка скопирована!', 'success');
         }
     };
     
     // Запрос отмены хода
     document.getElementById('takeback-btn').onclick = () => {
         if (window.game.history().length === 0) {
-            alert("Нет ходов для отмены");
+            window.notify("Нет ходов для отмены", "warning");
             return;
         }
         if (window.game.game_over()) {
-            alert("Игра уже окончена");
+            window.notify("Игра уже окончена", "warning");
             return;
         }
         window.updateGame(gameRef, { takebackRequest: { from: window.playerColor, timestamp: Date.now() } });
-        alert("Запрос отправлен сопернику");
+        window.notify("Запрос отправлен сопернику", "success");
     };
     
     // Слушатель запроса отмены
@@ -182,11 +195,11 @@ window.setupGameControls = function(gameRef, roomId) {
 // Кнопка "Предложить ничью"
 document.getElementById('draw-btn').onclick = () => {
     if (window.game.game_over()) {
-        alert("Игра уже окончена");
+        window.notify("Игра уже окончена", "warning");
         return;
     }
     if (window.pendingDraw) {
-        alert("Запрос уже отправлен");
+        window.notify("Запрос уже отправлен", "warning");
         return;
     }
     window.sendDrawRequest(gameRef, roomId);
@@ -260,7 +273,10 @@ document.getElementById('draw-reject').onclick = () => {
     if (modalCopyBtn) {
         modalCopyBtn.onclick = () => {
             const pgn = window.game.pgn();
-            if (!pgn) return alert("Нет данных партии");
+            if (!pgn) {
+                window.notify("Нет данных партии", "warning");
+                return;
+            }
 
             navigator.clipboard.writeText(pgn).then(() => {
                 const originalText = modalCopyBtn.innerText;

@@ -1202,3 +1202,67 @@ body.theme-middle-earth #myBoard {
         width: 100%;
     }
 }
+
+/* ===== UI TOAST + CONFIRM (этап 1 замены alert/confirm) ===== */
+.ui-toast-root {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1200;
+    pointer-events: none;
+}
+
+.ui-toast {
+    max-width: min(92vw, 360px);
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(22, 24, 22, 0.98);
+    color: var(--text);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.ui-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.ui-toast-success { border-color: var(--success); }
+.ui-toast-error { border-color: var(--danger); }
+.ui-toast-warning { border-color: #d1a85f; }
+
+.ui-confirm-modal {
+    z-index: 1300;
+}
+
+.ui-confirm-content {
+    max-width: min(92vw, 420px);
+}
+
+.ui-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .ui-toast-root {
+        left: 12px;
+        right: 12px;
+        bottom: 10px;
+    }
+
+    .ui-toast {
+        max-width: 100%;
+    }
+
+    .ui-confirm-actions {
+        flex-direction: column-reverse;
+    }
+}
