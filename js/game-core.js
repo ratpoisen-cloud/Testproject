@@ -11,6 +11,108 @@ window.pendingTakeback = null;
 window.dragSourceSquare = null; // Добавляем переменную для drag-and-drop
 window.lobbyViewMode = 'games';
 window.lobbyPlayersExpanded = {};
+window.reviewMode = false;
+window.reviewPlyIndex = null;
+window.reviewGame = null;
+window.lastRemotePgn = '';
+
+window.syncReviewStateFromCurrentGame = function() {
+    if (!window.game) {
+        window.lastRemotePgn = '';
+        window.reviewGame = null;
+        window.reviewPlyIndex = null;
+        return;
+    }
+
+    const pgn = window.game.pgn() || '';
+    window.lastRemotePgn = pgn;
+
+    const reviewGame = new Chess();
+    if (pgn) reviewGame.load_pgn(pgn);
+
+    window.reviewGame = reviewGame;
+
+    if (window.reviewMode) {
+        const maxPly = reviewGame.history().length;
+        const currentIndex = Number.isInteger(window.reviewPlyIndex) ? window.reviewPlyIndex : maxPly;
+        window.reviewPlyIndex = Math.max(0, Math.min(currentIndex, maxPly));
+    } else {
+        window.reviewPlyIndex = null;
+    }
+};
+
+window.buildReviewDisplayGame = function(index) {
+    if (!window.reviewGame) {
+        window.syncReviewStateFromCurrentGame();
+    }
+
+    const sourceReviewGame = window.reviewGame || new Chess();
+    const historySan = sourceReviewGame.history();
+    const maxPly = historySan.length;
+    const safeIndex = Math.max(0, Math.min(Number.isInteger(index) ? index : maxPly, maxPly));
+
+    const displayGame = new Chess();
+    for (let i = 0; i < safeIndex; i++) {
+        displayGame.move(historySan[i]);
+    }
+
+    return { displayGame, safeIndex, maxPly };
+};
+
+window.enterReviewMode = function(startIndex) {
+    if (!window.game) return;
+
+    window.reviewMode = true;
+    window.syncReviewStateFromCurrentGame();
+
+    const maxPly = window.reviewGame ? window.reviewGame.history().length : 0;
+    const targetIndex = Number.isInteger(startIndex) ? startIndex : maxPly;
+    window.goToReviewPly(targetIndex);
+};
+
+window.exitReviewMode = function() {
+    window.reviewMode = false;
+    window.reviewPlyIndex = null;
+    window.reviewGame = null;
+
+    window.removeHighlights?.();
+
+    if (!window.game) return;
+
+    window.updateBoardPosition(window.game.fen(), true);
+    const history = window.game.history({ verbose: true });
+    if (history.length > 0 && window.highlightLastMove) {
+        window.highlightLastMove(history[history.length - 1]);
+    }
+};
+
+window.goToReviewPly = function(index) {
+    if (!window.reviewMode) {
+        window.enterReviewMode(index);
+        return;
+    }
+
+    const { displayGame, safeIndex } = window.buildReviewDisplayGame(index);
+
+    window.reviewPlyIndex = safeIndex;
+    window.removeHighlights?.();
+    window.updateBoardPosition(displayGame.fen(), true);
+
+    const reviewHistory = displayGame.history({ verbose: true });
+    if (reviewHistory.length > 0 && window.highlightLastMove) {
+        window.highlightLastMove(reviewHistory[reviewHistory.length - 1]);
+    }
+};
+
+window.stepReview = function(delta) {
+    const step = Number.isInteger(delta) ? delta : 0;
+    if (!window.reviewMode) {
+        window.enterReviewMode();
+    }
+
+    const currentIndex = Number.isInteger(window.reviewPlyIndex) ? window.reviewPlyIndex : 0;
+    window.goToReviewPly(currentIndex + step);
+};
 
 window.getFinishedGameResultLabel = function(gameData) {
     if (!gameData || gameData.gameState !== 'game_over') return '';
@@ -364,6 +466,7 @@ window.initGame = async function(roomId) {
     const requestedJoinColor = window.getRequestedJoinColor();
     
     window.game = new Chess();
+    window.syncReviewStateFromCurrentGame();
     
     const gameCheck = await get(gameRef);
     if (!gameCheck.exists()) {
@@ -387,20 +490,24 @@ window.initGame = async function(roomId) {
     window.watchGame(gameRef, (snap) => {
         const data = snap.val();
         if (!data) return;
-        if (data.pgn && data.pgn !== window.game.pgn()) { 
-           window.game.load_pgn(data.pgn); 
-window.updateBoardPosition(window.game.fen(), true);
+        if (data.pgn && data.pgn !== window.game.pgn()) {
+            window.game.load_pgn(data.pgn);
+            window.syncReviewStateFromCurrentGame();
 
-// 🔥 ВОТ СЮДА ВСТАВЛЯЕМ
-const history = window.game.history({ verbose: true });
-if (history.length > 0) {
-    highlightLastMove(history[history.length - 1]);
-}
-
-window.pendingMove = null;
+            window.pendingMove = null;
             window.dragSourceSquare = null;
             document.getElementById('confirm-move-box').classList.add('hidden');
-            window.removeHighlights();
+            window.removeHighlights?.();
+
+            if (window.reviewMode) {
+                window.goToReviewPly(window.reviewPlyIndex);
+            } else {
+                window.updateBoardPosition(window.game.fen(), true);
+                const history = window.game.history({ verbose: true });
+                if (history.length > 0 && window.highlightLastMove) {
+                    window.highlightLastMove(history[history.length - 1]);
+                }
+            }
         }
         window.updateUI(data);
     });
