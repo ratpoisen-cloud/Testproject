@@ -44,9 +44,16 @@
         <div id="lobby-section" class="card hidden">
             <div class="lobby-header">
                 <h1 class="section-title section-title-tight">Мои партии</h1>
-                <button id="clear-finished-btn" class="btn btn-outline">🗑️ Очистить завершённые</button>
+                <div class="lobby-header-actions">
+                    <div class="lobby-view-toggle" role="tablist" aria-label="Режим лобби">
+                        <button id="lobby-view-games" class="btn btn-outline btn-sm lobby-view-btn active" type="button">Партии</button>
+                        <button id="lobby-view-players" class="btn btn-outline btn-sm lobby-view-btn" type="button">Игроки</button>
+                    </div>
+                    <button id="clear-finished-btn" class="btn btn-outline">🗑️ Очистить завершённые</button>
+                </div>
             </div>
             <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
+            <div id="players-list" class="games-grid hidden">Загрузка игроков...</div>
             <button id="create-game-btn" class="btn btn-primary btn-large">Создать новую игру</button>
         </div>
 
