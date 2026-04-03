@@ -171,6 +171,12 @@ window.setupGameControls = function(gameRef, roomId) {
 
         window.goToReviewPly(maxPly);
     };
+
+    document.getElementById('review-live-btn').onclick = () => {
+        if (!window.game || !window.reviewMode) return;
+        if (window.game.game_over()) return;
+        window.exitReviewMode();
+    };
     
     // Запрос отмены хода
     document.getElementById('takeback-btn').onclick = () => {

@@ -139,6 +139,7 @@ window.updateReviewControlsState = function() {
     const prevBtn = document.getElementById('review-prev-btn');
     const nextBtn = document.getElementById('review-next-btn');
     const lastBtn = document.getElementById('review-last-btn');
+    const liveBtn = document.getElementById('review-live-btn');
     const statusNode = document.getElementById('review-status');
 
     const maxPly = window.game.history().length;
@@ -149,6 +150,7 @@ window.updateReviewControlsState = function() {
         : maxPly;
     const isAtStart = activePlyIndex <= 0;
     const isAtEnd = activePlyIndex >= maxPly;
+    const isFinishedGame = window.game.game_over() || window.lastKnownGameState === 'game_over';
 
     if (statusNode) {
         if (!hasMoves) {
@@ -166,6 +168,9 @@ window.updateReviewControlsState = function() {
     if (prevBtn) prevBtn.disabled = !hasMoves || isAtStart;
     if (nextBtn) nextBtn.disabled = !hasMoves || isAtEnd;
     if (lastBtn) lastBtn.disabled = !hasMoves || isAtEnd;
+    if (liveBtn) {
+        liveBtn.disabled = !window.reviewMode || isFinishedGame;
+    }
 };
 
 // Обновление модального окна окончания игры
