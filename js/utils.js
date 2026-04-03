@@ -28,6 +28,48 @@ window.getGameResultMessage = function(game) {
     if (game.insufficient_material()) return "Ничья (недостаточно фигур)";
     return "Игра окончена";
 };
+
+// Вычисление результата в PGN с приоритетом внешних причин (сдача/соглашение) над локальными эвристиками.
+window.resolveGameResult = function(game, data) {
+    const resignColor = data?.resign;
+    if (resignColor === 'w') return '0-1';
+    if (resignColor === 'b') return '1-0';
+
+    const message = String(data?.message || '').toLowerCase();
+    if (message.includes('ничья')) return '1/2-1/2';
+    if (message.includes('сдач')) {
+        if (message.includes('бел')) return '1-0';
+        if (message.includes('черн')) return '0-1';
+    }
+
+    if (game?.in_checkmate?.()) return game.turn() === 'w' ? '0-1' : '1-0';
+    if (game?.in_draw?.() || game?.in_stalemate?.() || game?.in_threefold_repetition?.() || game?.insufficient_material?.()) {
+        return '1/2-1/2';
+    }
+
+    return '*';
+};
+
+// Единая точка формирования PGN-заголовков.
+window.applyGameHeaders = function(game, data) {
+    if (!game) return { result: '*', message: 'Игра окончена' };
+
+    const players = data?.players || {};
+    if (players.whiteName) game.header('White', players.whiteName);
+    if (players.blackName) game.header('Black', players.blackName);
+
+    const result = window.resolveGameResult(game, data);
+    game.header('Result', result);
+
+    if (data?.gameState === 'game_over') {
+        game.header('Termination', data?.message || window.getGameResultMessage(game));
+    }
+
+    return {
+        result,
+        message: data?.message || window.getGameResultMessage(game)
+    };
+};
 // Форматирование времени для отображения в лобби
 window.formatTimeAgo = function(timestamp) {
     if (!timestamp) return "неизвестно";

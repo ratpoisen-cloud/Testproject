@@ -230,9 +230,15 @@ window.sendDrawRequest = async function(gameRef, roomId) {
 
 // Функция принятия ничьей
 window.acceptDraw = async function(gameRef, roomId) {
+    const players = (await get(window.getPlayersRef(roomId))).val() || null;
+    const metadata = window.applyGameHeaders(window.game, {
+        players,
+        gameState: 'game_over',
+        message: 'Ничья по соглашению'
+    });
     const updateData = { 
         gameState: 'game_over', 
-        message: 'Ничья по соглашению',
+        message: metadata.message,
         pgn: window.game.pgn()
     };
     await window.updateGame(gameRef, updateData);

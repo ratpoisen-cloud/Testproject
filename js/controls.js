@@ -1,8 +1,13 @@
 // ==================== КНОПКИ УПРАВЛЕНИЯ ====================
 
 window.setupGameControls = function(gameRef, roomId) {
+    const resolvePlayersForHeaders = async () => {
+        const snap = await get(window.getPlayersRef(roomId));
+        return snap.val() || null;
+    };
+
     // Подтверждение хода
-    document.getElementById('confirm-btn').onclick = () => {
+    document.getElementById('confirm-btn').onclick = async () => {
     if (!window.pendingMove) return;
     
     const moveResult = window.game.move({
@@ -35,8 +40,15 @@ window.setupGameControls = function(gameRef, roomId) {
     };
     
     if (window.game.game_over()) { 
+        const players = await resolvePlayersForHeaders();
+        const metadata = window.applyGameHeaders(window.game, {
+            players,
+            gameState: 'game_over',
+            message: window.getGameResultMessage(window.game)
+        });
         updateData.gameState = 'game_over'; 
-        updateData.message = window.getGameResultMessage(window.game); 
+        updateData.message = metadata.message;
+        updateData.pgn = window.game.pgn();
     }
     
     window.updateGame(gameRef, updateData);
@@ -66,16 +78,23 @@ window.setupGameControls = function(gameRef, roomId) {
     };
     
     // Сдача
-    document.getElementById('resign-btn').onclick = () => {
+    document.getElementById('resign-btn').onclick = async () => {
         if (window.game.game_over()) {
             alert("Игра уже окончена");
             return;
         }
         if (confirm("Вы уверены, что хотите сдаться?")) {
             const winner = window.playerColor === 'w' ? 'Черные' : 'Белые';
+            const players = await resolvePlayersForHeaders();
+            const metadata = window.applyGameHeaders(window.game, {
+                players,
+                gameState: 'game_over',
+                message: `${winner} победили (сдача)`,
+                resign: window.playerColor
+            });
             window.updateGame(gameRef, { 
                 gameState: 'game_over', 
-                message: `${winner} победили (сдача)`,
+                message: metadata.message,
                 pgn: window.game.pgn(),
                 resign: window.playerColor
             });
