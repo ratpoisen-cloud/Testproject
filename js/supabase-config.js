@@ -2,7 +2,6 @@
 // Отвечает за: инициализацию Supabase и auth-адаптер, совместимый с текущим UI-кодом
 
 (function initSupabaseConfig() {
-    // TODO: вставьте свои значения из Supabase Project Settings -> API
     const SUPABASE_URL = 'https://cyhuhrkzjhxuhcqvwzrx.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_1nRdNqHgMXjhFGyefrdUQg_jejbh0J6';
 

@@ -46,8 +46,6 @@ window.verifyDataAdapterLoaded = function() {
     setTimeout(() => {
         if (typeof ref === 'undefined') {
             console.error('Data adapter not loaded!');
-        } else {
-            console.log('Supabase adapter loaded successfully');
         }
     }, 1000);
 };

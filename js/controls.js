@@ -127,9 +127,7 @@ window.setupGameControls = function(gameRef, roomId) {
         if (navigator.share) {
             try {
                 await navigator.share({ title: 'Шахматная партия', url: link });
-            } catch (err) {
-                console.log('Sharing cancelled');
-            }
+            } catch {}
         } else {
             navigator.clipboard.writeText(link);
             window.notify('Ссылка скопирована!', 'success');
