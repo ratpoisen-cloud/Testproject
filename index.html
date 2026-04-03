@@ -222,51 +222,5 @@
     <script src="js/game-core.js"></script>
     <script src="js/app.js"></script>
 
-    <script>
-        setTimeout(() => {
-            if (typeof ref === 'undefined') {
-                console.error('Data adapter not loaded!');
-            } else {
-                console.log('Supabase adapter loaded successfully');
-            }
-        }, 1000);
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const toggleBtn = document.getElementById('board-settings-toggle');
-            const menu = document.getElementById('board-settings-menu');
-            const themeSelect = document.getElementById('theme-select');
-            const pieceSetSelect = document.getElementById('piece-set-select');
-
-            if (toggleBtn && menu) {
-                toggleBtn.addEventListener('click', () => {
-                    menu.classList.toggle('hidden');
-                });
-
-                document.addEventListener('click', (e) => {
-                    const insideMenu = menu.contains(e.target);
-                    const insideButton = toggleBtn.contains(e.target);
-
-                    if (!insideMenu && !insideButton) {
-                        menu.classList.add('hidden');
-                    }
-                });
-            }
-
-            if (themeSelect) {
-                const savedTheme = localStorage.getItem('chess-theme') || 'theme-classic';
-                themeSelect.value = savedTheme;
-
-                themeSelect.addEventListener('change', (e) => {
-                    if (window.setTheme) {
-                        window.setTheme(e.target.value);
-                    }
-                });
-            }
-
-            if (pieceSetSelect && window.initPieceSetControls) {
-                window.initPieceSetControls(pieceSetSelect);
-            }
-        });
-    </script>
 </body>
 </html>
