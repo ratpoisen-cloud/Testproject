@@ -15,6 +15,7 @@ window.reviewMode = false;
 window.reviewPlyIndex = null;
 window.reviewGame = null;
 window.lastRemotePgn = '';
+window.lastKnownGameState = null;
 
 window.syncReviewStateFromCurrentGame = function() {
     if (!window.game) {
@@ -468,6 +469,7 @@ window.initGame = async function(roomId) {
     const requestedJoinColor = window.getRequestedJoinColor();
     
     window.game = new Chess();
+    window.lastKnownGameState = null;
     window.syncReviewStateFromCurrentGame();
     
     const gameCheck = await get(gameRef);

@@ -172,15 +172,28 @@ window.updateReviewControlsState = function() {
 
 // Обновление модального окна окончания игры
 window.updateGameModal = function(data) {
-    if (data.gameState === 'game_over' && document.getElementById('game-modal').classList.contains('hidden')) {
+    const modal = document.getElementById('game-modal');
+    if (!modal) return;
+
+    const currentState = data?.gameState || null;
+    const previousState = window.lastKnownGameState;
+    const isFirstStateSync = previousState === null;
+    const isRealGameOverTransition =
+        !isFirstStateSync &&
+        previousState === 'active' &&
+        currentState === 'game_over';
+
+    if (isRealGameOverTransition && modal.classList.contains('hidden')) {
         const metadata = window.applyGameHeaders(window.game, data);
-        document.getElementById('game-modal').classList.remove('hidden');
+        modal.classList.remove('hidden');
         document.getElementById('modal-title').innerHTML = '🏆 Игра окончена';
         document.getElementById('modal-desc').innerHTML = metadata.message;
         document.getElementById('confirm-move-box').classList.add('hidden');
         window.pendingMove = null;
         window.clearSelection();
     }
+
+    window.lastKnownGameState = currentState;
 };
 
 // Обновление бейджа игрока
