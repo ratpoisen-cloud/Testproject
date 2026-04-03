@@ -133,6 +133,38 @@ window.setupGameControls = function(gameRef, roomId) {
             window.notify('Ссылка скопирована!', 'success');
         }
     };
+
+    // Review controls
+    document.getElementById('review-first-btn').onclick = () => {
+        if (!window.game) return;
+        window.enterReviewMode(0);
+    };
+
+    document.getElementById('review-prev-btn').onclick = () => {
+        if (!window.game) return;
+        if (!window.reviewMode) {
+            window.enterReviewMode();
+        }
+        window.stepReview(-1);
+    };
+
+    document.getElementById('review-next-btn').onclick = () => {
+        if (!window.game) return;
+        if (!window.reviewMode) {
+            window.enterReviewMode();
+        }
+        window.stepReview(1);
+    };
+
+    document.getElementById('review-last-btn').onclick = () => {
+        if (!window.game) return;
+        const maxPly = window.game.history().length;
+        if (!window.reviewMode) {
+            window.updateReviewControlsState?.();
+            return;
+        }
+        window.goToReviewPly(maxPly);
+    };
     
     // Запрос отмены хода
     document.getElementById('takeback-btn').onclick = () => {
@@ -266,6 +298,14 @@ document.getElementById('draw-reject').onclick = () => {
         location.href = location.origin + location.pathname;
     };
 
+    // Открыть просмотр из модалки окончания игры
+    document.getElementById('modal-review-btn').onclick = () => {
+        document.getElementById('game-modal').classList.add('hidden');
+        if (!window.game) return;
+        const maxPly = window.game.history().length;
+        window.enterReviewMode(maxPly);
+    };
+
     // --- Логика копирования PGN из модалки ---
     const modalCopyBtn = document.getElementById('modal-copy-pgn');
     if (modalCopyBtn) {
@@ -302,4 +342,6 @@ document.getElementById('draw-reject').onclick = () => {
             document.body.removeChild(a);
         };
     }
+
+    window.updateReviewControlsState?.();
 };

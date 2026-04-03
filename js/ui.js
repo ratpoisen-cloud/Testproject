@@ -61,6 +61,7 @@ window.updateMoveHistory = function() {
         emptyCell.className = 'move-list-cell move-list-cell--empty-state';
         emptyCell.textContent = 'Нет ходов';
         moveListDiv.appendChild(emptyCell);
+        window.updateReviewControlsState?.();
         return;
     }
 
@@ -75,8 +76,6 @@ window.updateMoveHistory = function() {
     const goToPlyFromHistory = (plyIndex) => {
         if (typeof window.goToReviewPly !== 'function') return;
         window.goToReviewPly(plyIndex);
-        // Локально обновляем список после навигации, т.к. goToReviewPly не вызывает updateUI.
-        window.updateMoveHistory();
     };
 
     const createCell = ({ text = '', plyIndex = null, isMoveNumber = false, isEmpty = false }) => {
@@ -131,6 +130,44 @@ window.updateMoveHistory = function() {
     } else {
         moveListDiv.scrollTop = moveListDiv.scrollHeight;
     }
+
+    window.updateReviewControlsState?.();
+};
+
+window.updateReviewControlsState = function() {
+    if (!window.game) return;
+
+    const firstBtn = document.getElementById('review-first-btn');
+    const prevBtn = document.getElementById('review-prev-btn');
+    const nextBtn = document.getElementById('review-next-btn');
+    const lastBtn = document.getElementById('review-last-btn');
+    const statusNode = document.getElementById('review-status');
+
+    const maxPly = window.game.history().length;
+    const hasMoves = maxPly > 0;
+    const reviewIndex = Number.isInteger(window.reviewPlyIndex) ? window.reviewPlyIndex : maxPly;
+    const activePlyIndex = window.reviewMode
+        ? Math.max(0, Math.min(reviewIndex, maxPly))
+        : maxPly;
+    const isAtStart = activePlyIndex <= 0;
+    const isAtEnd = activePlyIndex >= maxPly;
+
+    if (statusNode) {
+        if (!hasMoves) {
+            statusNode.textContent = 'Нет ходов';
+        } else if (!window.reviewMode || isAtEnd) {
+            statusNode.textContent = 'Последняя позиция';
+        } else if (isAtStart) {
+            statusNode.textContent = 'Начало партии';
+        } else {
+            statusNode.textContent = `Просмотр: позиция после ${activePlyIndex}-го полухода`;
+        }
+    }
+
+    if (firstBtn) firstBtn.disabled = !hasMoves || isAtStart;
+    if (prevBtn) prevBtn.disabled = !hasMoves || isAtStart;
+    if (nextBtn) nextBtn.disabled = !hasMoves || isAtEnd;
+    if (lastBtn) lastBtn.disabled = !hasMoves || isAtEnd;
 };
 
 // Обновление модального окна окончания игры

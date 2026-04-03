@@ -84,6 +84,7 @@ window.exitReviewMode = function() {
     if (history.length > 0 && window.highlightLastMove) {
         window.highlightLastMove(history[history.length - 1]);
     }
+    window.updateMoveHistory?.();
 };
 
 window.goToReviewPly = function(index) {
@@ -102,6 +103,7 @@ window.goToReviewPly = function(index) {
     if (reviewHistory.length > 0 && window.highlightLastMove) {
         window.highlightLastMove(reviewHistory[reviewHistory.length - 1]);
     }
+    window.updateMoveHistory?.();
 };
 
 window.stepReview = function(delta) {
