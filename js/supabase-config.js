@@ -3,8 +3,8 @@
 
 (function initSupabaseConfig() {
     // TODO: вставьте свои значения из Supabase Project Settings -> API
-    const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const SUPABASE_URL = 'https://cyhuhrkzjhxuhcqvwzrx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_1nRdNqHgMXjhFGyefrdUQg_jejbh0J6';
 
     if (!window.supabase || typeof window.supabase.createClient !== 'function') {
         console.error('Supabase SDK не загружен');
