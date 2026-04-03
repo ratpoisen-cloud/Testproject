@@ -171,6 +171,15 @@
                         <div class="game-bottom-panel">
                             <div class="moves-card">
                                 <h3>История ходов</h3>
+                                <div class="review-controls" role="group" aria-label="Навигация по ходам">
+                                    <div class="review-controls-buttons">
+                                        <button id="review-first-btn" class="review-control-btn" type="button" aria-label="В начало партии">|&lt;</button>
+                                        <button id="review-prev-btn" class="review-control-btn" type="button" aria-label="Назад на ход">&lt;</button>
+                                        <button id="review-next-btn" class="review-control-btn" type="button" aria-label="Вперёд на ход">&gt;</button>
+                                        <button id="review-last-btn" class="review-control-btn" type="button" aria-label="В конец партии">&gt;|</button>
+                                    </div>
+                                    <p id="review-status" class="review-status">Последняя позиция</p>
+                                </div>
                                 <div id="move-list" class="move-list-content"></div>
                             </div>
 

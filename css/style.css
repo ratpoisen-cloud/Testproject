@@ -899,6 +899,62 @@ body {
     text-align: center;
 }
 
+.review-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    margin-bottom: var(--space-12);
+}
+
+.review-controls-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-8);
+}
+
+.review-control-btn {
+    min-height: 36px;
+    padding: 0 var(--space-8);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-8);
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.review-control-btn:hover {
+    border-color: var(--accent);
+    background: rgba(163, 193, 143, 0.12);
+    transform: translateY(-1px);
+}
+
+.review-control-btn:active {
+    transform: scale(0.97);
+}
+
+.review-control-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--shadow-accent);
+}
+
+.review-control-btn:disabled {
+    cursor: default;
+    opacity: 0.45;
+    transform: none;
+}
+
+.review-status {
+    margin: 0;
+    min-height: 1.2em;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    text-align: center;
+}
+
 .move-list-content {
     background: #0a0a0a;
     padding: 12px;
@@ -931,12 +987,13 @@ body {
 }
 
 .move-list-cell--move:hover {
-    background: rgba(16, 185, 129, 0.12);
+    background: rgba(163, 193, 143, 0.12);
 }
 
 .move-list-cell--active {
-    background: rgba(16, 185, 129, 0.2);
-    border-bottom-color: rgba(16, 185, 129, 0.75);
+    background: rgba(163, 193, 143, 0.2);
+    color: var(--text);
+    border-bottom-color: rgba(163, 193, 143, 0.75);
 }
 
 .move-list-cell--empty {
@@ -1346,6 +1403,19 @@ body.theme-middle-earth #myBoard {
     .move-list-content,
     .game-bottom-panel .move-list-content {
         height: 190px;
+    }
+
+    .review-controls {
+        margin-bottom: var(--space-8);
+    }
+
+    .review-controls-buttons {
+        gap: 6px;
+    }
+
+    .review-control-btn {
+        min-height: 34px;
+        font-size: 0.82rem;
     }
 
     .share-container {
