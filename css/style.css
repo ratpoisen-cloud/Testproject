@@ -321,10 +321,11 @@ body {
     background: #1a1a1a;
     border-left: 4px solid var(--accent);
     border-radius: 16px;
-    padding: 16px 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .player-item-header {
@@ -333,6 +334,8 @@ body {
     align-items: flex-start;
     gap: 12px;
     flex-wrap: wrap;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .player-info {
@@ -340,10 +343,31 @@ body {
     min-width: 180px;
 }
 
+.player-name-row {
+    margin-bottom: 8px;
+}
+
+.player-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.player-stat-pill {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+
 .player-games-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-top: 2px;
 }
 
 .player-game-row {
@@ -361,6 +385,13 @@ body {
 .player-game-row.finished {
     border-left-color: var(--text-secondary);
     opacity: 0.9;
+}
+
+.player-game-result {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 2px 0 4px;
 }
 
 .play-btn {

@@ -12,6 +12,28 @@ window.dragSourceSquare = null; // Добавляем переменную дл�
 window.lobbyViewMode = 'games';
 window.lobbyPlayersExpanded = {};
 
+window.getFinishedGameResultLabel = function(gameData) {
+    if (!gameData || gameData.gameState !== 'game_over') return '';
+
+    const normalize = (value) => String(value || '').toLowerCase();
+    const message = normalize(gameData.message);
+    const pgn = String(gameData.pgn || '');
+    const resign = gameData.resign;
+
+    if (resign === 'w') return 'Победили чёрные';
+    if (resign === 'b') return 'Победили белые';
+
+    if (message.includes('ничья')) return 'Ничья';
+    if (message.includes('бел') && message.includes('побед')) return 'Победили белые';
+    if ((message.includes('черн') || message.includes('чёрн')) && message.includes('побед')) return 'Победили чёрные';
+
+    if (/\b1-0\b/.test(pgn)) return 'Победили белые';
+    if (/\b0-1\b/.test(pgn)) return 'Победили чёрные';
+    if (/\b1\/2-1\/2\b/.test(pgn)) return 'Ничья';
+
+    return 'Результат завершён';
+};
+
 window.getRequestedJoinColor = function() {
     const colorParam = new URLSearchParams(window.location.search).get('color');
     if (colorParam === 'w' || colorParam === 'b') return colorParam;
@@ -52,6 +74,7 @@ window.initLobby = function() {
     const playersViewBtn = document.getElementById('lobby-view-players');
     const gamesList = document.getElementById('games-list');
     const playersList = document.getElementById('players-list');
+    const clearFinishedBtn = document.getElementById('clear-finished-btn');
     const closeCreateGameModal = () => {
         createGameModal?.classList.add('hidden');
     };
@@ -61,6 +84,7 @@ window.initLobby = function() {
         playersList?.classList.toggle('hidden', isGamesView);
         gamesViewBtn?.classList.toggle('active', isGamesView);
         playersViewBtn?.classList.toggle('active', !isGamesView);
+        clearFinishedBtn?.classList.toggle('hidden', !isGamesView);
     };
 
     document.getElementById('create-game-btn').onclick = async () => {
@@ -227,7 +251,8 @@ window.buildPlayersAggregate = function(sortedGames, userId) {
             status: isFinished ? 'Завершена' : 'В процессе',
             isFinished,
             myColor,
-            lastMoveTime
+            lastMoveTime,
+            resultLabel: isFinished ? window.getFinishedGameResultLabel(data) : ''
         });
     });
 
@@ -257,15 +282,16 @@ window.renderPlayersLobby = function(container, players) {
         playerItem.innerHTML = `
             <div class="player-item-header">
                 <div class="player-info">
-                    <div>Игрок: <b>${player.name}</b></div>
-                    <div class="game-meta">
-                        <span class="game-status">Всего: ${player.totalGames}</span>
-                        <span class="game-status">Активных: ${player.activeGames}</span>
+                    <div class="player-name-row">Игрок: <b>${player.name}</b></div>
+                    <div class="player-stats">
+                        <span class="player-stat-pill">Всего: ${player.totalGames}</span>
+                        <span class="player-stat-pill">Активных: ${player.activeGames}</span>
+                        <span class="player-stat-pill">Завершённых: ${player.finishedGames}</span>
                         <span class="game-time">${window.formatTimeAgo(player.lastMoveTime)}</span>
                     </div>
                 </div>
                 <div class="game-actions">
-                    <button class="btn btn-sm play-btn player-play-btn">Играть</button>
+                    <button class="btn btn-sm play-btn player-play-btn">Новая партия</button>
                     <button class="btn btn-sm btn-outline toggle-games-btn">${isExpanded ? 'Скрыть партии' : 'Показать партии'}</button>
                 </div>
             </div>
@@ -297,6 +323,7 @@ window.renderPlayersLobby = function(container, players) {
                         <span class="game-status">${game.status}</span>
                         <span class="game-time">${window.formatTimeAgo(game.lastMoveTime)}</span>
                     </div>
+                    ${game.isFinished ? `<div class="player-game-result">${game.resultLabel}</div>` : ''}
                     <small>Вы играли ${game.myColor === 'white' ? 'белыми' : 'черными'}</small>
                 </div>
                 <div class="game-actions">
