@@ -928,6 +928,19 @@ body {
     color: var(--text-secondary);
 }
 
+.create-game-modal-content {
+    max-width: min(92vw, 420px);
+}
+
+.create-game-modal-actions {
+    display: grid;
+    gap: 10px;
+}
+
+.create-game-modal-actions .btn {
+    width: 100%;
+}
+
 .pgn-actions-bar {
     display: flex;
     gap: var(--space-8);
