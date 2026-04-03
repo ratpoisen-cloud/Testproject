@@ -8,7 +8,6 @@ window.updateUI = function(data) {
     const isMyTurn = window.playerColor && (window.playerColor === window.game.turn());
     
     window.updateTurnIndicator(isMyTurn);
-    window.updateGameStatus(data);
     window.updateMoveHistory();
     window.updateGameModal(data);
 };
@@ -29,6 +28,9 @@ window.updateTurnIndicator = function(isMyTurn) {
     if (!window.playerColor) {
         turnStatus.className = 'turn-status opponent-turn';
         turnText.innerHTML = 'НАБЛЮДАТЕЛЬ';
+        if (window.game.in_check()) {
+            turnText.innerHTML += ` • ШАХ ${window.game.turn() === 'w' ? 'БЕЛЫМ' : 'ЧЁРНЫМ'}`;
+        }
         return;
     }
     
@@ -39,20 +41,16 @@ window.updateTurnIndicator = function(isMyTurn) {
         turnStatus.className = 'turn-status opponent-turn';
         turnText.innerHTML = 'Ход соперника';
     }
+
+    if (window.game.in_check()) {
+        turnText.innerHTML += ` • ШАХ ${window.game.turn() === 'w' ? 'БЕЛЫМ' : 'ЧЁРНЫМ'}`;
+    }
 };
 
-// Обновление текстового статуса игры
+// Legacy no-op: отдельный #game-status-text удалён из текущей вёрстки.
+// Игровой статус теперь показывается через #turn-status в updateTurnIndicator.
 window.updateGameStatus = function(data) {
-    const statusText = document.getElementById('game-status-text');
-    if (!statusText) return;
-    
-    if (window.game.game_over()) {
-        statusText.innerHTML = data.message || window.getGameResultMessage(window.game);
-    } else if (window.game.in_check()) {
-        statusText.innerHTML = `ШАХ! ${window.game.turn() === 'w' ? 'Белым' : 'Чёрным'}`;
-    } else {
-        statusText.innerHTML = '♟️ Игра активна';
-    }
+    return data;
 };
 
 // Обновление истории ходов
