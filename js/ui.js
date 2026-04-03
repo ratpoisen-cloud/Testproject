@@ -61,74 +61,72 @@ window.updateMoveHistory = function() {
         emptyCell.className = 'move-list-cell move-list-cell--empty-state';
         emptyCell.textContent = 'Нет ходов';
         moveListDiv.appendChild(emptyCell);
-        window.updateReviewControlsState?.();
-        return;
-    }
+    } else {
+        const maxPly = history.length;
+        const reviewIndex = Number.isInteger(window.reviewPlyIndex) ? window.reviewPlyIndex : maxPly;
+        const activePlyIndex = window.reviewMode
+            ? Math.max(0, Math.min(reviewIndex, maxPly))
+            : maxPly;
+        const fragment = document.createDocumentFragment();
+        let activeMoveCell = null;
 
-    const maxPly = history.length;
-    const reviewIndex = Number.isInteger(window.reviewPlyIndex) ? window.reviewPlyIndex : maxPly;
-    const activePlyIndex = window.reviewMode
-        ? Math.max(0, Math.min(reviewIndex, maxPly))
-        : maxPly;
-    const fragment = document.createDocumentFragment();
-    let activeMoveCell = null;
+        const goToPlyFromHistory = (plyIndex) => {
+            if (typeof window.goToReviewPly !== 'function') return;
+            window.goToReviewPly(plyIndex);
+        };
 
-    const goToPlyFromHistory = (plyIndex) => {
-        if (typeof window.goToReviewPly !== 'function') return;
-        window.goToReviewPly(plyIndex);
-    };
+        const createCell = ({ text = '', plyIndex = null, isMoveNumber = false, isEmpty = false }) => {
+            const cell = document.createElement('div');
+            cell.classList.add('move-list-cell');
+            cell.textContent = text;
 
-    const createCell = ({ text = '', plyIndex = null, isMoveNumber = false, isEmpty = false }) => {
-        const cell = document.createElement('div');
-        cell.classList.add('move-list-cell');
-        cell.textContent = text;
-
-        if (isMoveNumber) {
-            cell.classList.add('move-list-cell--move-number', 'move-list-cell--dimmed');
-        }
-
-        if (isEmpty) {
-            cell.classList.add('move-list-cell--empty');
-        }
-
-        if (Number.isInteger(plyIndex)) {
-            cell.classList.add('move-list-cell--move');
-            cell.dataset.plyIndex = String(plyIndex);
-
-            if (plyIndex === activePlyIndex) {
-                cell.classList.add('move-list-cell--active');
-                activeMoveCell = cell;
+            if (isMoveNumber) {
+                cell.classList.add('move-list-cell--move-number', 'move-list-cell--dimmed');
             }
 
-            cell.addEventListener('click', () => goToPlyFromHistory(plyIndex));
+            if (isEmpty) {
+                cell.classList.add('move-list-cell--empty');
+            }
+
+            if (Number.isInteger(plyIndex)) {
+                cell.classList.add('move-list-cell--move');
+                cell.dataset.plyIndex = String(plyIndex);
+
+                if (plyIndex === activePlyIndex) {
+                    cell.classList.add('move-list-cell--active');
+                    activeMoveCell = cell;
+                }
+
+                cell.addEventListener('click', () => goToPlyFromHistory(plyIndex));
+            }
+
+            return cell;
+        };
+
+        for (let i = 0; i < history.length; i += 2) {
+            const moveNum = Math.floor(i / 2) + 1;
+            const whiteMove = history[i];
+            const blackMove = history[i + 1];
+
+            fragment.appendChild(createCell({ text: `${moveNum}.`, isMoveNumber: true }));
+            fragment.appendChild(createCell({
+                text: whiteMove?.san || whiteMove || '',
+                plyIndex: i + 1
+            }));
+            fragment.appendChild(createCell({
+                text: blackMove?.san || blackMove || '',
+                plyIndex: blackMove ? i + 2 : null,
+                isEmpty: !blackMove
+            }));
         }
 
-        return cell;
-    };
+        moveListDiv.appendChild(fragment);
 
-    for (let i = 0; i < history.length; i += 2) {
-        const moveNum = Math.floor(i / 2) + 1;
-        const whiteMove = history[i];
-        const blackMove = history[i + 1];
-
-        fragment.appendChild(createCell({ text: `${moveNum}.`, isMoveNumber: true }));
-        fragment.appendChild(createCell({
-            text: whiteMove?.san || whiteMove || '',
-            plyIndex: i + 1
-        }));
-        fragment.appendChild(createCell({
-            text: blackMove?.san || blackMove || '',
-            plyIndex: blackMove ? i + 2 : null,
-            isEmpty: !blackMove
-        }));
-    }
-
-    moveListDiv.appendChild(fragment);
-
-    if (window.reviewMode && activeMoveCell) {
-        activeMoveCell.scrollIntoView({ block: 'nearest' });
-    } else {
-        moveListDiv.scrollTop = moveListDiv.scrollHeight;
+        if (window.reviewMode && activeMoveCell) {
+            activeMoveCell.scrollIntoView({ block: 'nearest' });
+        } else {
+            moveListDiv.scrollTop = moveListDiv.scrollHeight;
+        }
     }
 
     window.updateReviewControlsState?.();

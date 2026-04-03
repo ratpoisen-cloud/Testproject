@@ -160,7 +160,6 @@ window.setupGameControls = function(gameRef, roomId) {
         if (!window.game) return;
         const maxPly = window.game.history().length;
         if (!window.reviewMode) {
-            window.updateReviewControlsState?.();
             return;
         }
         const isLiveGame = !window.game.game_over();
@@ -350,5 +349,4 @@ document.getElementById('draw-reject').onclick = () => {
         };
     }
 
-    window.updateReviewControlsState?.();
 };
