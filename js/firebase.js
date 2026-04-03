@@ -1,6 +1,11 @@
 // ==================== DATA LAYER (SUPABASE ADAPTER) ====================
 // Отвечает за: операции чтения/записи и realtime-подписки.
-// Важно: сохраняем старые имена функций (Firebase-style), чтобы не ломать UI/игровую логику.
+//
+// ВАЖНО:
+// - это НЕ Firebase SDK;
+// - это compat-адаптер поверх Supabase;
+// - внешние имена оставлены Firebase-style (ref/get/set/onValue/...),
+//   чтобы не ломать текущие UI/игровые модули во время поэтапной миграции.
 
 (function initDataAdapter() {
     const supabase = window.supabaseClient;
@@ -75,7 +80,7 @@
     const isGameRoot = (path) => /^games\/[^/]+$/.test(path);
     const isGamesRoot = (path) => path === 'games';
 
-    // Firebase-style ref(db, path)
+    // Firebase-style ref(db, path) — параметр db игнорируется намеренно (compat API).
     window.ref = function ref(_db, path) {
         return { path, type: 'path' };
     };
@@ -207,7 +212,7 @@
 
     window.watchGames = function watchGames(callback) {
         const emitGames = async () => {
-            const snap = await window.get(window.ref(window.db, 'games'));
+            const snap = await window.get(window.ref(null, 'games'));
             callback(snap);
         };
 
@@ -281,6 +286,7 @@
         return () => {};
     };
 
+    // Legacy name сохранён для совместимости. Чистит realtime-подписки Supabase.
     window.watchFirebaseCleanup = function watchFirebaseCleanup() {
         for (const channel of gamesChannels) channel.unsubscribe();
         for (const roomChannels of gameChannels.values()) {
@@ -290,6 +296,7 @@
         gameChannels.clear();
     };
 
+    // Legacy no-op: раньше ждали Firebase init, теперь Supabase уже инициализируется ранее.
     window.waitForFirebase = function waitForFirebase() {
         return Promise.resolve();
     };
