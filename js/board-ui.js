@@ -46,6 +46,7 @@ window.rebuildBoardWithCurrentState = function() {
     window.board = Chessboard('myBoard', window.getBoardConfig());
     window.board.position(fen, false);
     window.board.orientation(orientation);
+    window.updateCheckHighlight(fen);
 
     if (window.isMobile && window.playerColor) {
         window.attachMobileClickHandler();
@@ -88,6 +89,7 @@ window.initPieceSetControls = function(pieceSetSelect) {
 // Инициализация доски
 window.initBoard = function(playerColor) {
     window.board = Chessboard('myBoard', window.getBoardConfig());
+    window.updateCheckHighlight(window.game?.fen ? window.game.fen() : 'start');
     
     if (playerColor === 'b') window.board.orientation('black');
     
@@ -273,6 +275,8 @@ window.updateBoardPosition = function(fen, animate = true) {
     if (window.board) {
         window.board.position(fen, animate);
     }
+
+    window.updateCheckHighlight(fen);
 };
 
 // Создание безопасного предпросмотра хода без изменения основной партии
@@ -299,6 +303,40 @@ window.removeHighlights = function() {
 // Подсветка клетки
 window.highlightSquare = function(square, type) {
     $(`.square-${square}`).addClass(type);
+};
+
+window.removeCheckHighlight = function() {
+    $('#myBoard .square-55d63').removeClass('highlight-check');
+};
+
+window.findCheckedKingSquare = function(fen) {
+    const positionGame = new Chess(fen || window.game.fen());
+    if (!positionGame.in_check()) return null;
+
+    const checkedColor = positionGame.turn();
+    const boardState = positionGame.board();
+
+    for (let rank = 0; rank < boardState.length; rank++) {
+        for (let file = 0; file < boardState[rank].length; file++) {
+            const piece = boardState[rank][file];
+            if (!piece || piece.type !== 'k' || piece.color !== checkedColor) continue;
+
+            const fileChar = String.fromCharCode(97 + file);
+            const rankNumber = 8 - rank;
+            return `${fileChar}${rankNumber}`;
+        }
+    }
+
+    return null;
+};
+
+window.updateCheckHighlight = function(fen) {
+    window.removeCheckHighlight();
+
+    const kingSquare = window.findCheckedKingSquare(fen);
+    if (kingSquare) {
+        window.highlightSquare(kingSquare, 'highlight-check');
+    }
 };
 
 // Обновление ориентации доски

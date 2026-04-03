@@ -28,9 +28,6 @@ window.updateTurnIndicator = function(isMyTurn) {
     if (!window.playerColor) {
         turnStatus.className = 'turn-status opponent-turn';
         turnText.innerHTML = 'НАБЛЮДАТЕЛЬ';
-        if (window.game.in_check()) {
-            turnText.innerHTML += ` • ШАХ ${window.game.turn() === 'w' ? 'БЕЛЫМ' : 'ЧЁРНЫМ'}`;
-        }
         return;
     }
     
@@ -42,9 +39,6 @@ window.updateTurnIndicator = function(isMyTurn) {
         turnText.innerHTML = 'Ход соперника';
     }
 
-    if (window.game.in_check()) {
-        turnText.innerHTML += ` • ШАХ ${window.game.turn() === 'w' ? 'БЕЛЫМ' : 'ЧЁРНЫМ'}`;
-    }
 };
 
 // Legacy no-op: отдельный #game-status-text удалён из текущей вёрстки.
