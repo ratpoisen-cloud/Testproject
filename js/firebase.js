@@ -15,8 +15,30 @@
         return;
     }
 
+    if (typeof window.watchFirebaseCleanup === 'function') {
+        try {
+            window.watchFirebaseCleanup();
+        } catch (e) {
+            console.warn('Failed to cleanup previous realtime subscriptions during re-init:', e);
+        }
+    }
+
     const gameChannels = new Map();
     const gamesChannels = new Set();
+
+    const safeUnsubscribe = (channel) => {
+        if (!channel) return;
+        try {
+            channel.unsubscribe();
+        } catch (e) {
+            console.warn('Supabase channel unsubscribe failed:', e);
+        }
+        if (typeof supabase.removeChannel === 'function') {
+            supabase.removeChannel(channel).catch((e) => {
+                console.warn('Supabase removeChannel failed:', e);
+            });
+        }
+    };
 
     const toDbGame = (roomId, game) => {
         if (!game) return null;
@@ -226,7 +248,7 @@
         gamesChannels.add(channel);
 
         return () => {
-            channel.unsubscribe();
+            safeUnsubscribe(channel);
             gamesChannels.delete(channel);
         };
     };
@@ -255,9 +277,14 @@
         gameChannels.get(roomId).push(channel);
 
         return () => {
-            channel.unsubscribe();
+            safeUnsubscribe(channel);
             const arr = gameChannels.get(roomId) || [];
-            gameChannels.set(roomId, arr.filter((c) => c !== channel));
+            const next = arr.filter((c) => c !== channel);
+            if (next.length) {
+                gameChannels.set(roomId, next);
+            } else {
+                gameChannels.delete(roomId);
+            }
         };
     };
 
@@ -288,13 +315,20 @@
 
     // Legacy name сохранён для совместимости. Чистит realtime-подписки Supabase.
     window.watchFirebaseCleanup = function watchFirebaseCleanup() {
-        for (const channel of gamesChannels) channel.unsubscribe();
+        for (const channel of gamesChannels) safeUnsubscribe(channel);
         for (const roomChannels of gameChannels.values()) {
-            roomChannels.forEach((channel) => channel.unsubscribe());
+            roomChannels.forEach((channel) => safeUnsubscribe(channel));
         }
         gamesChannels.clear();
         gameChannels.clear();
     };
+
+    if (!window.__supabaseRealtimeCleanupBound) {
+        const cleanupRealtimeOnLeave = () => window.watchFirebaseCleanup();
+        window.addEventListener('pagehide', cleanupRealtimeOnLeave);
+        window.addEventListener('beforeunload', cleanupRealtimeOnLeave);
+        window.__supabaseRealtimeCleanupBound = true;
+    }
 
     // Legacy no-op: раньше ждали Firebase init, теперь Supabase уже инициализируется ранее.
     window.waitForFirebase = function waitForFirebase() {
