@@ -1408,7 +1408,12 @@ body.theme-middle-earth #myBoard {
 
     .top-bar {
         flex-direction: column;
+        justify-content: space-between;
         align-items: stretch;
+    }
+
+    #user-info {
+        margin-left: auto;
     }
 
     #back-to-lobby-btn-mobile {
