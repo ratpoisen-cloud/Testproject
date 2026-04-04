@@ -202,8 +202,7 @@ window.setupGameControls = function(gameRef, roomId) {
     if (exitBtn) {
         exitBtn.onclick = goBackToLobby;
     }
-    bindBackToLobbyButton('back-to-lobby-btn-mobile');
-    bindBackToLobbyButton('back-to-lobby-btn-desktop');
+    bindBackToLobbyButton('back-to-lobby-btn');
     
     // Поделиться ссылкой
     document.getElementById('share-btn').onclick = async () => {

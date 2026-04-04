@@ -77,8 +77,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
-    flex-wrap: wrap;
-    gap: 12px;
+    gap: 16px;
 }
 
 .top-bar-right {
@@ -92,21 +91,17 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: var(--card);
-    padding: 6px 16px 6px 10px;
-    border-radius: 50px;
-    border: 1px solid var(--border);
+    padding: 0;
     position: relative;
+    min-height: 40px;
 }
 
 .back-to-lobby-btn {
-    width: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    padding: 0;
+    min-height: 40px;
+    padding: 0 14px;
     border-width: 1px;
     border-radius: 12px;
-    font-size: 1rem;
+    font-size: 0.9rem;
     line-height: 1;
     opacity: 0.92;
 }
@@ -115,16 +110,7 @@ body {
     opacity: 1;
 }
 
-#user-info .back-to-lobby-btn {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.12);
-}
-
-#back-to-lobby-btn-mobile {
-    display: none;
-}
-
-#back-to-lobby-btn-desktop {
+#back-to-lobby-btn {
     display: none;
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(255, 255, 255, 0.16);
@@ -132,14 +118,13 @@ body {
     opacity: 0.9;
 }
 
-#back-to-lobby-btn-desktop:hover,
-#back-to-lobby-btn-mobile:hover {
+#back-to-lobby-btn:hover {
     color: var(--accent);
     border-color: var(--accent);
     background: rgba(163, 193, 143, 0.08);
 }
 
-.main-container:has(#game-section:not(.hidden)) #back-to-lobby-btn-desktop {
+.main-container:has(#game-section:not(.hidden)) #back-to-lobby-btn {
     display: inline-flex;
 }
 
@@ -1426,30 +1411,16 @@ body.theme-middle-earth #myBoard {
     }
 
     .top-bar {
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: stretch;
+        align-items: center;
     }
 
     .top-bar-right {
         justify-content: flex-end;
+        width: auto;
     }
 
     #user-info {
-        margin-left: auto;
-    }
-
-    #back-to-lobby-btn-mobile {
-        display: inline-flex;
-        flex: 0 0 auto;
-    }
-
-    #back-to-lobby-btn-desktop {
-        display: none;
-    }
-
-    .main-container:has(#game-section:not(.hidden)) #back-to-lobby-btn-desktop {
-        display: none;
+        min-height: 36px;
     }
 
     .card {
@@ -1582,12 +1553,6 @@ body.theme-middle-earth #myBoard {
 
     .share-container .btn {
         width: 100%;
-    }
-}
-
-@media (min-width: 601px) {
-    #back-to-lobby-btn-mobile {
-        display: none;
     }
 }
 
