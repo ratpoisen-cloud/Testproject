@@ -17,6 +17,105 @@ window.reviewGame = null;
 window.lastRemotePgn = '';
 window.lastKnownGameState = null;
 window.lastRenderedMoveHistoryLength = 0;
+window.activeReactions = [];
+window.reactionRateLimitState = { cycleKey: null, count: 0 };
+window.BOARD_REACTION_MAX_PER_CYCLE = 5;
+
+window.getReactionCycleKey = function() {
+    if (!window.game) return 'idle';
+    return `${window.game.turn()}_${window.game.history().length}`;
+};
+
+window.canSendBoardReaction = function() {
+    const cycleKey = window.getReactionCycleKey();
+    if (window.reactionRateLimitState.cycleKey !== cycleKey) {
+        window.reactionRateLimitState = { cycleKey, count: 0 };
+    }
+
+    if (window.reactionRateLimitState.count >= window.BOARD_REACTION_MAX_PER_CYCLE) {
+        return false;
+    }
+
+    window.reactionRateLimitState.count += 1;
+    return true;
+};
+
+window.normalizeBoardReactions = function(reactions) {
+    const list = Array.isArray(reactions) ? reactions : [];
+    const now = Date.now();
+    const active = list.filter((reaction) => {
+        return reaction &&
+            typeof reaction.id === 'string' &&
+            typeof reaction.square === 'string' &&
+            typeof reaction.emoji === 'string' &&
+            Number(reaction.expiresAt) > now;
+    });
+
+    const bySquare = new Map();
+    active.forEach((reaction) => {
+        const existing = bySquare.get(reaction.square);
+        if (!existing || Number(reaction.timestamp || 0) >= Number(existing.timestamp || 0)) {
+            bySquare.set(reaction.square, reaction);
+        }
+    });
+
+    return Array.from(bySquare.values());
+};
+
+window.setActiveReactionsFromState = function(reactions) {
+    window.activeReactions = window.normalizeBoardReactions(reactions);
+    window.renderBoardReactions?.();
+};
+
+window.getActiveReactionBySquare = function(square, reactions = window.activeReactions) {
+    if (!square) return null;
+    const active = window.normalizeBoardReactions(reactions);
+    return active.find((reaction) => reaction.square === square) || null;
+};
+
+window.pushBoardReaction = async function(square, emoji) {
+    if (!window.currentRoomId || !window.playerColor) return false;
+
+    const liveReactions = window.normalizeBoardReactions(window.activeReactions);
+    const existingReaction = window.getActiveReactionBySquare(square, liveReactions);
+    if (existingReaction) {
+        window.notify('На этой клетке уже есть реакция', 'info', 1800);
+        return false;
+    }
+
+    if (!window.canSendBoardReaction()) {
+        window.notify('Лимит реакций: до 5 за текущий ходовой цикл', 'warning', 2200);
+        return false;
+    }
+
+    const now = Date.now();
+    const nextReaction = {
+        id: `reaction_${now}_${Math.random().toString(36).slice(2, 8)}`,
+        square,
+        emoji,
+        from: window.playerColor,
+        timestamp: now,
+        expiresAt: now + (window.BOARD_REACTION_TTL_MS || 7000)
+    };
+
+    const nextReactions = [...liveReactions, nextReaction].slice(-24);
+
+    window.activeReactions = nextReactions;
+    window.renderBoardReactions?.();
+
+    try {
+        // MVP: реакции пишутся в общий массив состояния партии (last-write-wins при почти одновременных апдейтах).
+        // Для более строгой конкурентности позже можно вынести в RPC/отдельную таблицу.
+        await window.updateGame(window.getGameRef(window.currentRoomId), { reactions: nextReactions });
+        return true;
+    } catch (error) {
+        console.error('Ошибка отправки реакции:', error);
+        window.activeReactions = liveReactions;
+        window.renderBoardReactions?.();
+        window.notify('Не удалось отправить реакцию', 'error', 2200);
+        return false;
+    }
+};
 
 window.syncReviewStateFromCurrentGame = function() {
     if (!window.game) {
@@ -477,6 +576,8 @@ window.initGame = async function(roomId) {
     window.lastKnownGameState = null;
     window.lastRenderedMoveHistoryLength = 0;
     window.syncReviewStateFromCurrentGame();
+    window.activeReactions = [];
+    window.reactionRateLimitState = { cycleKey: window.getReactionCycleKey(), count: 0 };
     
     const gameCheck = await get(gameRef);
     if (!gameCheck.exists()) {
@@ -500,6 +601,7 @@ window.initGame = async function(roomId) {
     window.watchGame(gameRef, (snap) => {
         const data = snap.val();
         if (!data) return;
+        window.setActiveReactionsFromState(data.reactions || []);
         if (data.pgn && data.pgn !== window.game.pgn()) {
             window.game.load_pgn(data.pgn);
             window.syncReviewStateFromCurrentGame();

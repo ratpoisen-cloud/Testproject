@@ -769,6 +769,68 @@ body {
     border-radius: 4px;
 }
 
+.board-reactions-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 140;
+}
+
+.board-reaction-bubble {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: clamp(18px, 2.6vw, 26px);
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 10px;
+    background: rgba(15, 17, 15, 0.68);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
+    animation: reactionBubbleIn 0.2s ease-out;
+}
+
+.board-reaction-picker {
+    position: absolute;
+    z-index: 240;
+    width: 164px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px;
+    border-radius: 14px;
+    background: rgba(18, 20, 18, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+}
+
+.board-reaction-option {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.board-reaction-option:hover {
+    border-color: rgba(163, 193, 143, 0.55);
+    background: rgba(163, 193, 143, 0.14);
+}
+
+@keyframes reactionBubbleIn {
+    from {
+        transform: translate(-50%, -40%) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
 /* ===== ОВЕРЛЕИ ===== */
 .confirm-overlay {
     position: absolute;

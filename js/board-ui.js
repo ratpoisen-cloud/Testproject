@@ -13,6 +13,13 @@ window.PIECE_SETS = {
     tatiana: { label: 'tatiana', theme: 'assets/pieces/tatiana/{piece}.svg' }
 };
 
+window.BOARD_REACTIONS = ['💀', '🤡', '😭', '😏', '👀', '🔥', '😴', '⚰️'];
+window.BOARD_REACTION_TTL_MS = 7000;
+window.BOARD_REACTION_LONG_PRESS_MS = 450;
+window.boardReactionPickerSquare = null;
+window.boardReactionLongPressTimer = null;
+window.boardReactionSuppressTapUntil = 0;
+
 window.getNormalizedPieceSet = function(setName) {
     if (!setName) {
         return window.DEFAULT_PIECE_SET;
@@ -67,6 +74,7 @@ window.resetTransientBoardInteractionState = function() {
     window.selectedSquare = null;
     window.pendingMove = null;
     window.removeHighlights();
+    window.closeBoardReactionPicker?.();
     document.getElementById('confirm-move-box')?.classList.add('hidden');
 };
 
@@ -86,6 +94,9 @@ window.rebuildBoardWithCurrentState = function() {
     if (window.isMobile && window.playerColor) {
         window.attachMobileClickHandler();
     }
+
+    window.setupBoardReactionUI();
+    window.renderBoardReactions();
 };
 
 window.applyPieceSet = function(setName) {
@@ -132,9 +143,191 @@ window.initBoard = function(playerColor) {
     if (window.isMobile && playerColor) {
         window.attachMobileClickHandler();
     }
+
+    window.setupBoardReactionUI();
+    window.renderBoardReactions();
     
     return window.board;
 };
+
+window.setupBoardReactionUI = function() {
+    const boardWrapper = document.querySelector('.board-wrapper');
+    const boardElement = document.getElementById('myBoard');
+    if (!boardWrapper || !boardElement) return;
+
+    if (!document.getElementById('board-reactions-layer')) {
+        const layer = document.createElement('div');
+        layer.id = 'board-reactions-layer';
+        layer.className = 'board-reactions-layer';
+        boardWrapper.appendChild(layer);
+    }
+
+    if (!document.getElementById('board-reaction-picker')) {
+        const picker = document.createElement('div');
+        picker.id = 'board-reaction-picker';
+        picker.className = 'board-reaction-picker hidden';
+        picker.setAttribute('role', 'dialog');
+        picker.setAttribute('aria-label', 'Реакции на доске');
+        boardWrapper.appendChild(picker);
+    }
+
+    const pickerNode = document.getElementById('board-reaction-picker');
+    if (pickerNode) {
+        pickerNode.innerHTML = '';
+        window.BOARD_REACTIONS.forEach((emoji) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'board-reaction-option';
+            button.textContent = emoji;
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                if (!window.boardReactionPickerSquare) return;
+                window.sendBoardReaction(window.boardReactionPickerSquare, emoji);
+                window.closeBoardReactionPicker();
+            });
+            pickerNode.appendChild(button);
+        });
+    }
+
+    if (!window.__boardReactionGlobalHandlersBound) {
+        document.addEventListener('click', (event) => {
+            const picker = document.getElementById('board-reaction-picker');
+            if (!picker || picker.classList.contains('hidden')) return;
+            if (!picker.contains(event.target)) {
+                window.closeBoardReactionPicker();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                window.closeBoardReactionPicker();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            window.renderBoardReactions?.();
+            if (window.boardReactionPickerSquare) {
+                window.openBoardReactionPicker(window.boardReactionPickerSquare);
+            }
+        });
+        window.__boardReactionGlobalHandlersBound = true;
+    }
+
+    if (window.__boardReactionBoardHandlersBound) return;
+
+    $('#myBoard').on('contextmenu', '.square-55d63', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const square = $(this).attr('data-square');
+        if (!square || window.isReviewInteractionLocked()) return;
+        window.openBoardReactionPicker(square);
+    });
+
+    $('#myBoard').on('touchstart', '.square-55d63', function(event) {
+        const square = $(this).attr('data-square');
+        if (!square || window.isReviewInteractionLocked()) return;
+
+        clearTimeout(window.boardReactionLongPressTimer);
+        window.boardReactionLongPressTimer = setTimeout(() => {
+            window.boardReactionSuppressTapUntil = Date.now() + 500;
+            window.openBoardReactionPicker(square);
+        }, window.BOARD_REACTION_LONG_PRESS_MS);
+    });
+
+    const cancelLongPress = () => {
+        clearTimeout(window.boardReactionLongPressTimer);
+        window.boardReactionLongPressTimer = null;
+    };
+
+    $('#myBoard').on('touchend touchcancel touchmove', '.square-55d63', cancelLongPress);
+    window.__boardReactionBoardHandlersBound = true;
+};
+
+window.openBoardReactionPicker = function(square) {
+    if (!square) return;
+    if (!window.currentRoomId || !window.playerColor) return;
+    if (!window.game || window.game.game_over()) return;
+
+    const picker = document.getElementById('board-reaction-picker');
+    const boardWrapper = document.querySelector('.board-wrapper');
+    const squareNode = document.querySelector(`.square-${square}`);
+    if (!picker || !boardWrapper || !squareNode) return;
+
+    window.boardReactionPickerSquare = square;
+    picker.classList.remove('hidden');
+    picker.style.visibility = 'hidden';
+    picker.style.left = '0px';
+    picker.style.top = '0px';
+
+    const wrapperRect = boardWrapper.getBoundingClientRect();
+    const squareRect = squareNode.getBoundingClientRect();
+    const pickerRect = picker.getBoundingClientRect();
+
+    const preferredLeft = squareRect.left - wrapperRect.left + (squareRect.width / 2) - (pickerRect.width / 2);
+    const preferredTop = squareRect.top - wrapperRect.top - pickerRect.height - 8;
+    const fallbackTop = squareRect.bottom - wrapperRect.top + 8;
+
+    const maxLeft = Math.max(8, wrapperRect.width - pickerRect.width - 8);
+    const left = Math.max(8, Math.min(preferredLeft, maxLeft));
+    const hasTopSpace = preferredTop >= 8;
+    const topCandidate = hasTopSpace ? preferredTop : fallbackTop;
+    const maxTop = Math.max(8, wrapperRect.height - pickerRect.height - 8);
+    const top = Math.max(8, Math.min(topCandidate, maxTop));
+
+    picker.style.left = `${left}px`;
+    picker.style.top = `${top}px`;
+    picker.style.visibility = 'visible';
+};
+
+window.closeBoardReactionPicker = function() {
+    const picker = document.getElementById('board-reaction-picker');
+    if (!picker) return;
+    picker.classList.add('hidden');
+    picker.style.visibility = '';
+    window.boardReactionPickerSquare = null;
+};
+
+window.sendBoardReaction = function(square, emoji) {
+    if (!window.pushBoardReaction) return;
+    window.pushBoardReaction(square, emoji);
+};
+
+window.renderBoardReactions = function() {
+    const layer = document.getElementById('board-reactions-layer');
+    const boardWrapper = document.querySelector('.board-wrapper');
+    if (!layer || !boardWrapper) return;
+
+    const now = Date.now();
+    const reactions = (window.activeReactions || []).filter((reaction) => Number(reaction.expiresAt) > now);
+    layer.innerHTML = '';
+
+    const wrapperRect = boardWrapper.getBoundingClientRect();
+    reactions.forEach((reaction) => {
+        const squareNode = document.querySelector(`.square-${reaction.square}`);
+        if (!squareNode) return;
+
+        const squareRect = squareNode.getBoundingClientRect();
+        const bubble = document.createElement('div');
+        bubble.className = 'board-reaction-bubble';
+        bubble.textContent = reaction.emoji;
+        bubble.style.left = `${squareRect.left - wrapperRect.left + squareRect.width / 2}px`;
+        bubble.style.top = `${squareRect.top - wrapperRect.top + 6}px`;
+        layer.appendChild(bubble);
+    });
+};
+
+if (!window.__boardReactionCleanupTimerStarted) {
+    window.__boardReactionCleanupTimerStarted = true;
+    setInterval(() => {
+        if (!window.activeReactions) return;
+        const now = Date.now();
+        const filtered = window.activeReactions.filter((reaction) => Number(reaction.expiresAt) > now);
+        if (filtered.length !== window.activeReactions.length) {
+            window.activeReactions = filtered;
+            window.renderBoardReactions();
+        }
+    }, 1000);
+}
 
 // ==================== ДЕСКТОПНАЯ ЛОГИКА (drag-and-drop) ====================
 
@@ -263,6 +456,10 @@ window.attachMobileClickHandler = function() {
 
 // Мобильный клик
 window.handleMobileClick = function(square) {
+    if (Date.now() < window.boardReactionSuppressTapUntil) {
+        return;
+    }
+
     if (window.isReviewInteractionLocked()) {
         window.resetTransientBoardInteractionState();
         return;

@@ -17,8 +17,16 @@ create table if not exists public.games (
   turn text,
   last_move bigint,
   resign text,
+  reactions jsonb not null default '[]'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+alter table public.games
+add column if not exists reactions jsonb not null default '[]'::jsonb;
+
+update public.games
+set reactions = '[]'::jsonb
+where reactions is null;
 
 create index if not exists games_state_idx on public.games (game_state);
 create index if not exists games_last_move_time_idx on public.games (last_move_time desc);

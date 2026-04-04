@@ -55,7 +55,8 @@
             draw_request: game.drawRequest || null,
             turn: game.turn || null,
             last_move: game.lastMove || null,
-            resign: game.resign || null
+            resign: game.resign || null,
+            reactions: game.reactions || []
         };
     };
 
@@ -73,7 +74,8 @@
             drawRequest: row.draw_request || null,
             turn: row.turn || null,
             lastMove: row.last_move || null,
-            resign: row.resign || null
+            resign: row.resign || null,
+            reactions: row.reactions || []
         };
     };
 
@@ -91,6 +93,7 @@
         if (Object.prototype.hasOwnProperty.call(data, 'turn')) patch.turn = data.turn;
         if (Object.prototype.hasOwnProperty.call(data, 'lastMove')) patch.last_move = data.lastMove;
         if (Object.prototype.hasOwnProperty.call(data, 'resign')) patch.resign = data.resign;
+        if (Object.prototype.hasOwnProperty.call(data, 'reactions')) patch.reactions = data.reactions;
         return patch;
     };
 
