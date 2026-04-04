@@ -81,6 +81,13 @@ body {
     gap: 12px;
 }
 
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+}
+
 #user-info {
     display: flex;
     align-items: center;
@@ -114,9 +121,19 @@ body {
 }
 
 #back-to-lobby-btn-desktop {
+    display: none;
     width: auto;
-    min-width: 104px;
-    align-self: flex-end;
+    min-width: 92px;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.84rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.16);
+    opacity: 0.9;
+}
+
+.main-container:has(#game-section:not(.hidden)) #back-to-lobby-btn-desktop {
+    display: inline-flex;
 }
 
 #user-photo {
@@ -549,11 +566,6 @@ body {
     flex-direction: column;
     gap: var(--board-stack-gap);
     min-height: 0;
-}
-
-.side-column-top-action {
-    display: flex;
-    justify-content: flex-end;
 }
 
 /* ===== ЛЕВАЯ КОЛОНКА ПРИВЯЗАНА К ДОСКЕ ===== */
@@ -1410,6 +1422,10 @@ body.theme-middle-earth #myBoard {
         flex-direction: column;
         justify-content: space-between;
         align-items: stretch;
+    }
+
+    .top-bar-right {
+        justify-content: flex-end;
     }
 
     #user-info {
