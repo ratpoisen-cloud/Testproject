@@ -92,6 +92,33 @@ body {
     position: relative;
 }
 
+.back-to-lobby-btn {
+    min-height: 34px;
+    padding: 0 12px;
+    border-width: 1px;
+    font-size: 0.82rem;
+    opacity: 0.92;
+}
+
+.back-to-lobby-btn:hover {
+    opacity: 1;
+}
+
+#user-info .back-to-lobby-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+#back-to-lobby-btn-mobile {
+    display: none;
+}
+
+#back-to-lobby-btn-desktop {
+    width: auto;
+    min-width: 104px;
+    align-self: flex-end;
+}
+
 #user-photo {
     width: 40px;
     height: 40px;
@@ -522,6 +549,11 @@ body {
     flex-direction: column;
     gap: var(--board-stack-gap);
     min-height: 0;
+}
+
+.side-column-top-action {
+    display: flex;
+    justify-content: flex-end;
 }
 
 /* ===== ЛЕВАЯ КОЛОНКА ПРИВЯЗАНА К ДОСКЕ ===== */
@@ -1379,6 +1411,15 @@ body.theme-middle-earth #myBoard {
         align-items: stretch;
     }
 
+    #back-to-lobby-btn-mobile {
+        display: inline-flex;
+        flex: 0 0 auto;
+    }
+
+    #back-to-lobby-btn-desktop {
+        display: none;
+    }
+
     .card {
         padding: 20px;
     }
@@ -1509,6 +1550,12 @@ body.theme-middle-earth #myBoard {
 
     .share-container .btn {
         width: 100%;
+    }
+}
+
+@media (min-width: 601px) {
+    #back-to-lobby-btn-mobile {
+        display: none;
     }
 }
 
