@@ -89,6 +89,7 @@ body {
     padding: 6px 16px 6px 10px;
     border-radius: 50px;
     border: 1px solid var(--border);
+    position: relative;
 }
 
 #user-photo {
@@ -102,6 +103,48 @@ body {
 #user-name {
     font-weight: 600;
     font-size: 0.95rem;
+}
+
+.user-menu-trigger,
+#user-info .letter-avatar {
+    cursor: pointer;
+}
+
+.user-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 170px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    z-index: 30;
+}
+
+.user-menu-item {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 10px 14px;
+    cursor: pointer;
+}
+
+.user-menu-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.user-menu-item + .user-menu-item {
+    border-top: 1px solid var(--border);
+}
+
+.user-menu-item-danger {
+    color: #ffb3b3;
 }
 
 .auth-group {

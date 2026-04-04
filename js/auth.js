@@ -2,10 +2,56 @@
 // Отвечает за: вход/выход через Google и Email, состояние пользователя
 
 window.setupAuth = function() {
+    const userInfo = document.getElementById('user-info');
+    const userPhoto = document.getElementById('user-photo');
+    const userNameEl = document.getElementById('user-name');
+    const userMenu = document.getElementById('user-menu');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userEditBtn = document.getElementById('user-edit-btn');
+    const userThemesBtn = document.getElementById('user-themes-btn');
+
+    const closeUserMenu = () => {
+        userMenu?.classList.add('hidden');
+    };
+
+    const toggleUserMenu = () => {
+        if (!userMenu) return;
+        userMenu.classList.toggle('hidden');
+    };
+
+    [userPhoto, userNameEl].forEach((trigger) => {
+        trigger?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleUserMenu();
+        });
+    });
+
+    userInfo?.addEventListener('click', (event) => {
+        if (event.target.closest('.letter-avatar')) {
+            event.stopPropagation();
+            toggleUserMenu();
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!userInfo?.contains(event.target)) {
+            closeUserMenu();
+        }
+    });
+
+    userEditBtn?.addEventListener('click', () => {
+        window.notify('Скоро будет', 'info');
+        closeUserMenu();
+    });
+
+    userThemesBtn?.addEventListener('click', () => {
+        window.notify('Скоро будет', 'info');
+        closeUserMenu();
+    });
+
     onAuthStateChanged(window.auth, (user) => {
         window.currentUser = user;
         const authGroup = document.getElementById('auth-buttons');
-        const userInfo = document.getElementById('user-info');
         
         if (user) {
             authGroup?.classList.add('hidden');
@@ -14,7 +60,6 @@ window.setupAuth = function() {
             const userName = window.getUserName(user);
             document.getElementById('user-name').innerText = userName;
             
-            const userPhoto = document.getElementById('user-photo');
             if (user.photoURL) {
                 userPhoto.src = user.photoURL;
                 userPhoto.style.display = 'block';
@@ -29,6 +74,7 @@ window.setupAuth = function() {
                     userPhoto.parentNode.insertBefore(letterAvatar, userPhoto.nextSibling);
                 }
                 letterAvatar.style.display = 'flex';
+                letterAvatar.classList.add('user-menu-trigger');
                 letterAvatar.innerText = userName.charAt(0).toUpperCase();
             }
             
@@ -36,6 +82,7 @@ window.setupAuth = function() {
                 if (window.loadLobby) window.loadLobby(user);
             }
         } else {
+            closeUserMenu();
             authGroup?.classList.remove('hidden');
             userInfo?.classList.add('hidden');
         }
@@ -117,5 +164,8 @@ window.setupAuth = function() {
     };
 
     // Выход
-    document.getElementById('logout-btn').onclick = () => signOut(window.auth).then(() => location.href = location.origin + location.pathname);
+    logoutBtn.onclick = () => {
+        closeUserMenu();
+        signOut(window.auth).then(() => location.href = location.origin + location.pathname);
+    };
 };
