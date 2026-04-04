@@ -908,13 +908,12 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .board-settings-icon-btn:hover {
     border-color: var(--accent);
     background: var(--card);
-    transform: rotate(20deg);
 }
 
 .board-settings-icon-btn:active {
@@ -1484,10 +1483,10 @@ body.theme-middle-earth #myBoard {
     }
 
     .board-area {
-        width: calc(100% + 16px);
-        max-width: none;
-        margin-left: -8px;
-        margin-right: -8px;
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
     }
 
     .board-wrapper {
