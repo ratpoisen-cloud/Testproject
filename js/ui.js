@@ -52,11 +52,15 @@ window.updateGameStatus = function(data) {
 window.updateMoveHistory = function() {
     const history = window.game.history({ verbose: true });
     const moveListDiv = document.getElementById('move-list');
-    
+
     if (!moveListDiv) return;
-    
+
+    const previousHistoryLength = Number.isInteger(window.lastRenderedMoveHistoryLength)
+        ? window.lastRenderedMoveHistoryLength
+        : 0;
+
     moveListDiv.innerHTML = '';
-    
+
     if (history.length === 0) {
         const emptyCell = document.createElement('div');
         emptyCell.className = 'move-list-cell move-list-cell--empty-state';
@@ -124,12 +128,25 @@ window.updateMoveHistory = function() {
         moveListDiv.appendChild(fragment);
 
         if (window.reviewMode && activeMoveCell) {
-            activeMoveCell.scrollIntoView({ block: 'nearest' });
+            const cellTop = activeMoveCell.offsetTop;
+            const cellBottom = cellTop + activeMoveCell.offsetHeight;
+            const viewTop = moveListDiv.scrollTop;
+            const viewBottom = viewTop + moveListDiv.clientHeight;
+
+            if (cellTop < viewTop) {
+                moveListDiv.scrollTop = cellTop;
+            } else if (cellBottom > viewBottom) {
+                moveListDiv.scrollTop = cellBottom - moveListDiv.clientHeight;
+            }
         } else {
-            moveListDiv.scrollTop = moveListDiv.scrollHeight;
+            const hasNewRealMove = history.length > previousHistoryLength;
+            if (hasNewRealMove) {
+                moveListDiv.scrollTop = moveListDiv.scrollHeight;
+            }
         }
     }
 
+    window.lastRenderedMoveHistoryLength = history.length;
     window.updateReviewControlsState?.();
 };
 
