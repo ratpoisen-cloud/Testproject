@@ -353,7 +353,7 @@
 .board-settings-select {
     width: 100%;
     padding: 10px 12px;
-    background: #1a1a1a;
+    background: var(--input-bg);
     border: 1px solid var(--border);
     color: var(--text);
     border-radius: 12px;
@@ -370,7 +370,7 @@
     height: var(--btn-height);
     border-radius: var(--btn-radius);
     border: 1px solid var(--border);
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--panel-muted-bg);
     color: var(--text);
     font-size: 1.2rem;
     line-height: 1;
@@ -408,7 +408,7 @@
     padding: var(--space-12);
     border: 1px solid var(--border);
     border-radius: var(--radius-12);
-    background: rgba(0, 0, 0, 0.16);
+    background: var(--panel-muted-bg);
 }
 
 .finished-game-actions .btn {
@@ -500,7 +500,7 @@
 }
 
 .move-list-content {
-    background: #0a0a0a;
+    background: var(--move-list-bg);
     padding: 12px;
     border-radius: 12px;
     height: 350px;

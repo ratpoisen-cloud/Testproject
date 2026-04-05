@@ -67,3 +67,31 @@ window.initThemeButtons = function() {
         });
     });
 };
+
+// ==================== UI ТЕМЫ АККАУНТА ====================
+// Отвечает за: глобальную тему интерфейса (вне шахматной доски)
+
+window.UI_THEMES = ['default', 'dark', 'light'];
+
+window.setUITheme = function(themeName) {
+    if (!themeName || !window.UI_THEMES.includes(themeName)) {
+        themeName = 'default';
+    }
+
+    document.body.setAttribute('data-ui-theme', themeName);
+    localStorage.setItem('chess-ui-theme', themeName);
+
+    const uiThemeSelect = document.getElementById('ui-theme-select');
+    if (uiThemeSelect && uiThemeSelect.value !== themeName) {
+        uiThemeSelect.value = themeName;
+    }
+};
+
+window.loadUITheme = function() {
+    const savedTheme = localStorage.getItem('chess-ui-theme');
+    if (savedTheme && window.UI_THEMES.includes(savedTheme)) {
+        window.setUITheme(savedTheme);
+    } else {
+        window.setUITheme('default');
+    }
+};

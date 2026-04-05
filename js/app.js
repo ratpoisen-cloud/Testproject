@@ -7,6 +7,7 @@ window.initBoardSettingsControls = function() {
     const toggleBtn = document.getElementById('board-settings-toggle');
     const menu = document.getElementById('board-settings-menu');
     const themeSelect = document.getElementById('theme-select');
+    const uiThemeSelect = document.getElementById('ui-theme-select');
     const pieceSetSelect = document.getElementById('piece-set-select');
 
     if (toggleBtn && menu) {
@@ -35,6 +36,17 @@ window.initBoardSettingsControls = function() {
         });
     }
 
+    if (uiThemeSelect) {
+        const savedUITheme = localStorage.getItem('chess-ui-theme') || 'default';
+        uiThemeSelect.value = savedUITheme;
+
+        uiThemeSelect.addEventListener('change', (e) => {
+            if (window.setUITheme) {
+                window.setUITheme(e.target.value);
+            }
+        });
+    }
+
     if (pieceSetSelect && window.initPieceSetControls) {
         window.initPieceSetControls(pieceSetSelect);
     }
@@ -59,6 +71,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Загружаем тему
     window.loadTheme();
+    window.loadUITheme();
 
     // Инициализируем кнопки тем
     window.initThemeButtons();

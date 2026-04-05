@@ -33,7 +33,7 @@
 }
 
 .game-item {
-    background: #1a1a1a;
+    background: var(--item-bg);
     padding: 16px 20px;
     border-radius: 16px;
     display: flex;
@@ -47,7 +47,7 @@
 }
 
 .game-item:hover {
-    background: #222;
+    background: var(--item-hover-bg);
     transform: translateX(4px);
 }
 
@@ -102,7 +102,7 @@
 }
 
 .player-item {
-    background: #1a1a1a;
+    background: var(--item-bg);
     border-left: 4px solid var(--accent);
     border-radius: 16px;
     padding: 18px 20px;
@@ -155,7 +155,7 @@
 }
 
 .player-game-row {
-    background: #222622;
+    background: var(--item-hover-bg);
     border-radius: 12px;
     padding: 12px;
     display: flex;
