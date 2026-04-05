@@ -1,0 +1,82 @@
+.main-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.game-shell {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.game-layout-2col {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(280px, var(--game-side-column-width));
+    gap: var(--game-layout-gap);
+    align-items: start;
+}
+
+.game-main-column,
+.game-side-column {
+    min-width: 0;
+}
+
+.game-main-column {
+    width: min(100%, var(--game-main-column-width));
+    display: flex;
+    flex-direction: column;
+}
+
+.game-side-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--board-stack-gap);
+    min-height: 0;
+}
+
+.board-area {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    min-width: 0;
+}
+
+.game-status-header {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 var(--space-16) 0;
+}
+
+.board-settings-bar {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+}
+
+.board-wrapper {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    position: relative;
+}
+
+.controls.controls-split,
+.game-bottom-panel {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+}
+
+.controls.controls-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--board-stack-gap);
+}
+
+.controls-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--board-stack-gap);
+}

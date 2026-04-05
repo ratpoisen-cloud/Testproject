@@ -1,0 +1,62 @@
+:root {
+    --bg: #0f110f;
+    --card: #1c1f1c;
+    --surface: #242724;
+    --accent: #a3c18f;
+    --accent-dark: #7e9a6b;
+    --danger: #c15a5a;
+    --success: #7eb87e;
+    --text: #e8e8d8;
+    --text-secondary: #9ca39a;
+    --border: #333833;
+
+    --highlight-my-turn: rgba(163, 193, 143, 0.35);
+    --shadow-accent: rgba(163, 193, 143, 0.25);
+
+    --space-4: 4px;
+    --space-8: 8px;
+    --space-12: 12px;
+    --space-16: 16px;
+    --space-24: 24px;
+    --space-32: 32px;
+
+    --radius-8: 8px;
+    --radius-12: 12px;
+    --radius-16: 16px;
+    --radius-24: 24px;
+
+    --font-size-xs: 0.8rem;
+    --font-size-sm: 0.9rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.1rem;
+    --font-size-xl: 1.8rem;
+
+    --btn-height: 48px;
+    --btn-height-lg: 52px;
+    --btn-padding-x: 16px;
+    --btn-font-size: 0.95rem;
+    --btn-radius: 16px;
+
+    --game-layout-gap: 12px;
+    --board-stack-gap: 12px;
+    --board-min-size: 320px;
+    --game-main-column-width: 760px;
+    --game-side-column-width: 360px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.hidden {
+    display: none !important;
+}

@@ -1,0 +1,225 @@
+.lobby-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.lobby-header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.lobby-view-toggle {
+    display: flex;
+    gap: 8px;
+}
+
+.lobby-view-btn.active {
+    border-color: var(--accent);
+    background: rgba(163, 193, 143, 0.14);
+}
+
+.games-grid {
+    display: grid;
+    gap: 12px;
+    margin: 20px 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.game-item {
+    background: #1a1a1a;
+    padding: 16px 20px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 4px solid var(--accent);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.game-item:hover {
+    background: #222;
+    transform: translateX(4px);
+}
+
+.game-item.finished {
+    border-left-color: var(--text-secondary);
+    opacity: 0.85;
+}
+
+.game-item.finished:hover {
+    opacity: 1;
+}
+
+.game-info {
+    flex: 1;
+    min-width: 180px;
+}
+
+.game-info div {
+    margin-bottom: 4px;
+}
+
+.game-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 5px 0;
+    flex-wrap: wrap;
+}
+
+.game-id {
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.game-status {
+    font-weight: 500;
+}
+
+.game-time {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.game-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.player-item {
+    background: #1a1a1a;
+    border-left: 4px solid var(--accent);
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.player-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.player-info {
+    flex: 1;
+    min-width: 180px;
+}
+
+.player-name-row {
+    margin-bottom: 8px;
+}
+
+.player-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.player-stat-pill {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+
+.player-games-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 2px;
+}
+
+.player-game-row {
+    background: #222622;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    border-left: 3px solid var(--accent);
+    flex-wrap: wrap;
+}
+
+.player-game-row.finished {
+    border-left-color: var(--text-secondary);
+    opacity: 0.9;
+}
+
+.player-game-result {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 2px 0 4px;
+}
+
+.play-btn {
+    min-width: 80px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.play-btn:hover {
+    background: #b8d0a8;
+    transform: translateY(-1px);
+}
+
+.delete-btn {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+    background: #ff6b6b;
+    transform: translateY(-1px);
+}
+
+.empty-lobby {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+.empty-lobby small {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
