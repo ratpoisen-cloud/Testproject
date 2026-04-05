@@ -58,21 +58,25 @@ window.updateMoveHistory = function() {
     const previousHistoryLength = Number.isInteger(window.lastRenderedMoveHistoryLength)
         ? window.lastRenderedMoveHistoryLength
         : 0;
-
-    moveListDiv.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+    const legacyDimmedColor = 'var(--text-secondary)';
 
     if (history.length === 0) {
         const emptyCell = document.createElement('div');
         emptyCell.className = 'move-list-cell move-list-cell--empty-state';
         emptyCell.textContent = 'Нет ходов';
-        moveListDiv.appendChild(emptyCell);
+        // Safe visual fallback: keep previous inline empty-state contract
+        // even if corresponding CSS modifiers are missing.
+        emptyCell.style.gridColumn = 'span 3';
+        emptyCell.style.textAlign = 'center';
+        emptyCell.style.color = legacyDimmedColor;
+        fragment.appendChild(emptyCell);
     } else {
         const maxPly = history.length;
         const reviewIndex = Number.isInteger(window.reviewPlyIndex) ? window.reviewPlyIndex : maxPly;
         const activePlyIndex = window.reviewMode
             ? Math.max(0, Math.min(reviewIndex, maxPly))
             : maxPly;
-        const fragment = document.createDocumentFragment();
         let activeMoveCell = null;
 
         const goToPlyFromHistory = (plyIndex) => {
@@ -87,6 +91,8 @@ window.updateMoveHistory = function() {
 
             if (isMoveNumber) {
                 cell.classList.add('move-list-cell--move-number', 'move-list-cell--dimmed');
+                // Safe visual fallback: move numbers stay dimmed without relying only on CSS.
+                cell.style.color = legacyDimmedColor;
             }
 
             if (isEmpty) {
@@ -125,7 +131,7 @@ window.updateMoveHistory = function() {
             }));
         }
 
-        moveListDiv.appendChild(fragment);
+        moveListDiv.replaceChildren(fragment);
 
         if (window.reviewMode && activeMoveCell) {
             const cellTop = activeMoveCell.offsetTop;
@@ -144,6 +150,10 @@ window.updateMoveHistory = function() {
                 moveListDiv.scrollTop = moveListDiv.scrollHeight;
             }
         }
+    }
+
+    if (history.length === 0) {
+        moveListDiv.replaceChildren(fragment);
     }
 
     window.lastRenderedMoveHistoryLength = history.length;
