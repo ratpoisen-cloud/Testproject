@@ -166,6 +166,12 @@ window.setupAuth = function() {
     // Выход
     logoutBtn.onclick = () => {
         closeUserMenu();
-        signOut(window.auth).then(() => location.href = location.origin + location.pathname);
+        signOut(window.auth)
+            .then(() => {
+                location.href = location.origin + location.pathname;
+            })
+            .catch((err) => {
+                window.notify('Ошибка выхода: ' + (err?.message || err), 'error', 3600);
+            });
     };
 };

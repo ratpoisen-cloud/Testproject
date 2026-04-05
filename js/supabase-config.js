@@ -19,25 +19,31 @@
     });
 
     const normalizeUser = (user) => {
-        if (!user) return null;
-        const metadata = user.user_metadata || {};
+        if (!user || typeof user !== 'object') return null;
+        const metadata = (user.user_metadata && typeof user.user_metadata === 'object')
+            ? user.user_metadata
+            : {};
+        const email = typeof user.email === 'string' ? user.email : '';
+        const emailName = email.includes('@') ? email.split('@')[0] : '';
         return {
             ...user,
             uid: user.id,
-            displayName: metadata.full_name || metadata.name || metadata.user_name || user.email?.split('@')[0] || 'Игрок',
+            displayName: metadata.full_name || metadata.name || metadata.user_name || emailName || 'Игрок',
             photoURL: metadata.avatar_url || null
         };
     };
 
     const mapAuthError = (err) => {
-        if (!err) return err;
-        const mapped = new Error(err.message || 'Auth error');
-        mapped.code = err.code || err.message;
+        if (!err) return new Error('Auth error');
+        const message = typeof err.message === 'string' ? err.message : 'Auth error';
+        const mapped = new Error(message);
+        mapped.code = typeof err.code === 'string' ? err.code : 'auth/unknown';
+        mapped.original = err;
 
-        if (err.message?.includes('Invalid login credentials')) {
+        if (message.includes('Invalid login credentials')) {
             mapped.code = 'auth/invalid-credential';
         }
-        if (err.message?.includes('User already registered')) {
+        if (message.includes('User already registered')) {
             mapped.code = 'auth/email-already-in-use';
         }
 
@@ -55,7 +61,7 @@
 
     window.signInWithPopup = async function signInWithPopup(_auth, providerInstance) {
         const provider = providerInstance?.providerId || 'google';
-        const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+        const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash || ''}`;
         const { error } = await supabaseClient.auth.signInWithOAuth({
             provider,
             options: { redirectTo }
@@ -82,16 +88,37 @@
     };
 
     window.onAuthStateChanged = function onAuthStateChanged(_auth, callback) {
-        let isActive = true;
+        if (typeof callback !== 'function') {
+            console.warn('onAuthStateChanged вызван без callback-функции');
+            return function noopUnsubscribe() {};
+        }
 
-        supabaseClient.auth.getUser().then(({ data }) => {
+        let isActive = true;
+        let lastEmittedUserId;
+        let hasEmittedInitial = false;
+
+        const emitIfChanged = (user) => {
             if (!isActive) return;
-            callback(normalizeUser(data?.user || null));
+            const normalized = normalizeUser(user || null);
+            const currentId = normalized?.uid || null;
+            if (hasEmittedInitial && currentId === lastEmittedUserId) return;
+            hasEmittedInitial = true;
+            lastEmittedUserId = currentId;
+            callback(normalized);
+        };
+
+        supabaseClient.auth.getUser().then(({ data, error }) => {
+            if (error) {
+                console.warn('Не удалось получить текущего пользователя', error);
+            }
+            emitIfChanged(data?.user || null);
+        }).catch((error) => {
+            console.warn('Ошибка при получении текущего пользователя', error);
+            emitIfChanged(null);
         });
 
         const { data: listener } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-            if (!isActive) return;
-            callback(normalizeUser(session?.user || null));
+            emitIfChanged(session?.user || null);
         });
 
         return function unsubscribe() {
