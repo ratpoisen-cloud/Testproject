@@ -38,9 +38,9 @@
 }
 
 .board-area {
-    width: 100%;
-    max-width: none;
-    margin: 0;
+    width: min(100%, var(--game-main-column-width));
+    max-width: 100%;
+    margin: 0 auto;
     min-width: 0;
 }
 
