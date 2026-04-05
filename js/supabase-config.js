@@ -23,13 +23,19 @@
         const metadata = (user.user_metadata && typeof user.user_metadata === 'object')
             ? user.user_metadata
             : {};
+        const identities = Array.isArray(user.identities) ? user.identities : [];
+        const firstIdentityData = identities[0]?.identity_data && typeof identities[0].identity_data === 'object'
+            ? identities[0].identity_data
+            : {};
         const email = typeof user.email === 'string' ? user.email : '';
         const emailName = email.includes('@') ? email.split('@')[0] : '';
+        const providerPhoto = metadata.avatar_url || metadata.picture || firstIdentityData.avatar_url || firstIdentityData.picture || null;
         return {
             ...user,
             uid: user.id,
             displayName: metadata.full_name || metadata.name || metadata.user_name || emailName || 'Игрок',
-            photoURL: metadata.avatar_url || null
+            photoURL: providerPhoto,
+            customAvatarURL: metadata.custom_avatar_url || null
         };
     };
 
@@ -94,16 +100,18 @@
         }
 
         let isActive = true;
-        let lastEmittedUserId;
+        let lastEmittedStateKey;
         let hasEmittedInitial = false;
 
         const emitIfChanged = (user) => {
             if (!isActive) return;
             const normalized = normalizeUser(user || null);
-            const currentId = normalized?.uid || null;
-            if (hasEmittedInitial && currentId === lastEmittedUserId) return;
+            const currentStateKey = normalized
+                ? `${normalized.uid || ''}:${normalized.displayName || ''}:${normalized.photoURL || ''}:${normalized.customAvatarURL || ''}`
+                : 'guest';
+            if (hasEmittedInitial && currentStateKey === lastEmittedStateKey) return;
             hasEmittedInitial = true;
-            lastEmittedUserId = currentId;
+            lastEmittedStateKey = currentStateKey;
             callback(normalized);
         };
 
