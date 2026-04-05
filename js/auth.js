@@ -30,7 +30,10 @@ window.setupAuth = function() {
 
     const applyUserAvatar = (user) => {
         if (!userInfo || !userPhoto) return;
-        const customAvatarUrl = typeof user?.customAvatarURL === 'string' ? user.customAvatarURL : '';
+        const metadataCustomAvatar = typeof user?.user_metadata?.custom_avatar_url === 'string'
+            ? user.user_metadata.custom_avatar_url
+            : '';
+        const customAvatarUrl = (typeof user?.customAvatarURL === 'string' ? user.customAvatarURL : '') || metadataCustomAvatar;
         const providerAvatarUrl = typeof user?.photoURL === 'string' ? user.photoURL : '';
         const selectedAvatarUrl = customAvatarUrl || providerAvatarUrl;
         const userName = window.getUserName(user);
