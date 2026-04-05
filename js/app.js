@@ -45,7 +45,7 @@ window.initBoardSettingsControls = function() {
 window.verifyDataAdapterLoaded = function() {
     setTimeout(() => {
         if (typeof ref === 'undefined') {
-            console.error('Data adapter not loaded!');
+            console.error('Data adapter not loaded! Expected compat API from js/firebase.js (Supabase-backed).');
         }
     }, 1000);
 };
