@@ -47,20 +47,20 @@
         height: auto;
     }
 
-    .board-area,
-    .board-wrapper {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-    }
-
-    #myBoard {
+    .board-area {
         width: min(100%, var(--game-main-column-width));
         max-width: 100%;
         min-width: 0;
-        min-height: 0;
         margin-left: auto;
         margin-right: auto;
+    }
+
+    .board-wrapper,
+    #myBoard {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        min-height: 0;
     }
 
     .game-bottom-panel {
