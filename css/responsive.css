@@ -134,6 +134,7 @@
 
     .top-bar {
         align-items: center;
+        gap: 8px;
     }
 
     .top-bar-right {
@@ -142,7 +143,21 @@
     }
 
     .user-menu-wrap {
-        min-height: 36px;
+        min-height: var(--system-control-height);
+        flex: 1;
+        min-width: 0;
+    }
+
+    #user-info,
+    .user-menu-trigger {
+        width: 100%;
+        min-width: 0;
+    }
+
+    #user-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .card {
@@ -240,9 +255,10 @@
     }
 
     .board-settings-menu {
-        left: 0;
-        right: 0;
-        width: 100%;
+        left: var(--system-control-mobile-gutter);
+        right: var(--system-control-mobile-gutter);
+        width: calc(100% - (var(--system-control-mobile-gutter) * 2));
+        max-width: none;
     }
 
     .game-bottom-panel {
