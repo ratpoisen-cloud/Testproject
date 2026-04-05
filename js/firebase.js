@@ -1,11 +1,17 @@
 // ==================== DATA LAYER (SUPABASE ADAPTER) ====================
 // Отвечает за: операции чтения/записи и realtime-подписки.
 //
-// ВАЖНО:
-// - это НЕ Firebase SDK;
-// - это compat-адаптер поверх Supabase;
-// - внешние имена оставлены Firebase-style (ref/get/set/onValue/...),
-//   чтобы не ломать текущие UI/игровые модули во время поэтапной миграции.
+// Stage 1 поддержки (безопасная чистка legacy-путаницы):
+// - Это НЕ Firebase SDK.
+// - Это compat-слой поверх Supabase.
+// - Публичные глобальные имена (ref/get/set/update/onValue/...) оставлены
+//   Firebase-style ТОЛЬКО ради совместимости со старым фронтом.
+// - Любые новые изменения в data-layer нужно делать через Supabase-логику
+//   внутри этого файла, а не через добавление "настоящего Firebase".
+//
+// Короткая карта соответствий:
+// - "games/{roomId}" (compat path) -> таблица public.games (Supabase).
+// - camelCase поля в UI -> snake_case поля в БД (через toDb*/fromDb*).
 
 (function initDataAdapter() {
     const supabase = window.supabaseClient;
@@ -105,7 +111,8 @@
     const isGameRoot = (path) => /^games\/[^/]+$/.test(path);
     const isGamesRoot = (path) => path === 'games';
 
-    // Firebase-style ref(db, path) — параметр db игнорируется намеренно (compat API).
+    // Firebase-style ref(db, path): параметр db намеренно игнорируется.
+    // Он сохраняется в сигнатуре только для обратной совместимости вызовов.
     window.ref = function ref(_db, path) {
         return { path, type: 'path' };
     };
@@ -126,6 +133,8 @@
         return { path: `games/${roomId}/drawRequest`, roomId, field: 'drawRequest', type: 'field' };
     };
 
+    // Firebase-like get(): снаружи возвращает snapshot-объект в старом стиле,
+    // внутри читает данные из Supabase.
     window.get = async function get(refObj) {
         if (!refObj?.path) return makeSnapshot(null);
 
@@ -159,6 +168,7 @@
         return makeSnapshot(null);
     };
 
+    // Firebase-like set(): полный upsert/delete игры в таблице games.
     window.set = async function set(refObj, value) {
         if (!refObj?.path) return;
 
@@ -182,6 +192,7 @@
         }
     };
 
+    // Firebase-like update(): частичное обновление игры (patch в БД).
     window.update = async function update(refObj, data) {
         if (!refObj?.roomId) return;
         const patch = toDbPatch(data || {});
@@ -236,6 +247,8 @@
         });
     };
 
+    // watchGames/watchGame/onValue имитируют Firebase realtime API,
+    // но технически работают через Supabase Realtime channels.
     window.watchGames = function watchGames(callback) {
         const emitGames = async () => {
             const snap = await window.get(window.ref(null, 'games'));
@@ -317,7 +330,8 @@
         return () => {};
     };
 
-    // Legacy name сохранён для совместимости. Чистит realtime-подписки Supabase.
+    // Legacy имя сохранено намеренно (не переименовывать на этом этапе).
+    // Функция чистит именно Supabase realtime-подписки.
     window.watchFirebaseCleanup = function watchFirebaseCleanup() {
         for (const channel of gamesChannels) safeUnsubscribe(channel);
         for (const roomChannels of gameChannels.values()) {
@@ -334,7 +348,8 @@
         window.__supabaseRealtimeCleanupBound = true;
     }
 
-    // Legacy no-op: раньше ждали Firebase init, теперь Supabase уже инициализируется ранее.
+    // Legacy no-op: ранее ожидали Firebase init, теперь источник истины —
+    // инициализированный Supabase client из js/supabase-config.js.
     window.waitForFirebase = function waitForFirebase() {
         return Promise.resolve();
     };
