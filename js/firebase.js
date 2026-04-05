@@ -31,6 +31,8 @@
 
     const gameChannels = new Map();
     const gamesChannels = new Set();
+    const gameSubscribers = new Map();
+    const gamesSubscribers = new Set();
 
     const safeUnsubscribe = (channel) => {
         if (!channel) return;
@@ -259,37 +261,29 @@
 
     // watchGames/watchGame/onValue имитируют Firebase realtime API,
     // но технически работают через Supabase Realtime channels.
-    window.watchGames = function watchGames(callback) {
-        const emitGames = async () => {
-            const snap = await window.get(window.ref(null, 'games'));
-            callback(snap);
-        };
-
-        emitGames();
-
-        const channel = supabase
-            .channel(`games-lobby-${Math.random().toString(36).slice(2)}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'games' }, emitGames)
-            .subscribe();
-
-        gamesChannels.add(channel);
-
-        return () => {
-            safeUnsubscribe(channel);
-            gamesChannels.delete(channel);
-        };
+    const emitGamesToSubscribers = async () => {
+        const snap = await window.get(window.ref(null, 'games'));
+        for (const cb of gamesSubscribers) cb(snap);
     };
 
-    window.watchGame = function watchGame(gameRef, callback) {
-        const roomId = gameRef.roomId;
+    const ensureGamesChannel = () => {
+        if (gamesChannels.size > 0) return;
+        const channel = supabase
+            .channel(`games-lobby-${Math.random().toString(36).slice(2)}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'games' }, emitGamesToSubscribers)
+            .subscribe();
+        gamesChannels.add(channel);
+    };
 
-        const emitGame = async () => {
-            const snap = await window.get(window.getGameRef(roomId));
-            callback(snap);
-        };
+    const emitGameToSubscribers = async (roomId) => {
+        const callbacks = gameSubscribers.get(roomId);
+        if (!callbacks || callbacks.size === 0) return;
+        const snap = await window.get(window.getGameRef(roomId));
+        for (const cb of callbacks) cb(snap);
+    };
 
-        emitGame();
-
+    const ensureGameChannel = (roomId) => {
+        if (gameChannels.has(roomId)) return;
         const channel = supabase
             .channel(`game-${roomId}-${Math.random().toString(36).slice(2)}`)
             .on('postgres_changes', {
@@ -297,19 +291,43 @@
                 schema: 'public',
                 table: 'games',
                 filter: `room_id=eq.${roomId}`
-            }, emitGame)
+            }, () => emitGameToSubscribers(roomId))
             .subscribe();
+        gameChannels.set(roomId, channel);
+    };
 
-        if (!gameChannels.has(roomId)) gameChannels.set(roomId, []);
-        gameChannels.get(roomId).push(channel);
+    window.watchGames = function watchGames(callback) {
+        gamesSubscribers.add(callback);
+        ensureGamesChannel();
+
+        window.get(window.ref(null, 'games')).then(callback);
 
         return () => {
-            safeUnsubscribe(channel);
-            const arr = gameChannels.get(roomId) || [];
-            const next = arr.filter((c) => c !== channel);
-            if (next.length) {
-                gameChannels.set(roomId, next);
-            } else {
+            gamesSubscribers.delete(callback);
+            if (gamesSubscribers.size === 0) {
+                for (const channel of gamesChannels) safeUnsubscribe(channel);
+                gamesChannels.clear();
+            }
+        };
+    };
+
+    window.watchGame = function watchGame(gameRef, callback) {
+        const roomId = gameRef.roomId;
+
+        if (!roomId) return () => {};
+        if (!gameSubscribers.has(roomId)) gameSubscribers.set(roomId, new Set());
+        gameSubscribers.get(roomId).add(callback);
+        ensureGameChannel(roomId);
+        window.get(window.getGameRef(roomId)).then(callback);
+
+        return () => {
+            const callbacks = gameSubscribers.get(roomId);
+            if (!callbacks) return;
+            callbacks.delete(callback);
+            if (callbacks.size === 0) {
+                gameSubscribers.delete(roomId);
+                const channel = gameChannels.get(roomId);
+                safeUnsubscribe(channel);
                 gameChannels.delete(roomId);
             }
         };
@@ -344,11 +362,11 @@
     // Функция чистит именно Supabase realtime-подписки.
     window.watchFirebaseCleanup = function watchFirebaseCleanup() {
         for (const channel of gamesChannels) safeUnsubscribe(channel);
-        for (const roomChannels of gameChannels.values()) {
-            roomChannels.forEach((channel) => safeUnsubscribe(channel));
-        }
+        for (const channel of gameChannels.values()) safeUnsubscribe(channel);
         gamesChannels.clear();
         gameChannels.clear();
+        gamesSubscribers.clear();
+        gameSubscribers.clear();
     };
 
     if (!window.__supabaseRealtimeCleanupBound) {
