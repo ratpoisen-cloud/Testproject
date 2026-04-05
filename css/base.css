@@ -36,6 +36,16 @@
     --btn-padding-x: 16px;
     --btn-font-size: 0.95rem;
     --btn-radius: 16px;
+    --system-control-height: 44px;
+    --system-control-radius: 14px;
+    --system-control-padding-x: 12px;
+    --system-control-border: 1px solid var(--border);
+    --system-control-bg: rgba(36, 39, 36, 0.96);
+    --system-control-text: var(--text);
+    --system-control-text-secondary: var(--text-secondary);
+    --system-control-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
+    --system-control-active-bg: rgba(163, 193, 143, 0.14);
+    --system-control-mobile-gutter: 8px;
 
     --game-layout-gap: 12px;
     --board-stack-gap: 12px;

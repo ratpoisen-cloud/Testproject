@@ -327,12 +327,12 @@
     top: 0;
     right: 0;
     z-index: 220;
-    width: min(280px, 92vw);
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 18px;
+    width: min(280px, calc(100vw - (var(--system-control-mobile-gutter) * 2)));
+    background: var(--system-control-bg);
+    border: var(--system-control-border);
+    border-radius: var(--system-control-radius);
     padding: 14px;
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--system-control-shadow);
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -346,23 +346,56 @@
 
 .board-settings-group label {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--system-control-text-secondary);
     font-weight: 600;
 }
 
 .board-settings-select {
     width: 100%;
-    padding: 10px 12px;
+    min-height: var(--system-control-height);
+    padding: 0 38px 0 var(--system-control-padding-x);
     background: var(--input-bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 12px;
+    border: var(--system-control-border);
+    color: var(--system-control-text);
+    border-radius: var(--system-control-radius);
     font-size: 0.92rem;
+    line-height: 1.2;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--system-control-text-secondary) 50%),
+        linear-gradient(135deg, var(--system-control-text-secondary) 50%, transparent 50%);
+    background-position:
+        calc(100% - 18px) calc(50% - 2px),
+        calc(100% - 12px) calc(50% - 2px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
     outline: none;
+}
+
+.board-settings-select:hover {
+    background-color: rgba(255, 255, 255, 0.04);
 }
 
 .board-settings-select:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--shadow-accent);
+    background-color: rgba(163, 193, 143, 0.08);
+}
+
+.system-menu {
+    border-radius: var(--system-control-radius);
+    border: var(--system-control-border);
+    background: var(--system-control-bg);
+    box-shadow: var(--system-control-shadow);
+}
+
+.system-select {
+    min-height: var(--system-control-height);
+    border-radius: var(--system-control-radius);
+    border: var(--system-control-border);
+    color: var(--system-control-text);
 }
 
 .board-settings-icon-btn {
