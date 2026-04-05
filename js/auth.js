@@ -2,51 +2,60 @@
 // Отвечает за: вход/выход через Google и Email, состояние пользователя
 
 window.setupAuth = function() {
+    const userMenuWrap = document.getElementById('user-menu-wrap');
     const userInfo = document.getElementById('user-info');
+    const userMenuTrigger = document.getElementById('user-menu-trigger');
     const userPhoto = document.getElementById('user-photo');
     const userNameEl = document.getElementById('user-name');
     const userMenu = document.getElementById('user-menu');
     const logoutBtn = document.getElementById('logout-btn');
-    const userEditBtn = document.getElementById('user-edit-btn');
-    const userThemesBtn = document.getElementById('user-themes-btn');
+    const userAvatarBtn = document.getElementById('user-avatar-btn');
+    const avatarFileInput = document.getElementById('avatar-file-input');
 
     const closeUserMenu = () => {
         userMenu?.classList.add('hidden');
+        userMenuTrigger?.setAttribute('aria-expanded', 'false');
     };
 
     const toggleUserMenu = () => {
         if (!userMenu) return;
         userMenu.classList.toggle('hidden');
+        userMenuTrigger?.setAttribute('aria-expanded', String(!userMenu.classList.contains('hidden')));
     };
 
-    [userPhoto, userNameEl].forEach((trigger) => {
-        trigger?.addEventListener('click', (event) => {
-            event.stopPropagation();
-            toggleUserMenu();
-        });
+    userMenuTrigger?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleUserMenu();
     });
 
-    userInfo?.addEventListener('click', (event) => {
-        if (event.target.closest('.letter-avatar')) {
+    userMenuTrigger?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
             event.stopPropagation();
             toggleUserMenu();
         }
     });
 
     document.addEventListener('click', (event) => {
-        if (!userInfo?.contains(event.target)) {
+        if (!userMenuWrap?.contains(event.target)) {
             closeUserMenu();
         }
     });
 
-    userEditBtn?.addEventListener('click', () => {
-        window.notify('Скоро будет', 'info');
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeUserMenu();
+        }
+    });
+
+    userAvatarBtn?.addEventListener('click', () => {
+        avatarFileInput?.click();
         closeUserMenu();
     });
 
-    userThemesBtn?.addEventListener('click', () => {
-        window.notify('Скоро будет', 'info');
-        closeUserMenu();
+    avatarFileInput?.addEventListener('change', () => {
+        window.notify('Загрузка аватара скоро появится', 'info');
+        avatarFileInput.value = '';
     });
 
     onAuthStateChanged(window.auth, (user) => {
@@ -55,26 +64,25 @@ window.setupAuth = function() {
         
         if (user) {
             authGroup?.classList.add('hidden');
-            userInfo?.classList.remove('hidden');
+            userMenuWrap?.classList.remove('hidden');
             
             const userName = window.getUserName(user);
-            document.getElementById('user-name').innerText = userName;
+            userNameEl.innerText = userName;
             
             if (user.photoURL) {
                 userPhoto.src = user.photoURL;
                 userPhoto.style.display = 'block';
-                const letterAvatar = document.querySelector('.letter-avatar');
+                const letterAvatar = userInfo?.querySelector('.letter-avatar');
                 if (letterAvatar) letterAvatar.style.display = 'none';
             } else {
                 userPhoto.style.display = 'none';
-                let letterAvatar = document.querySelector('.letter-avatar');
+                let letterAvatar = userInfo?.querySelector('.letter-avatar');
                 if (!letterAvatar) {
                     letterAvatar = document.createElement('div');
                     letterAvatar.className = 'letter-avatar';
                     userPhoto.parentNode.insertBefore(letterAvatar, userPhoto.nextSibling);
                 }
                 letterAvatar.style.display = 'flex';
-                letterAvatar.classList.add('user-menu-trigger');
                 letterAvatar.innerText = userName.charAt(0).toUpperCase();
             }
             
@@ -84,7 +92,7 @@ window.setupAuth = function() {
         } else {
             closeUserMenu();
             authGroup?.classList.remove('hidden');
-            userInfo?.classList.add('hidden');
+            userMenuWrap?.classList.add('hidden');
         }
     });
 
