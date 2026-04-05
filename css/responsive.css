@@ -42,9 +42,11 @@
 
     .game-main-column,
     .game-side-column {
-        width: 100%;
+        width: min(100%, var(--game-main-column-width));
         max-width: 100%;
         height: auto;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .board-area {
@@ -95,8 +97,10 @@
 
     .game-main-column,
     .game-side-column {
-        width: 100%;
+        width: min(100%, var(--game-main-column-width));
         height: auto;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .game-status-header,
