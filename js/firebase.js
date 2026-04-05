@@ -204,8 +204,16 @@
         return window.update(gameRef, data);
     };
 
-    // MVP: легковесная транзакция через read-modify-write.
-    // Для production/high-concurrency лучше заменить на RPC с FOR UPDATE.
+    // LEGACY-COMPAT helper (Firebase-like API shape).
+    // ВАЖНО: это НЕ настоящая БД-транзакция, а read-modify-write цикл.
+    // Он не обеспечивает серверную атомарность и может терять обновления
+    // при конкурентных запросах.
+    //
+    // Разрешён только для low-contention/legacy сценариев, где гонки
+    // не критичны.
+    // НЕ использовать для join-room и любых high-concurrency операций:
+    // для них обязателен RPC/серверная атомарность (см. addPlayerToGame ->
+    // join_game_player_with_color).
     window.runTransaction = async function runTransaction(playersRef, updater) {
         const snap = await window.get(playersRef);
         const current = snap.val();
@@ -227,6 +235,8 @@
         return data || null;
     };
 
+    // Предпочтительный и безопасный путь для присоединения игрока к партии:
+    // атомарный серверный RPC (а НЕ runTransaction/read-modify-write).
     window.addPlayerToGame = async function addPlayerToGame(playersRef, uid, uName, preferredColor = null) {
         try {
             return await joinPlayerAtomically(playersRef.roomId, uid, uName, preferredColor);
