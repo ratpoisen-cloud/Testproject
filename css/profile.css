@@ -39,24 +39,21 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    min-height: var(--system-control-height);
-    border-radius: var(--system-control-radius);
-    border: var(--system-control-border);
-    padding: 2px 10px 2px 2px;
-    background: var(--system-control-bg);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01);
-    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    min-height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 .user-trigger-block:hover {
-    border-color: rgba(163, 193, 143, 0.5);
-    background: rgba(255, 255, 255, 0.04);
+    background: transparent;
 }
 
 .user-menu-trigger[aria-expanded="true"] {
-    border-color: var(--accent);
-    background: var(--system-control-active-bg);
-    box-shadow: 0 0 0 2px var(--shadow-accent);
+    background: transparent;
+    box-shadow: none;
 }
 
 .user-trigger-block:focus-visible {
