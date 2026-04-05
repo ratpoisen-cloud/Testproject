@@ -124,7 +124,7 @@
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.95);
+    background: var(--overlay-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -147,9 +147,9 @@
     width: 100%;
     padding: 14px;
     margin: 10px 0;
-    background: #1a1a1a;
+    background: var(--input-bg);
     border: 1px solid var(--border);
-    color: white;
+    color: var(--text);
     border-radius: 12px;
     box-sizing: border-box;
     font-size: 1rem;
@@ -232,7 +232,7 @@
     padding: 10px 12px;
     border-radius: 12px;
     border: 1px solid var(--border);
-    background: rgba(22, 24, 22, 0.98);
+    background: var(--toast-bg);
     color: var(--text);
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
     opacity: 0;
@@ -248,7 +248,7 @@
 .ui-toast-success { border-color: var(--success); }
 .ui-toast-error { border-color: var(--danger); }
 .ui-toast-warning { border-color: #d1a85f; }
-.ui-toast-info { border-color: #7aa9d8; background: rgba(20, 28, 36, 0.98); }
+.ui-toast-info { border-color: #7aa9d8; background: var(--toast-info-bg); }
 
 .ui-confirm-modal {
     z-index: 1300;

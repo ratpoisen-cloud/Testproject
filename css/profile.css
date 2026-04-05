@@ -4,6 +4,7 @@
     align-items: center;
     margin-bottom: 24px;
     gap: 16px;
+    background: var(--top-bar-bg);
 }
 
 .top-bar-right {
@@ -38,7 +39,7 @@
 
 #back-to-lobby-btn {
     display: none;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--panel-muted-bg);
     border-color: rgba(255, 255, 255, 0.16);
     color: var(--text-secondary);
     opacity: 0.9;
