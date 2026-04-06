@@ -203,18 +203,17 @@
                                 <button id="resign-btn" class="btn btn-danger btn-control-size">Сдаться</button>
                             </div>
 
-                            <div id="finished-game-actions" class="finished-game-actions hidden" role="group" aria-label="Действия завершённой партии">
-                                <button id="inline-copy-pgn" class="btn btn-outline pgn-action-btn">Копировать PGN</button>
-                                <button id="inline-download-pgn" class="btn btn-outline pgn-action-btn">Скачать PGN</button>
-                                <button id="inline-rematch-btn" class="btn btn-primary">Реванш</button>
-                            </div>
-
                             <div class="share-box game-share-box">
                                 <small>Пригласить друга</small>
                                 <div class="share-container">
                                     <input type="text" id="room-link" readonly>
                                     <button id="share-btn" class="btn btn-primary">Поделиться</button>
                                 </div>
+                            </div>
+
+                            <div id="finished-game-actions" class="finished-game-actions hidden" role="group" aria-label="Действия завершённой партии">
+                                <button id="inline-copy-pgn" class="btn btn-outline pgn-action-btn">Копировать PGN</button>
+                                <button id="inline-rematch-btn" class="btn btn-primary">Реванш</button>
                             </div>
                         </div>
 
@@ -244,8 +243,7 @@
                 <h2 id="modal-title" class="modal-title-reset">Игра окончена</h2>
                 <p id="modal-desc" class="modal-desc modal-desc-secondary"></p>
                 <div class="pgn-actions pgn-actions-bar">
-                    <button id="modal-copy-pgn" class="btn btn-outline pgn-action-btn">📋 Копировать</button>
-                    <button id="modal-download-pgn" class="btn btn-outline pgn-action-btn">💾 Скачать .pgn</button>
+                    <button id="modal-copy-pgn" class="btn btn-outline pgn-action-btn">Копировать PGN</button>
                 </div>
                 <div class="game-modal-actions">
                     <button id="modal-review-btn" class="btn btn-outline">Посмотреть</button>
