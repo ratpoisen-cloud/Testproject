@@ -56,6 +56,24 @@
         margin-left: auto;
         margin-right: auto;
     }
+}
+
+@media (max-width: 1180px) and (min-width: 601px) and (orientation: landscape) {
+    .game-main-column,
+    .board-area {
+        width: min(100%, var(--game-main-column-width), calc(100dvh - 280px));
+    }
+
+    .game-side-column {
+        height: auto;
+    }
+
+    #myBoard {
+        width: 100%;
+    }
+}
+
+@media (max-width: 1180px) {
 
     .board-wrapper,
     #myBoard {
