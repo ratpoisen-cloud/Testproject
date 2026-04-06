@@ -203,14 +203,20 @@ window.updateReviewControlsState = function() {
 
 window.updateFinishedGameActions = function(data) {
     const finishedActions = document.getElementById('finished-game-actions');
-    if (!finishedActions) return;
+    const drawBtn = document.getElementById('draw-btn');
+    const resignBtn = document.getElementById('resign-btn');
 
     const isFinishedGame =
         window.game?.game_over?.() ||
         data?.gameState === 'game_over' ||
         window.lastKnownGameState === 'game_over';
 
-    finishedActions.classList.toggle('hidden', !isFinishedGame);
+    if (finishedActions) {
+        finishedActions.classList.toggle('hidden', !isFinishedGame);
+    }
+
+    drawBtn?.classList.toggle('hidden', isFinishedGame);
+    resignBtn?.classList.toggle('hidden', isFinishedGame);
 };
 
 // Обновление модального окна окончания игры
