@@ -65,28 +65,6 @@ window.setupGameControls = function(gameRef, roomId) {
         };
     };
 
-    const bindPgnDownloadButton = (buttonId) => {
-        const button = document.getElementById(buttonId);
-        if (!button) return;
-        button.onclick = () => {
-            const pgn = window.game?.pgn?.();
-            if (!pgn) {
-                window.notify("Нет данных партии", "warning");
-                return;
-            }
-
-            const blob = new Blob([pgn], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `game_${roomId || 'chess'}.pgn`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        };
-    };
-
     const resetPendingMoveUI = () => {
         window.pendingMove = null;
         hideElement('confirm-move-box');
@@ -419,8 +397,6 @@ window.setupGameControls = function(gameRef, roomId) {
 
         bindPgnCopyButton('modal-copy-pgn');
         bindPgnCopyButton('inline-copy-pgn');
-        bindPgnDownloadButton('modal-download-pgn');
-        bindPgnDownloadButton('inline-download-pgn');
     };
 
     bindPendingMoveControls();
