@@ -205,6 +205,7 @@ window.updateFinishedGameActions = function(data) {
     const finishedActions = document.getElementById('finished-game-actions');
     const drawBtn = document.getElementById('draw-btn');
     const resignBtn = document.getElementById('resign-btn');
+    const shareBox = document.querySelector('.game-share-box');
 
     const isFinishedGame =
         window.game?.game_over?.() ||
@@ -217,6 +218,7 @@ window.updateFinishedGameActions = function(data) {
 
     drawBtn?.classList.toggle('hidden', isFinishedGame);
     resignBtn?.classList.toggle('hidden', isFinishedGame);
+    shareBox?.classList.toggle('hidden', isFinishedGame);
 };
 
 // Обновление модального окна окончания игры
