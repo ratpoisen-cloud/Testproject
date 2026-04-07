@@ -200,11 +200,11 @@
 .board-reaction-picker {
     position: absolute;
     z-index: 240;
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: 4px;
     padding: 6px;
+    width: min(296px, calc(100% - 16px));
     max-width: calc(100% - 16px);
     border-radius: 14px;
     background: rgba(18, 20, 18, 0.96);
@@ -213,14 +213,14 @@
 }
 
 .board-reaction-option {
-    width: 32px;
-    height: 32px;
-    flex: 0 0 auto;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    min-height: 30px;
     border-radius: 10px;
     border: 1px solid transparent;
     background: rgba(255, 255, 255, 0.05);
     color: var(--text);
-    font-size: 20px;
+    font-size: clamp(16px, 4.5vw, 20px);
     line-height: 1;
     cursor: pointer;
 }
