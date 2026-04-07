@@ -13,7 +13,7 @@ window.PIECE_SETS = {
     tatiana: { label: 'tatiana', theme: 'assets/pieces/tatiana/{piece}.svg' }
 };
 
-window.BOARD_REACTIONS = ['💀', '🤡', '😭', '😏', '👀', '🔥', '😴', '⚰️'];
+window.BOARD_REACTIONS = ['💀', '🤡', '😭', '😏', '👀', '🔥', '😴', '⚰️', '🖕🏻', '💅🏻', '⚔️', '🏴‍☠️', '🤝', '🐒', '🤬', '🧱'];
 window.BOARD_REACTION_TTL_MS = 7000;
 window.BOARD_REACTION_LONG_PRESS_MS = 450;
 window.boardReactionPickerSquare = null;
