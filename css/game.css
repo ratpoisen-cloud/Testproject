@@ -57,6 +57,10 @@
     flex: 0 0 auto;
 }
 
+.player-icon:empty {
+    display: none;
+}
+
 .player-color-text {
     font-weight: 600;
     font-size: 0.95rem;
