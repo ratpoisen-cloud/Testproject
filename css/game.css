@@ -41,14 +41,14 @@
 }
 
 .player-badge.white-piece {
-    background: linear-gradient(135deg, #a3c18f, #8eb57a);
-    color: #0f110f;
-    box-shadow: 0 3px 12px rgba(163, 193, 143, 0.3);
+    background: var(--badge-white-bg);
+    color: var(--badge-white-text);
+    box-shadow: 0 3px 12px var(--shadow-accent);
 }
 
 .player-badge.black-piece {
-    background: #2a2f2a;
-    color: var(--text);
+    background: var(--badge-black-bg);
+    color: var(--badge-black-text);
     border: 1px solid var(--border);
 }
 
@@ -76,12 +76,12 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background: rgba(163, 193, 143, 0.12);
+    background: var(--accent-soft);
     padding: 0 12px;
     border-radius: var(--btn-radius);
     font-weight: 700;
     font-size: 0.98rem;
-    border: 1px solid rgba(163, 193, 143, 0.25);
+    border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
     transition: all 0.3s ease;
     text-align: center;
     white-space: nowrap;
@@ -90,15 +90,16 @@
 }
 
 .turn-status.my-turn {
-    background: linear-gradient(135deg, rgba(163, 193, 143, 0.35), rgba(163, 193, 143, 0.15));
-    border-color: var(--accent);
+    background: var(--status-my-turn-bg);
+    border-color: var(--status-my-turn-border);
     box-shadow: 0 0 18px var(--highlight-my-turn);
     animation: turnPulse 2s ease-in-out infinite;
 }
 
 .turn-status.opponent-turn {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: var(--border);
+    background: var(--status-opponent-bg);
+    border-color: var(--status-opponent-border);
+    color: var(--status-passive-text);
     opacity: 0.85;
 }
 
@@ -115,17 +116,17 @@
 @keyframes turnPulse {
     0%, 100% {
         transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(163, 193, 143, 0.4);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
     }
     50% {
         transform: scale(1.035);
-        box-shadow: 0 0 0 10px rgba(163, 193, 143, 0);
+        box-shadow: 0 0 0 10px transparent;
     }
 }
 
 .highlight-selected {
     position: relative;
-    box-shadow: inset 0 0 0 4px rgba(163, 193, 143, 0.85) !important;
+    box-shadow: inset 0 0 0 4px var(--board-highlight-selected) !important;
 }
 
 .highlight-possible {
@@ -137,13 +138,13 @@
     position: absolute;
     width: 28%;
     height: 28%;
-    background: rgba(163, 193, 143, 0.9);
+    background: var(--board-highlight-possible);
     border-radius: 50%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    box-shadow: 0 0 8px rgba(163, 193, 143, 0.5);
+    box-shadow: 0 0 8px var(--board-highlight-possible-shadow);
 }
 
 .highlight-capture {
@@ -155,19 +156,19 @@
     position: absolute;
     width: 85%;
     height: 85%;
-    border: 4px solid rgba(193, 90, 90, 0.9);
+    border: 4px solid var(--board-highlight-capture);
     border-radius: 12%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    box-shadow: 0 0 12px rgba(193, 90, 90, 0.5);
+    box-shadow: 0 0 12px var(--board-highlight-capture-shadow);
 }
 
 .highlight-drag-source {
     position: relative;
-    box-shadow: inset 0 0 0 4px rgba(163, 193, 143, 0.85) !important;
-    background-color: rgba(163, 193, 143, 0.2) !important;
+    box-shadow: inset 0 0 0 4px var(--board-highlight-selected) !important;
+    background-color: var(--board-highlight-drag-bg) !important;
 }
 
 .last-move {
@@ -230,8 +231,8 @@
 }
 
 .board-reaction-option:hover {
-    border-color: rgba(163, 193, 143, 0.55);
-    background: rgba(163, 193, 143, 0.14);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    background: var(--accent-soft);
 }
 
 @keyframes reactionBubbleIn {
@@ -305,7 +306,7 @@
 
 .btn-round.btn-success {
     background: var(--accent);
-    color: #000;
+    color: var(--accent-contrast);
 }
 
 .btn-round.btn-danger {
@@ -379,13 +380,13 @@
 }
 
 .board-settings-select:hover {
-    background-color: rgba(255, 255, 255, 0.04);
+    background-color: var(--accent-soft);
 }
 
 .board-settings-select:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px var(--shadow-accent);
-    background-color: rgba(163, 193, 143, 0.08);
+    background-color: var(--accent-soft);
 }
 
 .system-menu {
@@ -407,7 +408,7 @@
     height: var(--btn-height);
     border-radius: var(--btn-radius);
     border: 1px solid var(--border);
-    background: var(--panel-muted-bg);
+    background: var(--surface-elevated);
     color: var(--text);
     font-size: 1.2rem;
     line-height: 1;
@@ -420,7 +421,7 @@
 
 .board-settings-icon-btn:hover {
     border-color: var(--accent);
-    background: var(--card);
+    background: var(--accent-soft);
 }
 
 .board-settings-icon-btn:active {
@@ -503,7 +504,7 @@
 
 .review-control-btn:hover {
     border-color: var(--accent);
-    background: rgba(163, 193, 143, 0.12);
+    background: var(--accent-soft);
     transform: translateY(-1px);
 }
 
@@ -569,17 +570,17 @@
 }
 
 .move-list-cell--move:hover {
-    background: rgba(163, 193, 143, 0.1);
+    background: var(--move-list-hover-bg);
     color: var(--text);
-    box-shadow: inset 0 0 0 1px rgba(163, 193, 143, 0.24);
+    box-shadow: inset 0 0 0 1px var(--move-list-hover-border);
 }
 
 .move-list-cell--active {
-    background: rgba(163, 193, 143, 0.2);
+    background: var(--move-list-active-bg);
     color: var(--text);
     font-weight: 600;
-    border-bottom-color: rgba(163, 193, 143, 0.48);
-    box-shadow: inset 0 0 0 1px rgba(163, 193, 143, 0.6);
+    border-bottom-color: var(--move-list-active-border);
+    box-shadow: inset 0 0 0 1px var(--move-list-active-shadow);
 }
 
 .move-list-cell--empty {
@@ -614,7 +615,7 @@
 
 .share-container input {
     flex: 1;
-    background: #1a1a1a;
+    background: var(--input-bg-readonly);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 10px;
@@ -622,6 +623,16 @@
     font-size: 0.8rem;
     width: 100%;
     box-sizing: border-box;
+}
+
+.share-container input::placeholder {
+    color: var(--input-placeholder);
+}
+
+.share-container input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .share-container .btn {
