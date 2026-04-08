@@ -25,13 +25,17 @@
 
 .btn-primary {
     background: var(--accent);
-    color: #0f110f;
+    color: var(--accent-contrast);
     font-weight: 700;
 }
 
 .btn-primary:hover {
-    background: #b8d0a8;
+    background: var(--accent-hover);
     box-shadow: 0 4px 12px var(--shadow-accent);
+}
+
+.btn-primary:active {
+    background: var(--accent-active);
 }
 
 .btn-outline {
@@ -46,14 +50,14 @@
 }
 
 .btn-draw {
-    background: #e8dcc8;
-    color: #3a3a2a;
-    border: 1px solid #c9b896;
+    background: var(--draw-bg);
+    color: var(--draw-text);
+    border: 1px solid var(--draw-border);
 }
 
 .btn-draw:hover {
-    background: #f0e6d6;
-    box-shadow: 0 4px 12px rgba(200, 180, 140, 0.3);
+    background: var(--draw-hover);
+    box-shadow: 0 4px 12px var(--draw-hover-shadow);
 }
 
 .btn-danger {
@@ -62,12 +66,12 @@
 }
 
 .btn-danger:hover {
-    background: #9e4545;
+    background: var(--danger-hover);
 }
 
 .btn-success {
     background: var(--accent);
-    color: #000;
+    color: var(--accent-contrast);
 }
 
 .btn-sm {
@@ -88,6 +92,7 @@
     padding: 28px;
     border-radius: var(--radius-24);
     border: 1px solid var(--border);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
 .section-title {
@@ -132,14 +137,14 @@
 }
 
 .modal-content {
-    background: var(--card);
+    background: var(--modal-bg);
     padding: 32px;
     border-radius: var(--radius-24);
     max-width: 380px;
     width: 90%;
     text-align: center;
     border: 1px solid var(--accent);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.52);
     box-sizing: border-box;
 }
 
@@ -153,6 +158,22 @@
     border-radius: 12px;
     box-sizing: border-box;
     font-size: 1rem;
+}
+
+.input-field[readonly] {
+    background: var(--input-bg-readonly);
+    color: var(--text-secondary);
+}
+
+.input-field::placeholder {
+    color: var(--input-placeholder);
+    opacity: 1;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .email-auth-actions {

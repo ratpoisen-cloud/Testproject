@@ -47,6 +47,29 @@ body[data-ui-theme="dark"] {
     --move-list-bg: #0a0e14;
     --toast-bg: rgba(13, 17, 24, 0.98);
     --toast-info-bg: rgba(18, 28, 42, 0.98);
+    --surface-elevated: #1f2735;
+    --modal-bg: #151c27;
+    --input-bg-readonly: #151c25;
+    --input-placeholder: #8fa4bc;
+    --accent-hover: #79baff;
+    --accent-active: #3d7fd6;
+    --accent-contrast: #06111f;
+    --accent-soft: rgba(95, 168, 255, 0.15);
+    --danger-hover: #cf5656;
+    --draw-bg: #2c2f2a;
+    --draw-text: #dde3d9;
+    --draw-border: #4b5349;
+    --draw-hover: #353a34;
+    --draw-hover-shadow: rgba(117, 133, 111, 0.32);
+    --status-my-turn-bg: linear-gradient(135deg, rgba(95, 168, 255, 0.34), rgba(95, 168, 255, 0.14));
+    --status-my-turn-border: rgba(95, 168, 255, 0.85);
+    --status-opponent-bg: rgba(18, 24, 34, 0.84);
+    --status-opponent-border: rgba(58, 73, 95, 0.9);
+    --status-passive-text: #b8c7d8;
+    --badge-white-bg: linear-gradient(135deg, #8ac2ff, #5fa8ff);
+    --badge-white-text: #051223;
+    --badge-black-bg: #101723;
+    --badge-black-text: #e6edf8;
 }
 
 /* ====================== УЛУЧШЕННЫЙ СВЕТЛЫЙ ====================== */
@@ -71,6 +94,29 @@ body[data-ui-theme="light"] {
     --move-list-bg: #f0f4f9;
     --toast-bg: rgba(255, 255, 255, 0.97);
     --toast-info-bg: rgba(230, 242, 255, 0.97);
+    --surface-elevated: #f5f8fc;
+    --modal-bg: #ffffff;
+    --input-bg-readonly: #edf2f8;
+    --input-placeholder: #7a879b;
+    --accent-hover: #4a86e6;
+    --accent-active: #1f5ab8;
+    --accent-contrast: #ffffff;
+    --accent-soft: rgba(43, 110, 217, 0.14);
+    --danger-hover: #bb4040;
+    --draw-bg: #edf2e5;
+    --draw-text: #324234;
+    --draw-border: #c6d2b9;
+    --draw-hover: #e3ecd7;
+    --draw-hover-shadow: rgba(131, 152, 105, 0.26);
+    --status-my-turn-bg: linear-gradient(135deg, rgba(43, 110, 217, 0.2), rgba(43, 110, 217, 0.08));
+    --status-my-turn-border: rgba(43, 110, 217, 0.65);
+    --status-opponent-bg: rgba(43, 55, 77, 0.05);
+    --status-opponent-border: rgba(100, 121, 152, 0.3);
+    --status-passive-text: #5a6881;
+    --badge-white-bg: linear-gradient(135deg, #e7effa, #d7e5f7);
+    --badge-white-text: #1d2a3d;
+    --badge-black-bg: #2a3b56;
+    --badge-black-text: #f3f7ff;
 }
 
 /* ====================== AMOLED (глубокий чёрный) ====================== */
@@ -95,6 +141,29 @@ body[data-ui-theme="amoled"] {
     --move-list-bg: #050505;
     --toast-bg: rgba(8, 8, 8, 0.98);
     --toast-info-bg: rgba(15, 20, 30, 0.98);
+    --surface-elevated: #101010;
+    --modal-bg: #080808;
+    --input-bg-readonly: #0d0d0d;
+    --input-placeholder: #8f8f8f;
+    --accent-hover: #70b3ff;
+    --accent-active: #2e7be0;
+    --accent-contrast: #03070f;
+    --accent-soft: rgba(77, 158, 255, 0.16);
+    --danger-hover: #e55757;
+    --draw-bg: #161616;
+    --draw-text: #e4e4e4;
+    --draw-border: #2f2f2f;
+    --draw-hover: #1f1f1f;
+    --draw-hover-shadow: rgba(120, 120, 120, 0.3);
+    --status-my-turn-bg: linear-gradient(135deg, rgba(77, 158, 255, 0.38), rgba(77, 158, 255, 0.15));
+    --status-my-turn-border: rgba(77, 158, 255, 0.95);
+    --status-opponent-bg: rgba(255, 255, 255, 0.03);
+    --status-opponent-border: rgba(255, 255, 255, 0.16);
+    --status-passive-text: #9ba9c0;
+    --badge-white-bg: linear-gradient(135deg, #7fbcff, #4d9eff);
+    --badge-white-text: #02070f;
+    --badge-black-bg: #0e0e0e;
+    --badge-black-text: #f0f4fa;
 }
 
 /* ====================== FOREST (тёплая зелёная) ====================== */
@@ -119,4 +188,27 @@ body[data-ui-theme="forest"] {
     --move-list-bg: #0c120e;
     --toast-bg: rgba(18, 22, 19, 0.98);
     --toast-info-bg: rgba(25, 35, 28, 0.98);
+    --surface-elevated: #283128;
+    --modal-bg: #1a211b;
+    --input-bg-readonly: #1a231c;
+    --input-placeholder: #97a68f;
+    --accent-hover: #b2d89f;
+    --accent-active: #7aa86d;
+    --accent-contrast: #10160f;
+    --accent-soft: rgba(156, 200, 138, 0.16);
+    --danger-hover: #b95a5a;
+    --draw-bg: #dce7d0;
+    --draw-text: #2b3729;
+    --draw-border: #afc39f;
+    --draw-hover: #e7f0dc;
+    --draw-hover-shadow: rgba(128, 156, 112, 0.28);
+    --status-my-turn-bg: linear-gradient(135deg, rgba(156, 200, 138, 0.34), rgba(156, 200, 138, 0.14));
+    --status-my-turn-border: rgba(156, 200, 138, 0.88);
+    --status-opponent-bg: rgba(255, 255, 255, 0.05);
+    --status-opponent-border: rgba(83, 102, 84, 0.82);
+    --status-passive-text: #afbcaa;
+    --badge-white-bg: linear-gradient(135deg, #cae4bc, #9cc88a);
+    --badge-white-text: #122012;
+    --badge-black-bg: #1a2b1d;
+    --badge-black-text: #e9f0e4;
 }

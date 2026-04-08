@@ -21,7 +21,7 @@
 
 .lobby-view-btn.active {
     border-color: var(--accent);
-    background: rgba(163, 193, 143, 0.14);
+    background: var(--accent-soft);
 }
 
 .games-grid {
@@ -80,7 +80,7 @@
 
 .game-id {
     font-family: monospace;
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--surface) 84%, var(--text) 16%);
     padding: 2px 6px;
     border-radius: 4px;
 }
@@ -90,7 +90,7 @@
 }
 
 .game-time {
-    background: rgba(255, 255, 255, 0.05);
+    background: color-mix(in srgb, var(--surface) 88%, var(--text) 12%);
     padding: 2px 8px;
     border-radius: 12px;
 }
@@ -181,7 +181,7 @@
 .play-btn {
     min-width: 80px;
     background: var(--accent);
-    color: #000;
+    color: var(--accent-contrast);
     border: none;
     padding: 6px 14px;
     border-radius: 8px;
@@ -192,8 +192,12 @@
 }
 
 .play-btn:hover {
-    background: #b8d0a8;
+    background: var(--accent-hover);
     transform: translateY(-1px);
+}
+
+.play-btn:active {
+    background: var(--accent-active);
 }
 
 .delete-btn {
@@ -209,7 +213,7 @@
 }
 
 .delete-btn:hover {
-    background: #ff6b6b;
+    background: var(--danger-hover);
     transform: translateY(-1px);
 }
 

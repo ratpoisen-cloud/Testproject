@@ -86,7 +86,7 @@
 #back-to-lobby-btn:hover {
     color: var(--accent);
     border-color: var(--accent);
-    background: rgba(163, 193, 143, 0.08);
+    background: var(--accent-soft);
 }
 
 .main-container:has(#game-section:not(.hidden)) #back-to-lobby-btn {
@@ -147,7 +147,7 @@
 }
 
 .user-menu-item-danger {
-    color: #ffb3b3;
+    color: color-mix(in srgb, var(--danger) 72%, var(--text));
 }
 
 
@@ -175,13 +175,13 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6b8c5c, #4a6a3a);
+    background: linear-gradient(135deg, var(--accent), var(--accent-active));
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     font-size: 1.2rem;
-    color: white;
+    color: var(--accent-contrast);
     border: 2px solid var(--accent);
 }
 
