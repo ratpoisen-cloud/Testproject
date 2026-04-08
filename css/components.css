@@ -156,8 +156,9 @@
 }
 
 .email-auth-actions {
+    display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .email-auth-actions .btn {
