@@ -10,7 +10,7 @@
     --toast-info-bg: rgba(20, 28, 36, 0.98);
 }
 
-/* Тема интерфейса по умолчанию: соответствует текущему виду приложения */
+/* ====================== ОСНОВНАЯ ТЕМА (без изменений) ====================== */
 body[data-ui-theme="default"] {
     --bg: #0f110f;
     --card: #1c1f1c;
@@ -22,60 +22,101 @@ body[data-ui-theme="default"] {
     --text: #e8e8d8;
     --text-secondary: #9ca39a;
     --border: #333833;
-
-    --top-bar-bg: transparent;
-    --input-bg: #1a1a1a;
-    --overlay-bg: rgba(0, 0, 0, 0.95);
-    --panel-muted-bg: rgba(0, 0, 0, 0.16);
-    --item-bg: #1a1a1a;
-    --item-hover-bg: #222;
-    --move-list-bg: #0a0a0a;
-    --toast-bg: rgba(22, 24, 22, 0.98);
-    --toast-info-bg: rgba(20, 28, 36, 0.98);
 }
 
+/* ====================== УЛУЧШЕННЫЙ ТЁМНЫЙ ====================== */
 body[data-ui-theme="dark"] {
-    --bg: #0a0c10;
-    --card: #141a21;
-    --surface: #1b2632;
-    --accent: #78a8ff;
-    --accent-dark: #5f86cb;
-    --danger: #d26a6a;
-    --success: #75c08f;
-    --text: #e7edf5;
-    --text-secondary: #9db0c3;
-    --border: #2a3745;
+    --bg: #0b0e14;
+    --card: #12171f;
+    --surface: #1a212d;
+    --accent: #5fa8ff;
+    --accent-dark: #3d7fd6;
+    --danger: #e36b6b;
+    --success: #4ec38a;
+    --text: #e8edf5;
+    --text-secondary: #a3b4c8;
+    --border: #25303f;
 
-    --top-bar-bg: rgba(14, 20, 28, 0.72);
-    --input-bg: #10161d;
-    --overlay-bg: rgba(0, 0, 0, 0.88);
-    --panel-muted-bg: rgba(7, 11, 16, 0.42);
-    --item-bg: #10161d;
-    --item-hover-bg: #15202c;
-    --move-list-bg: #0c1118;
-    --toast-bg: rgba(16, 24, 33, 0.98);
-    --toast-info-bg: rgba(19, 32, 47, 0.98);
+    /* Улучшенные overlay и панели */
+    --top-bar-bg: rgba(11, 14, 20, 0.85);
+    --input-bg: #0f141b;
+    --overlay-bg: rgba(8, 11, 18, 0.96);
+    --panel-muted-bg: rgba(15, 21, 32, 0.55);
+    --item-bg: #13191f;
+    --item-hover-bg: #1c2533;
+    --move-list-bg: #0a0e14;
+    --toast-bg: rgba(13, 17, 24, 0.98);
+    --toast-info-bg: rgba(18, 28, 42, 0.98);
 }
 
+/* ====================== УЛУЧШЕННЫЙ СВЕТЛЫЙ ====================== */
 body[data-ui-theme="light"] {
-    --bg: #eff3f7;
+    --bg: #f4f7fa;
     --card: #ffffff;
-    --surface: #f8fbff;
-    --accent: #4e74c8;
-    --accent-dark: #3f60a5;
-    --danger: #c05757;
-    --success: #4c9a69;
-    --text: #1f2732;
-    --text-secondary: #5f6f83;
-    --border: #ccd6e2;
+    --surface: #fafcff;
+    --accent: #2b6ed9;
+    --accent-dark: #1f5ab8;
+    --danger: #d14f4f;
+    --success: #2e9b5e;
+    --text: #1c2533;
+    --text-secondary: #55657f;
+    --border: #d0d9e6;
 
-    --top-bar-bg: rgba(255, 255, 255, 0.8);
-    --input-bg: #f5f8fc;
-    --overlay-bg: rgba(35, 42, 53, 0.46);
-    --panel-muted-bg: rgba(207, 217, 229, 0.38);
-    --item-bg: #f7faff;
+    --top-bar-bg: rgba(255, 255, 255, 0.92);
+    --input-bg: #f0f4f9;
+    --overlay-bg: rgba(28, 37, 53, 0.52);
+    --panel-muted-bg: rgba(220, 230, 242, 0.65);
+    --item-bg: #f6f9fd;
     --item-hover-bg: #eef3fa;
-    --move-list-bg: #f4f7fb;
-    --toast-bg: rgba(255, 255, 255, 0.98);
-    --toast-info-bg: rgba(236, 244, 255, 0.98);
+    --move-list-bg: #f0f4f9;
+    --toast-bg: rgba(255, 255, 255, 0.97);
+    --toast-info-bg: rgba(230, 242, 255, 0.97);
+}
+
+/* ====================== AMOLED (глубокий чёрный) ====================== */
+body[data-ui-theme="amoled"] {
+    --bg: #000000;
+    --card: #0a0a0a;
+    --surface: #111111;
+    --accent: #4d9eff;
+    --accent-dark: #2e7be0;
+    --danger: #ff6b6b;
+    --success: #3ed18a;
+    --text: #f0f4fa;
+    --text-secondary: #9ba9c0;
+    --border: #1a1a1a;
+
+    --top-bar-bg: rgba(0, 0, 0, 0.88);
+    --input-bg: #050505;
+    --overlay-bg: rgba(0, 0, 0, 0.98);
+    --panel-muted-bg: rgba(15, 15, 15, 0.6);
+    --item-bg: #0a0a0a;
+    --item-hover-bg: #1a1a1a;
+    --move-list-bg: #050505;
+    --toast-bg: rgba(8, 8, 8, 0.98);
+    --toast-info-bg: rgba(15, 20, 30, 0.98);
+}
+
+/* ====================== FOREST (тёплая зелёная) ====================== */
+body[data-ui-theme="forest"] {
+    --bg: #0f1410;
+    --card: #1a211b;
+    --surface: #222a23;
+    --accent: #9cc88a;
+    --accent-dark: #7aa86d;
+    --danger: #c86a6a;
+    --success: #8ed47a;
+    --text: #e9f0e4;
+    --text-secondary: #a3b39c;
+    --border: #2f3a2f;
+
+    --top-bar-bg: rgba(15, 20, 16, 0.85);
+    --input-bg: #141a15;
+    --overlay-bg: rgba(10, 14, 11, 0.95);
+    --panel-muted-bg: rgba(25, 32, 26, 0.5);
+    --item-bg: #171f19;
+    --item-hover-bg: #212a23;
+    --move-list-bg: #0c120e;
+    --toast-bg: rgba(18, 22, 19, 0.98);
+    --toast-info-bg: rgba(25, 35, 28, 0.98);
 }
