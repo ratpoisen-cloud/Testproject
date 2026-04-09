@@ -181,8 +181,12 @@
     background: var(--tile-icon-shell);
     color: var(--tile-icon-color);
     box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 40%, transparent);
-    display: block;
-    object-fit: contain;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.95rem;
+    line-height: 1;
     transition: transform 0.16s ease, background 0.16s ease;
 }
 
@@ -195,21 +199,6 @@
     transform: scale(0.97);
 }
 
-.hub-tile-icon--create {
-    width: 58px;
-    height: 58px;
-    padding: 11px;
-}
-
-.hub-tile-icon--games {
-    width: 54px;
-    height: 54px;
-}
-
-.hub-tile-icon--players {
-    width: 56px;
-    height: 56px;
-}
 
 .hub-tile-title {
     font-weight: 750;
