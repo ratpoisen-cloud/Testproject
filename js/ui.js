@@ -202,15 +202,24 @@ window.updateReviewControlsState = function() {
 };
 
 window.updateFinishedGameActions = function(data) {
+    const gameSection = document.getElementById('game-section');
+    const liveTopActions = document.getElementById('live-game-actions-top');
+    const liveBottomActions = document.getElementById('live-game-actions-bottom');
     const finishedActions = document.getElementById('finished-game-actions');
     const drawBtn = document.getElementById('draw-btn');
     const resignBtn = document.getElementById('resign-btn');
+    const takebackBtn = document.getElementById('takeback-btn');
+    const confirmMoveBox = document.getElementById('confirm-move-box');
+    const takebackRequestBox = document.getElementById('takeback-request-box');
+    const drawRequestBox = document.getElementById('draw-request-box');
     const shareBox = document.querySelector('.game-share-box');
 
-    const isFinishedGame =
-        window.game?.game_over?.() ||
-        data?.gameState === 'game_over' ||
-        window.lastKnownGameState === 'game_over';
+    const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
+
+    gameSection?.classList.toggle('finished-viewer-mode', isFinishedGame);
+
+    liveTopActions?.classList.toggle('hidden', isFinishedGame);
+    liveBottomActions?.classList.toggle('hidden', isFinishedGame);
 
     if (finishedActions) {
         finishedActions.classList.toggle('hidden', !isFinishedGame);
@@ -218,6 +227,15 @@ window.updateFinishedGameActions = function(data) {
 
     drawBtn?.classList.toggle('hidden', isFinishedGame);
     resignBtn?.classList.toggle('hidden', isFinishedGame);
+    if (takebackBtn) {
+        takebackBtn.classList.toggle('hidden', isFinishedGame);
+        takebackBtn.disabled = isFinishedGame;
+    }
+    if (isFinishedGame) {
+        confirmMoveBox?.classList.add('hidden');
+        takebackRequestBox?.classList.add('hidden');
+        drawRequestBox?.classList.add('hidden');
+    }
     shareBox?.classList.toggle('hidden', isFinishedGame);
 };
 

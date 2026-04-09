@@ -195,7 +195,9 @@
                     <div class="game-side-column">
                         <div class="controls controls-split">
                             <div class="controls-group controls-safe">
+                                <div id="live-game-actions-top" class="controls-group--live">
                                 <button id="takeback-btn" class="btn btn-outline btn-control-size">Отмена хода</button>
+                                </div>
                                 <div class="review-controls review-controls-inline" role="group" aria-label="Навигация по ходам">
                                     <div class="review-controls-buttons">
                                         <button id="review-first-btn" class="review-control-btn" type="button" aria-label="В начало партии">|&lt;</button>
@@ -215,7 +217,7 @@
                                 <div id="move-list" class="move-list-content"></div>
                             </div>
 
-                            <div class="controls-group controls-risky controls-risky-bottom">
+                            <div id="live-game-actions-bottom" class="controls-group controls-risky controls-risky-bottom controls-group--live">
                                 <button id="draw-btn" class="btn btn-draw btn-control-size">Предложить ничью</button>
                                 <button id="resign-btn" class="btn btn-danger btn-control-size">Сдаться</button>
                             </div>

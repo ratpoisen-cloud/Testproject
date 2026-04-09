@@ -21,6 +21,14 @@ window.activeReactions = [];
 window.reactionRateLimitState = { cycleKey: null, count: 0 };
 window.BOARD_REACTION_MAX_PER_CYCLE = 5;
 
+window.isGameFinished = function(gameData = null) {
+    return Boolean(
+        window.game?.game_over?.() ||
+        gameData?.gameState === 'game_over' ||
+        window.lastKnownGameState === 'game_over'
+    );
+};
+
 window.getReactionCycleKey = function() {
     if (!window.game) return 'idle';
     return `${window.game.turn()}_${window.game.history().length}`;
@@ -748,7 +756,7 @@ window.deleteGame = async function(gameId, userId) {
 };
 // Функция отправки запроса на ничью
 function hideDrawRequestBox() {
-    document.getElementById('draw-request-box').classList.add('hidden');
+    document.getElementById('draw-request-box')?.classList.add('hidden');
 }
 
 function getCurrentUserDisplayName() {
@@ -756,6 +764,13 @@ function getCurrentUserDisplayName() {
 }
 
 window.sendDrawRequest = async function(gameRef, roomId) {
+    if (window.isGameFinished?.()) {
+        hideDrawRequestBox();
+        window.pendingDraw = null;
+        window.notify("Игра уже окончена", "warning");
+        return;
+    }
+
     const currentTurn = window.game.turn();
     const request = {
         from: window.playerColor,
@@ -770,6 +785,13 @@ window.sendDrawRequest = async function(gameRef, roomId) {
 
 // Функция принятия ничьей
 window.acceptDraw = async function(gameRef, roomId) {
+    if (window.isGameFinished?.()) {
+        hideDrawRequestBox();
+        window.pendingDraw = null;
+        window.notify("Игра уже окончена", "warning");
+        return;
+    }
+
     const players = (await get(window.getPlayersRef(roomId))).val() || null;
     const metadata = window.applyGameHeaders(window.game, {
         players,
@@ -789,6 +811,13 @@ window.acceptDraw = async function(gameRef, roomId) {
 
 // Функция отклонения ничьей
 window.rejectDraw = async function(gameRef, roomId) {
+    if (window.isGameFinished?.()) {
+        hideDrawRequestBox();
+        window.pendingDraw = null;
+        window.notify("Игра уже окончена", "warning");
+        return;
+    }
+
     await window.updateGame(gameRef, { drawRequest: null });
     hideDrawRequestBox();
     window.pendingDraw = null;
