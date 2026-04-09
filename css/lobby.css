@@ -57,10 +57,11 @@
 .lobby-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 14px;
+    align-items: center;
+    margin-bottom: 12px;
     gap: 18px;
     flex-wrap: wrap;
+    padding-bottom: 4px;
 }
 
 .lobby-heading {
@@ -87,10 +88,10 @@
 .lobby-create-btn {
     margin-left: auto;
     width: auto;
-    min-height: 46px;
+    min-height: 44px;
     padding: 0 22px;
-    font-weight: 700;
-    box-shadow: 0 10px 20px color-mix(in srgb, var(--accent) 25%, transparent);
+    font-weight: 650;
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .lobby-subheader {
@@ -99,14 +100,15 @@
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    padding: 6px 0 2px;
 }
 
 .lobby-view-toggle {
     display: flex;
     gap: 6px;
     padding: 3px;
-    border-radius: 12px;
+    border-radius: 10px;
     background: color-mix(in srgb, var(--surface) 90%, transparent);
     border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
@@ -126,11 +128,12 @@
 }
 
 .lobby-utility-btn {
-    min-height: 34px;
-    font-size: 0.78rem;
+    min-height: 32px;
+    font-size: 0.76rem;
     border-width: 1px;
     color: var(--text-secondary);
-    opacity: 0.78;
+    opacity: 0.66;
+    border-color: color-mix(in srgb, var(--border) 88%, transparent);
 }
 
 .lobby-utility-btn:hover {
@@ -139,79 +142,104 @@
 
 .games-grid {
     display: grid;
-    gap: 12px;
-    margin: 16px 0 8px;
+    gap: 10px;
+    margin: 10px 0 8px;
     max-height: 400px;
     overflow-y: auto;
 }
 
 .game-item {
     background: color-mix(in srgb, var(--item-bg) 86%, var(--surface));
-    padding: 16px 18px;
-    border-radius: 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    padding: 14px 16px;
+    border-radius: 16px;
+    display: grid;
+    grid-template-columns: 4px minmax(0, 1fr) auto;
+    align-items: center;
     border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-    gap: 15px;
-    flex-wrap: wrap;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    gap: 12px;
 }
 
 .game-item:hover {
-    background: color-mix(in srgb, var(--item-hover-bg) 88%, var(--surface));
-    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    background: color-mix(in srgb, var(--item-hover-bg) 84%, var(--surface));
+    border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
     transform: translateY(-1px);
 }
 
 .game-item.finished {
-    border-color: color-mix(in srgb, var(--border) 90%, transparent);
+    border-color: color-mix(in srgb, var(--border) 88%, transparent);
+    background: color-mix(in srgb, var(--item-bg) 78%, var(--surface));
+    opacity: 0.88;
+}
+
+.game-item.waiting {
+    border-color: color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.game-accent {
+    align-self: stretch;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.game-item.waiting .game-accent {
+    background: color-mix(in srgb, var(--text-secondary) 42%, var(--border));
+}
+
+.game-item.finished .game-accent {
+    background: color-mix(in srgb, var(--text-secondary) 30%, var(--border));
 }
 
 .game-info {
-    flex: 1;
-    min-width: 220px;
+    min-width: 0;
 }
 
-.game-opponent {
-    margin: 0 0 8px;
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text);
-}
-
-.game-status-row {
+.game-title-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     flex-wrap: wrap;
 }
 
+.game-opponent {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 680;
+    color: var(--text);
+}
+
 .game-status-pill {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 600;
     border-radius: 999px;
-    padding: 4px 10px;
+    padding: 3px 9px;
     border: 1px solid transparent;
+    line-height: 1.2;
 }
 
 .game-status-pill.active {
-    color: var(--accent);
+    color: color-mix(in srgb, var(--accent) 90%, var(--text));
     background: color-mix(in srgb, var(--accent) 14%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.game-status-pill.waiting {
+    color: color-mix(in srgb, var(--text-secondary) 88%, var(--text));
+    background: color-mix(in srgb, var(--surface) 94%, var(--border));
+    border-color: color-mix(in srgb, var(--border) 85%, transparent);
 }
 
 .game-status-pill.finished {
     color: var(--text-secondary);
-    background: color-mix(in srgb, var(--surface) 90%, transparent);
-    border-color: color-mix(in srgb, var(--border) 80%, transparent);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-color: color-mix(in srgb, var(--border) 88%, transparent);
 }
 
 .game-meta {
     display: flex;
-    gap: 10px;
-    font-size: 0.77rem;
+    gap: 7px;
+    font-size: 0.75rem;
     color: var(--text-secondary);
     margin: 0;
     flex-wrap: wrap;
@@ -222,22 +250,25 @@
     color: var(--text-secondary);
 }
 
-.game-id {
-    font-family: monospace;
-    background: color-mix(in srgb, var(--surface) 90%, var(--text) 10%);
-    padding: 3px 8px;
-    border-radius: 999px;
+.game-dot {
+    opacity: 0.55;
 }
 
-.game-time {
-    font-size: 0.76rem;
-    color: var(--text-secondary);
+.game-turn-pill {
+    font-size: 0.68rem;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 2px 8px;
+    color: color-mix(in srgb, var(--accent) 95%, var(--text));
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .game-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
+    justify-content: flex-end;
 }
 
 .player-item {
@@ -318,15 +349,15 @@
 }
 
 .play-btn {
-    min-width: 90px;
+    min-width: 88px;
     background: var(--accent);
     color: var(--accent-contrast);
     border: none;
-    padding: 6px 16px;
+    padding: 6px 14px;
     border-radius: 10px;
     cursor: pointer;
-    font-weight: 600;
-    font-size: 0.85rem;
+    font-weight: 650;
+    font-size: 0.82rem;
     transition: all 0.2s ease;
 }
 
@@ -341,15 +372,15 @@
 
 .delete-btn {
     background: transparent;
-    color: color-mix(in srgb, var(--danger) 82%, var(--text-secondary));
-    border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
-    padding: 6px 12px;
+    color: color-mix(in srgb, var(--danger) 65%, var(--text-secondary));
+    border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--border));
+    padding: 6px 11px;
     border-radius: 10px;
     cursor: pointer;
     font-weight: 500;
-    font-size: 0.8rem;
+    font-size: 0.76rem;
     transition: all 0.2s ease;
-    opacity: 0.9;
+    opacity: 0.76;
 }
 
 .delete-btn:hover {
@@ -360,8 +391,28 @@
 
 .empty-lobby {
     text-align: center;
-    padding: 40px;
+    padding: 36px 22px;
     color: var(--text-secondary);
+    border: 1px dashed color-mix(in srgb, var(--border) 82%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+
+.empty-lobby-title {
+    margin: 0;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 650;
+}
+
+.empty-lobby-text {
+    margin: 8px 0 0;
+    font-size: 0.88rem;
+}
+
+.empty-lobby-cta {
+    margin-top: 14px;
+    min-height: 38px;
 }
 
 .empty-lobby small {

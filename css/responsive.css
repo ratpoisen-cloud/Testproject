@@ -192,14 +192,16 @@
     }
 
     .game-item {
-        flex-direction: column;
+        grid-template-columns: 4px minmax(0, 1fr);
         align-items: flex-start;
+        row-gap: 10px;
     }
 
     .game-actions {
         width: 100%;
         justify-content: flex-end;
-        margin-top: 10px;
+        grid-column: 1 / -1;
+        margin-top: 0;
     }
 
     .lobby-header {
@@ -238,7 +240,7 @@
 
     .play-btn,
     .delete-btn {
-        padding: 6px 16px;
+        padding: 6px 14px;
     }
 
     .guest-shell {
