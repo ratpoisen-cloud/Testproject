@@ -159,11 +159,6 @@
         gap: 8px;
     }
 
-    .brand-mark {
-        font-size: 0.8rem;
-        letter-spacing: 0.03em;
-    }
-
     .top-bar-right {
         justify-content: flex-end;
         width: auto;

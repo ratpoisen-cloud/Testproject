@@ -20,6 +20,7 @@ window.lastRenderedMoveHistoryLength = 0;
 window.activeReactions = [];
 window.reactionRateLimitState = { cycleKey: null, count: 0 };
 window.BOARD_REACTION_MAX_PER_CYCLE = 5;
+window.playersExpandedResultFilter = {};
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -247,6 +248,43 @@ window.getFinishedGameResultLabel = function(gameData) {
     return 'Результат завершён';
 };
 
+function resolveFinishedResultCode(gameData) {
+    const pgn = String(gameData?.pgn || '');
+    if (/\b1-0\b/.test(pgn)) return '1-0';
+    if (/\b0-1\b/.test(pgn)) return '0-1';
+    if (/\b1\/2-1\/2\b/.test(pgn)) return '1/2-1/2';
+
+    const replayGame = new Chess();
+    if (pgn) {
+        try {
+            replayGame.load_pgn(pgn);
+        } catch (error) {
+            console.warn('Не удалось загрузить PGN для результата:', error);
+        }
+    }
+
+    return window.resolveGameResult?.(replayGame, gameData) || '*';
+}
+
+window.getFinishedGamePerspective = function(gameData, userId) {
+    const result = resolveFinishedResultCode(gameData);
+    const players = gameData?.players || {};
+    const myColor = players.white === userId ? 'white' : (players.black === userId ? 'black' : null);
+
+    if (result === '1/2-1/2') {
+        return { key: 'draws', label: 'Ничья', className: 'result-draw' };
+    }
+
+    const isWhiteWin = result === '1-0';
+    const isBlackWin = result === '0-1';
+    const isWin = (isWhiteWin && myColor === 'white') || (isBlackWin && myColor === 'black');
+    const isLoss = (isWhiteWin && myColor === 'black') || (isBlackWin && myColor === 'white');
+
+    if (isWin) return { key: 'wins', label: 'Вы победили', className: 'result-win' };
+    if (isLoss) return { key: 'losses', label: 'Вы проиграли', className: 'result-loss' };
+    return { key: 'draws', label: window.getFinishedGameResultLabel(gameData), className: 'result-draw' };
+};
+
 window.getRequestedJoinColor = function() {
     const colorParam = new URLSearchParams(window.location.search).get('color');
     if (colorParam === 'w' || colorParam === 'b') return colorParam;
@@ -394,7 +432,8 @@ function buildLobbyGameCardData(id, data, userId) {
     const opponentAvatar = myColor === 'white'
         ? (players.blackPhotoURL || players.blackAvatar || '')
         : (players.whitePhotoURL || players.whiteAvatar || '');
-    const statusText = isOver ? 'Завершена' : (isWaitingForOpponent ? 'Ожидание' : 'В процессе');
+    const resultState = isOver ? window.getFinishedGamePerspective(data, userId) : null;
+    const statusText = isOver ? resultState.label : (isWaitingForOpponent ? 'Ожидание' : '');
     const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
 
     return {
@@ -407,23 +446,49 @@ function buildLobbyGameCardData(id, data, userId) {
         opponent,
         opponentAvatar,
         statusText,
+        resultClass: resultState?.className || '',
+        turnLabel: !isOver && !isWaitingForOpponent ? (isMyTurn ? 'Ваш ход' : 'Ход соперника') : '',
+        turnClass: isMyTurn ? 'my-turn' : 'opponent-turn',
         canDeleteFromLobby: isOver || isWaitingForOpponent,
         timeAgo: window.formatTimeAgo(data.lastMoveTime || data.createdAt || 0)
     };
 }
 
+function getAvatarInitial(name) {
+    const safeName = (name || 'Игрок').trim() || 'Игрок';
+    return safeName.charAt(0).toUpperCase();
+}
+
+window.handleAvatarImageError = function(img) {
+    const shell = img?.closest?.('.avatar-shell');
+    if (!shell) return;
+    const fallback = document.createElement('span');
+    fallback.className = 'avatar-shell avatar-fallback';
+    fallback.textContent = img.dataset.initial || 'И';
+    shell.replaceWith(fallback);
+};
+
 function getAvatarMarkup(name, avatarUrl) {
     const safeName = (name || 'Игрок').trim() || 'Игрок';
-    const initial = safeName.charAt(0).toUpperCase();
+    const initial = getAvatarInitial(safeName);
     if (avatarUrl) {
-        return `<span class="avatar-shell"><img class="avatar-img" src="${avatarUrl}" alt="Аватар ${safeName}"></span>`;
+        return `<span class="avatar-shell"><img class="avatar-img" src="${avatarUrl}" data-initial="${initial}" alt="Аватар ${safeName}" loading="lazy"></span>`;
     }
     return `<span class="avatar-shell avatar-fallback">${initial}</span>`;
 }
 
+function bindAvatarFallbackHandlers(rootNode) {
+    if (!rootNode) return;
+    rootNode.querySelectorAll('.avatar-img').forEach((img) => {
+        if (img.dataset.fallbackBound === '1') return;
+        img.dataset.fallbackBound = '1';
+        img.addEventListener('error', () => window.handleAvatarImageError(img), { once: true });
+    });
+}
+
 function createLobbyGameElement(cardData, userId) {
     const item = document.createElement('div');
-    item.className = `game-item ${cardData.stateClass}`;
+    item.className = `game-item ${cardData.stateClass} ${cardData.resultClass || ''}`.trim();
     item.innerHTML = `
         <div class="game-accent" aria-hidden="true"></div>
         <div class="game-info">
@@ -432,10 +497,10 @@ function createLobbyGameElement(cardData, userId) {
                     ${getAvatarMarkup(cardData.opponent, cardData.opponentAvatar)}
                     <p class="game-opponent">${cardData.opponent}</p>
                 </div>
-                <span class="game-status-pill ${cardData.stateClass}">${cardData.statusText}</span>
+                ${cardData.statusText ? `<span class="game-status-pill ${cardData.stateClass} ${cardData.resultClass}">${cardData.statusText}</span>` : ''}
             </div>
             <div class="game-meta">
-                ${cardData.isMyTurn ? '<span class="game-turn-pill">Ваш ход</span>' : ''}
+                ${cardData.turnLabel ? `<span class="game-turn-pill ${cardData.turnClass}">${cardData.turnLabel}</span>` : ''}
                 <span class="game-side">Вы ${cardData.myColor === 'white' ? 'белыми' : 'чёрными'}</span>
                 <span class="game-dot" aria-hidden="true">•</span>
                 <span class="game-time">${cardData.timeAgo}</span>
@@ -460,6 +525,7 @@ function createLobbyGameElement(cardData, userId) {
         };
     }
 
+    bindAvatarFallbackHandlers(item);
     return item;
 }
 
@@ -588,36 +654,39 @@ window.buildPlayersAggregate = function(sortedGames, userId) {
 
         const opponentNameRaw = isUserWhite ? players.blackName : players.whiteName;
         const opponentName = opponentNameRaw || 'Игрок';
+        const opponentAvatar = isUserWhite
+            ? (players.blackPhotoURL || players.blackAvatar || '')
+            : (players.whitePhotoURL || players.whiteAvatar || '');
         const isFinished = data.gameState === 'game_over';
         const lastMoveTime = data.lastMoveTime || data.createdAt || 0;
-        const myColor = isUserWhite ? 'white' : 'black';
-
         if (!opponentsMap.has(opponentUid)) {
             opponentsMap.set(opponentUid, {
                 uid: opponentUid,
                 name: opponentName,
+                avatarUrl: opponentAvatar,
                 wins: 0,
                 losses: 0,
                 draws: 0,
-                lastMoveTime: 0
+                lastMoveTime: 0,
+                finishedGames: { wins: [], losses: [], draws: [] }
             });
         }
 
         const opponentCard = opponentsMap.get(opponentUid);
+        if ((!opponentCard.avatarUrl || !opponentCard.avatarUrl.trim()) && opponentAvatar) {
+            opponentCard.avatarUrl = opponentAvatar;
+        }
+        if ((opponentCard.name === 'Игрок' || !opponentCard.name) && opponentNameRaw) {
+            opponentCard.name = opponentNameRaw;
+        }
         opponentCard.lastMoveTime = Math.max(opponentCard.lastMoveTime, lastMoveTime);
 
         if (isFinished) {
-            const resultLabel = window.getFinishedGameResultLabel(data);
-            if (resultLabel === 'Ничья') {
-                opponentCard.draws += 1;
-            } else if (
-                (resultLabel === 'Победили белые' && myColor === 'white') ||
-                (resultLabel === 'Победили чёрные' && myColor === 'black')
-            ) {
-                opponentCard.wins += 1;
-            } else if (resultLabel.startsWith('Победили')) {
-                opponentCard.losses += 1;
-            }
+            const resultState = window.getFinishedGamePerspective(data, userId);
+            if (resultState.key === 'wins') opponentCard.wins += 1;
+            if (resultState.key === 'losses') opponentCard.losses += 1;
+            if (resultState.key === 'draws') opponentCard.draws += 1;
+            opponentCard.finishedGames[resultState.key].push({ id: gameId, data });
         }
     });
 
@@ -633,22 +702,29 @@ window.renderPlayersLobby = function(container, players) {
     }
 
     players.forEach((player) => {
+        const selectedFilter = window.playersExpandedResultFilter?.[player.uid] || '';
+        const selectedGames = selectedFilter ? (player.finishedGames?.[selectedFilter] || []) : [];
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
         playerItem.innerHTML = `
             <div class="player-item-header">
                 <div class="player-info">
-                    <div class="player-name-row">${getAvatarMarkup(player.name, '')} <b>${player.name}</b></div>
+                    <div class="player-name-row">${getAvatarMarkup(player.name, player.avatarUrl)} <b>${player.name}</b></div>
                     <div class="player-stats">
-                        <span class="player-stat-pill">Выиграно: ${player.wins}</span>
-                        <span class="player-stat-pill">Проиграно: ${player.losses}</span>
-                        <span class="player-stat-pill">Ничьи: ${player.draws}</span>
+                        <button class="player-stat-pill player-stat-pill-win ${selectedFilter === 'wins' ? 'is-active' : ''}" type="button" data-result-filter="wins">Выиграно: ${player.wins}</button>
+                        <button class="player-stat-pill player-stat-pill-loss ${selectedFilter === 'losses' ? 'is-active' : ''}" type="button" data-result-filter="losses">Проиграно: ${player.losses}</button>
+                        <button class="player-stat-pill player-stat-pill-draw ${selectedFilter === 'draws' ? 'is-active' : ''}" type="button" data-result-filter="draws">Ничьи: ${player.draws}</button>
                     </div>
                 </div>
                 <div class="game-actions">
                     <button class="btn btn-sm play-btn player-play-btn">Новая партия</button>
                 </div>
             </div>
+            ${selectedFilter ? `
+                <div class="player-finished-list">
+                    ${selectedGames.length ? '' : '<div class="empty-lobby">Подходящих завершённых партий пока нет</div>'}
+                </div>
+            ` : ''}
         `;
 
         const playBtn = playerItem.querySelector('.player-play-btn');
@@ -659,6 +735,31 @@ window.renderPlayersLobby = function(container, players) {
             getLobbyNodes().createGameBtn?.click();
         };
 
+        playerItem.querySelectorAll('[data-result-filter]').forEach((filterBtn) => {
+            filterBtn.onclick = (event) => {
+                event.stopPropagation();
+                const nextFilter = filterBtn.dataset.resultFilter;
+                window.playersExpandedResultFilter = window.playersExpandedResultFilter || {};
+                window.playersExpandedResultFilter[player.uid] = selectedFilter === nextFilter ? '' : nextFilter;
+                window.renderPlayersLobby(container, players);
+            };
+        });
+
+        if (selectedFilter && selectedGames.length) {
+            const listNode = playerItem.querySelector('.player-finished-list');
+            selectedGames
+                .slice()
+                .sort((a, b) => (b.data.lastMoveTime || b.data.createdAt || 0) - (a.data.lastMoveTime || a.data.createdAt || 0))
+                .forEach((gameEntry) => {
+                    const cardData = buildLobbyGameCardData(gameEntry.id, gameEntry.data, window.currentUser?.uid || '');
+                    if (!cardData) return;
+                    const cardNode = createLobbyGameElement(cardData, window.currentUser?.uid || '');
+                    cardNode.classList.add('player-finished-card');
+                    listNode.appendChild(cardNode);
+                });
+        }
+
+        bindAvatarFallbackHandlers(playerItem);
         container.appendChild(playerItem);
     });
 };
