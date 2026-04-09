@@ -317,25 +317,37 @@ function getLobbyNodes() {
         createGameCancelBtn: document.getElementById('create-game-modal-cancel'),
         colorButtons: document.querySelectorAll('[data-create-color]'),
         backButtons: document.querySelectorAll('[data-lobby-back]'),
-        gamesList: document.getElementById('games-list'),
         finishedGamesList: document.getElementById('finished-games-list'),
-        toggleFinishedGamesBtn: document.getElementById('toggle-finished-games-btn'),
-        playersList: document.getElementById('players-list'),
-        clearFinishedBtn: document.getElementById('clear-finished-btn')
+        toggleFinishedGamesBtn: document.getElementById('toggle-finished-games-btn')
     };
 }
 
 window.setLobbyScreen = function(screen) {
     const nodes = getLobbyNodes();
-    window.lobbyCurrentScreen = screen;
+    const safeScreen = ['hub', 'games', 'players'].includes(screen) ? screen : 'hub';
+    window.lobbyCurrentScreen = safeScreen;
 
-    nodes.hubView?.classList.toggle('hidden', screen !== 'hub');
-    nodes.gamesView?.classList.toggle('hidden', screen !== 'games');
-    nodes.playersView?.classList.toggle('hidden', screen !== 'players');
+    nodes.hubView?.classList.toggle('hidden', safeScreen !== 'hub');
+    nodes.gamesView?.classList.toggle('hidden', safeScreen !== 'games');
+    nodes.playersView?.classList.toggle('hidden', safeScreen !== 'players');
+
+    return safeScreen;
 };
 
 function closeCreateGameModal(modal) {
     modal?.classList.add('hidden');
+}
+
+function syncFinishedGamesVisibility(toggleBtn, finishedList) {
+    if (!toggleBtn || !finishedList) return;
+    finishedList.classList.toggle('hidden', !window.lobbyShowFinished);
+    toggleBtn.textContent = window.lobbyShowFinished ? 'Скрыть завершённые' : 'Показать завершённые';
+}
+
+async function openCreateGameModal(nodes) {
+    const user = await window.requireAuthForGame();
+    if (!user) return;
+    nodes.createGameModal?.classList.remove('hidden');
 }
 
 function buildLobbyEmptyState() {
@@ -451,8 +463,9 @@ function createLobbyGameElement(cardData, userId) {
     return item;
 }
 
-function resetLobbyContainers(gamesList, playersList) {
+function resetLobbyContainers(gamesList, finishedGamesList, playersList) {
     gamesList.innerHTML = '';
+    if (finishedGamesList) finishedGamesList.innerHTML = '';
     playersList.innerHTML = '';
 }
 
@@ -472,23 +485,14 @@ window.initLobby = function() {
     }
     nodes.gameSection?.classList.add('hidden');
 
-    nodes.hubCreateBtn.onclick = async () => {
-        const user = await window.requireAuthForGame();
-        if (!user) return;
-        nodes.createGameModal?.classList.remove('hidden');
-    };
+    nodes.hubCreateBtn.onclick = () => openCreateGameModal(nodes);
     nodes.hubOpenGamesBtn.onclick = () => window.setLobbyScreen('games');
     nodes.hubOpenPlayersBtn.onclick = () => window.setLobbyScreen('players');
     nodes.backButtons.forEach((button) => {
         button.onclick = () => window.setLobbyScreen('hub');
     });
 
-    nodes.createGameBtn.onclick = async () => {
-        const user = await window.requireAuthForGame();
-        if (!user) return;
-
-        nodes.createGameModal?.classList.remove('hidden');
-    };
+    nodes.createGameBtn.onclick = () => openCreateGameModal(nodes);
 
     nodes.colorButtons.forEach((btn) => {
         btn.onclick = () => {
@@ -503,11 +507,13 @@ window.initLobby = function() {
     nodes.createGameModal.onclick = (event) => {
         if (event.target === nodes.createGameModal) closeCreateGameModal(nodes.createGameModal);
     };
+    window.lobbyShowFinished = false;
+    syncFinishedGamesVisibility(nodes.toggleFinishedGamesBtn, nodes.finishedGamesList);
+
     if (nodes.toggleFinishedGamesBtn) {
         nodes.toggleFinishedGamesBtn.onclick = () => {
             window.lobbyShowFinished = !window.lobbyShowFinished;
-            nodes.finishedGamesList?.classList.toggle('hidden', !window.lobbyShowFinished);
-            nodes.toggleFinishedGamesBtn.textContent = window.lobbyShowFinished ? 'Скрыть завершённые' : 'Показать завершённые';
+            syncFinishedGamesVisibility(nodes.toggleFinishedGamesBtn, nodes.finishedGamesList);
         };
     }
 
@@ -519,11 +525,10 @@ window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
     const nodes = getLobbyNodes();
     const gamesList = document.getElementById('games-list');
-    const finishedGamesList = document.getElementById('finished-games-list');
+    const finishedGamesList = nodes.finishedGamesList;
     const playersList = document.getElementById('players-list');
     window.watchGames((snap) => {
-        resetLobbyContainers(gamesList, playersList);
-        if (finishedGamesList) finishedGamesList.innerHTML = '';
+        resetLobbyContainers(gamesList, finishedGamesList, playersList);
         const games = snap.val();
         if (!games) {
             const empty = buildLobbyEmptyState();
@@ -559,6 +564,8 @@ window.loadLobby = function(user) {
         if (!hasFinishedGames && finishedGamesList) {
             finishedGamesList.innerHTML = buildLobbyEmptyState().finishedGames;
         }
+
+        syncFinishedGamesVisibility(nodes.toggleFinishedGamesBtn, finishedGamesList);
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
         window.renderPlayersLobby(playersList, playersAggregate);
@@ -649,7 +656,7 @@ window.renderPlayersLobby = function(container, players) {
             event.stopPropagation();
             const user = await window.requireAuthForGame();
             if (!user) return;
-            document.getElementById('create-game-btn').click();
+            getLobbyNodes().createGameBtn?.click();
         };
 
         container.appendChild(playerItem);

@@ -220,11 +220,6 @@
         width: 100%;
     }
 
-    .lobby-create-btn {
-        width: 100%;
-        margin-left: 0;
-    }
-
     .finished-games-block {
         width: 100%;
         align-items: stretch;
