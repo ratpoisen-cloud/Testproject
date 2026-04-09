@@ -2,9 +2,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     gap: 16px;
     background: var(--top-bar-bg);
+    min-height: 44px;
 }
 
 .top-bar-right {
@@ -169,6 +170,23 @@
 .auth-group {
     display: flex;
     gap: 12px;
+}
+
+.brand-mark {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+body.guest-state #user-menu-wrap {
+    display: none !important;
+}
+
+body.auth-state #auth-buttons {
+    display: none !important;
 }
 
 .letter-avatar {

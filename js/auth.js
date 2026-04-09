@@ -3,6 +3,10 @@
 
 window.setupAuth = function() {
     const userMenuWrap = document.getElementById('user-menu-wrap');
+    const authButtons = document.getElementById('auth-buttons');
+    const guestSection = document.getElementById('guest-section');
+    const lobbySection = document.getElementById('lobby-section');
+    const gameSection = document.getElementById('game-section');
     const userInfo = document.getElementById('user-info');
     const userMenuTrigger = document.getElementById('user-menu-trigger');
     const userPhoto = document.getElementById('user-photo');
@@ -14,6 +18,43 @@ window.setupAuth = function() {
     const AVATAR_BUCKET = 'avatars';
     const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024;
     let isAvatarUploading = false;
+    let hasResolvedInitialAuthState = false;
+
+    window.setAppAuthView = (isAuthorized) => {
+        document.body.classList.toggle('auth-state', isAuthorized);
+        document.body.classList.toggle('guest-state', !isAuthorized);
+        authButtons?.classList.toggle('hidden', isAuthorized);
+        userMenuWrap?.classList.toggle('hidden', !isAuthorized);
+
+        if (isAuthorized) {
+            guestSection?.classList.add('hidden');
+            if (!gameSection || gameSection.classList.contains('hidden')) {
+                lobbySection?.classList.remove('hidden');
+            }
+            return;
+        }
+
+        lobbySection?.classList.add('hidden');
+        gameSection?.classList.add('hidden');
+        guestSection?.classList.remove('hidden');
+    };
+
+    const hideModalById = (id) => {
+        document.getElementById(id)?.classList.add('hidden');
+    };
+
+    const cleanupGuestUiState = () => {
+        closeUserMenu();
+        hideModalById('email-modal');
+        hideModalById('create-game-modal');
+        hideModalById('game-modal');
+        hideModalById('board-settings-menu');
+        document.getElementById('email-error')?.classList.add('hidden');
+        window.watchFirebaseCleanup?.();
+        if (window.history?.replaceState) {
+            window.history.replaceState({}, '', `${window.location.origin}${window.location.pathname}`);
+        }
+    };
 
     const setAvatarUploadState = (state) => {
         if (!userAvatarBtn) return;
@@ -180,12 +221,11 @@ window.setupAuth = function() {
     });
 
     onAuthStateChanged(window.auth, (user) => {
+        hasResolvedInitialAuthState = true;
         window.currentUser = user;
-        const authGroup = document.getElementById('auth-buttons');
         
         if (user) {
-            authGroup?.classList.add('hidden');
-            userMenuWrap?.classList.remove('hidden');
+            window.setAppAuthView(true);
             
             const userName = window.getUserName(user);
             userNameEl.innerText = userName;
@@ -195,14 +235,13 @@ window.setupAuth = function() {
                 if (window.loadLobby) window.loadLobby(user);
             }
         } else {
-            closeUserMenu();
-            authGroup?.classList.remove('hidden');
-            userMenuWrap?.classList.add('hidden');
+            cleanupGuestUiState();
+            window.setAppAuthView(false);
         }
     });
 
     // Google вход
-    document.getElementById('login-google').onclick = async () => {
+    const handleGoogleLogin = async () => {
         try {
             await signInWithPopup(window.auth, new GoogleAuthProvider());
         } catch (err) {
@@ -219,10 +258,16 @@ window.setupAuth = function() {
         emailError.classList.remove('hidden');
     };
 
-    document.getElementById('login-email-trigger').onclick = () => {
+    const openEmailModal = () => {
         emailError.classList.add('hidden');
         emailModal.classList.remove('hidden');
     };
+
+    document.getElementById('login-google').onclick = handleGoogleLogin;
+    document.getElementById('guest-login-google').onclick = handleGoogleLogin;
+
+    document.getElementById('login-email-trigger').onclick = openEmailModal;
+    document.getElementById('guest-login-email').onclick = openEmailModal;
     
     document.getElementById('close-email-modal').onclick = () => emailModal.classList.add('hidden');
 
@@ -278,13 +323,14 @@ window.setupAuth = function() {
 
     // Выход
     logoutBtn.onclick = () => {
-        closeUserMenu();
         signOut(window.auth)
-            .then(() => {
-                location.href = location.origin + location.pathname;
-            })
+            .then(() => cleanupGuestUiState())
             .catch((err) => {
                 window.notify('Ошибка выхода: ' + (err?.message || err), 'error', 3600);
             });
     };
+
+    if (!hasResolvedInitialAuthState) {
+        document.body.classList.remove('auth-state', 'guest-state');
+    }
 };

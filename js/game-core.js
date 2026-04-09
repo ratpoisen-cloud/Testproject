@@ -411,7 +411,12 @@ function resetLobbyContainers(gamesList, playersList) {
 
 window.initLobby = function() {
     const nodes = getLobbyNodes();
-    nodes.lobbySection?.classList.remove('hidden');
+    const isAuthorized = Boolean(window.currentUser);
+    if (window.setAppAuthView) {
+        window.setAppAuthView(isAuthorized);
+    } else {
+        nodes.lobbySection?.classList.toggle('hidden', !isAuthorized);
+    }
     nodes.gameSection?.classList.add('hidden');
 
     nodes.createGameBtn.onclick = async () => {
@@ -448,6 +453,7 @@ window.initLobby = function() {
 
 // Загрузка игр в лобби
 window.loadLobby = function(user) {
+    window.setAppAuthView?.(true);
     const gamesList = document.getElementById('games-list');
     const playersList = document.getElementById('players-list');
     window.watchGames((snap) => {
