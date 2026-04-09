@@ -205,32 +205,46 @@
 
     .lobby-hub-grid {
         grid-template-columns: 1fr;
+        gap: 10px;
     }
 
     .hub-tile {
-        padding: 14px 15px;
-        min-height: 110px;
-        gap: 9px;
+        min-height: 98px;
+        padding: 12px 14px;
+        gap: 10px;
+        border-radius: 16px;
+        flex-direction: row;
+        justify-content: flex-start;
+        text-align: left;
     }
 
     .hub-tile-icon {
-        width: 41px;
-        height: 41px;
+        width: 44px;
+        height: 44px;
+        padding: 8px;
+        border-radius: 13px;
+        flex-shrink: 0;
     }
 
     .hub-tile-icon--create {
-        width: 43px;
-        height: 43px;
+        width: 47px;
+        height: 47px;
+        padding: 9px;
     }
 
     .hub-tile-icon--games {
-        width: 39px;
-        height: 39px;
+        width: 44px;
+        height: 44px;
     }
 
     .hub-tile-icon--players {
-        width: 42px;
-        height: 42px;
+        width: 46px;
+        height: 46px;
+    }
+
+    .hub-tile-title {
+        font-size: 1.03rem;
+        line-height: 1.1;
     }
 
     .lobby-heading {
