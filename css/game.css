@@ -464,6 +464,22 @@
     width: 100%;
 }
 
+#game-section.finished-viewer-mode .controls-group--live {
+    display: none;
+}
+
+#game-section.finished-viewer-mode .game-bottom-panel {
+    border-color: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px var(--accent-soft);
+}
+
+#game-section.finished-viewer-mode .moves-card h3::after {
+    content: " • Режим просмотра";
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.92rem;
+}
+
 .moves-card {
     display: flex;
     flex-direction: column;

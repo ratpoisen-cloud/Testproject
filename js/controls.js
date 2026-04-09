@@ -71,6 +71,13 @@ window.setupGameControls = function(gameRef, roomId) {
         window.clearSelection();
     };
 
+    const isFinishedGame = () => {
+        if (typeof window.isGameFinished === 'function') {
+            return window.isGameFinished();
+        }
+        return Boolean(window.game?.game_over?.() || window.lastKnownGameState === 'game_over');
+    };
+
     // ===== Confirm / Cancel move =====
     const bindPendingMoveControls = () => {
         // Подтверждение хода
@@ -146,7 +153,7 @@ window.setupGameControls = function(gameRef, roomId) {
     const bindSessionControls = () => {
         // Сдача
         setClickHandler('resign-btn', async () => {
-            if (window.game.game_over()) {
+            if (isFinishedGame()) {
                 window.notify("Игра уже окончена", "warning");
                 return;
             }
@@ -264,12 +271,14 @@ window.setupGameControls = function(gameRef, roomId) {
     const bindTakebackControls = () => {
         // Запрос отмены хода
         setClickHandler('takeback-btn', () => {
-            if (window.game.history().length === 0) {
-                window.notify("Нет ходов для отмены", "warning");
+            if (isFinishedGame()) {
+                document.getElementById('takeback-request-box')?.classList.add('hidden');
+                window.pendingTakeback = null;
+                window.notify("Игра уже окончена", "warning");
                 return;
             }
-            if (window.game.game_over()) {
-                window.notify("Игра уже окончена", "warning");
+            if (window.game.history().length === 0) {
+                window.notify("Нет ходов для отмены", "warning");
                 return;
             }
             window.updateGame(gameRef, { takebackRequest: { from: window.playerColor, timestamp: Date.now() } });
@@ -281,14 +290,22 @@ window.setupGameControls = function(gameRef, roomId) {
         if (typeof onValue !== 'undefined') {
             onValue(takebackRef, (snap) => {
                 const request = snap.val();
+                const requestBox = document.getElementById('takeback-request-box');
+
+                if (isFinishedGame()) {
+                    requestBox?.classList.add('hidden');
+                    window.pendingTakeback = null;
+                    return;
+                }
+
                 if (!request) {
-                    document.getElementById('takeback-request-box').classList.add('hidden');
+                    requestBox?.classList.add('hidden');
                     window.pendingTakeback = null;
                     return;
                 }
 
                 if (request.from !== window.playerColor && !request.answered) {
-                    document.getElementById('takeback-request-box').classList.remove('hidden');
+                    requestBox?.classList.remove('hidden');
                     window.pendingTakeback = request;
                 }
             });
@@ -296,6 +313,12 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Принять отмену
         setClickHandler('takeback-accept', () => {
+            if (isFinishedGame()) {
+                document.getElementById('takeback-request-box')?.classList.add('hidden');
+                window.pendingTakeback = null;
+                window.notify("Игра уже окончена", "warning");
+                return;
+            }
             if (window.pendingTakeback) {
                 window.game.undo();
                 window.updateGame(gameRef, {
@@ -312,6 +335,12 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Отклонить отмену
         setClickHandler('takeback-reject', () => {
+            if (isFinishedGame()) {
+                document.getElementById('takeback-request-box')?.classList.add('hidden');
+                window.pendingTakeback = null;
+                window.notify("Игра уже окончена", "warning");
+                return;
+            }
             window.updateGame(gameRef, { takebackRequest: null });
             document.getElementById('takeback-request-box').classList.add('hidden');
             window.pendingTakeback = null;
@@ -322,7 +351,7 @@ window.setupGameControls = function(gameRef, roomId) {
     const bindDrawControls = () => {
         // Кнопка "Предложить ничью"
         setClickHandler('draw-btn', () => {
-            if (window.game.game_over()) {
+            if (isFinishedGame()) {
                 window.notify("Игра уже окончена", "warning");
                 return;
             }
@@ -338,8 +367,14 @@ window.setupGameControls = function(gameRef, roomId) {
         if (typeof onValue !== 'undefined') {
             onValue(drawRef, (snap) => {
                 const request = snap.val();
+                const drawRequestBox = document.getElementById('draw-request-box');
+                if (isFinishedGame()) {
+                    drawRequestBox?.classList.add('hidden');
+                    window.pendingDraw = null;
+                    return;
+                }
                 if (!request) {
-                    document.getElementById('draw-request-box').classList.add('hidden');
+                    drawRequestBox?.classList.add('hidden');
                     window.pendingDraw = null;
                     return;
                 }
@@ -347,7 +382,7 @@ window.setupGameControls = function(gameRef, roomId) {
                 if (request.from !== window.playerColor && !request.answered) {
                     document.getElementById('draw-request-text').innerHTML =
                         `${request.fromName || 'Соперник'} предлагает ничью`;
-                    document.getElementById('draw-request-box').classList.remove('hidden');
+                    drawRequestBox?.classList.remove('hidden');
                     window.pendingDraw = request;
                 }
             });
@@ -355,6 +390,12 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Принять ничью
         setClickHandler('draw-accept', () => {
+            if (isFinishedGame()) {
+                document.getElementById('draw-request-box')?.classList.add('hidden');
+                window.pendingDraw = null;
+                window.notify("Игра уже окончена", "warning");
+                return;
+            }
             if (window.pendingDraw) {
                 window.acceptDraw(gameRef, roomId);
             }
@@ -362,6 +403,12 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Отклонить ничью
         setClickHandler('draw-reject', () => {
+            if (isFinishedGame()) {
+                document.getElementById('draw-request-box')?.classList.add('hidden');
+                window.pendingDraw = null;
+                window.notify("Игра уже окончена", "warning");
+                return;
+            }
             if (window.pendingDraw) {
                 window.rejectDraw(gameRef, roomId);
             }
