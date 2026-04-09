@@ -202,15 +202,22 @@
         margin-top: 10px;
     }
 
-    .lobby-header-actions {
+    .lobby-header {
+        gap: 12px;
+    }
+
+    .lobby-heading {
         width: 100%;
-        justify-content: flex-start;
-        margin-left: 0;
     }
 
     .lobby-create-btn {
         width: 100%;
-        order: -1;
+        margin-left: 0;
+    }
+
+    .lobby-subheader {
+        width: 100%;
+        align-items: stretch;
     }
 
     .lobby-view-toggle {
@@ -219,6 +226,10 @@
 
     .lobby-view-btn {
         flex: 1;
+    }
+
+    .lobby-utility-btn {
+        width: 100%;
     }
 
     .game-meta {

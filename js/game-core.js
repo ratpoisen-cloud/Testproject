@@ -382,13 +382,15 @@ function createLobbyGameElement(cardData, userId) {
     item.className = `game-item ${cardData.isOver ? 'finished' : 'active'}`;
     item.innerHTML = `
         <div class="game-info">
-            <div>Против: <b>${cardData.opponent}</b></div>
-            <div class="game-meta">
-                <span class="game-id">${cardData.id}</span>
-                <span class="game-status">${cardData.statusText}</span>
+            <p class="game-opponent">${cardData.opponent}</p>
+            <div class="game-status-row">
+                <span class="game-status-pill ${cardData.isOver ? 'finished' : 'active'}">${cardData.statusText}</span>
                 <span class="game-time">${cardData.timeAgo}</span>
             </div>
-            <small>Вы играете ${cardData.myColor === 'white' ? 'белыми' : 'черными'}</small>
+            <div class="game-meta">
+                <span class="game-side">Вы играете ${cardData.myColor === 'white' ? 'белыми' : 'чёрными'}</span>
+                <span class="game-id">${cardData.id}</span>
+            </div>
         </div>
         <div class="game-actions">
             <button class="btn btn-sm play-btn">Играть</button>
