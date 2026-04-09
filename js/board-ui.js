@@ -21,6 +21,7 @@ window.BOARD_MOBILE_TAP_EVENTS_NS = '.mobileBoardTap';
 window.boardReactionPickerSquare = null;
 window.boardReactionLongPressTimer = null;
 window.boardReactionSuppressTapUntil = 0;
+window.boardReactionLongPressTriggered = false;
 
 window.getNormalizedPieceSet = function(setName) {
     if (!setName) {
@@ -218,11 +219,36 @@ window.setupBoardReactionUI = function() {
     const $board = $('#myBoard');
     $board.off(window.BOARD_REACTION_EVENTS_NS);
 
+    const suppressPieceImageDefault = function(event) {
+        const isPieceImage = event.target.closest?.('img, .piece-417db');
+        if (!isPieceImage) return;
+        if (event.cancelable) {
+            event.preventDefault();
+        }
+        event.stopPropagation();
+    };
+
+    $board.on(`dragstart${window.BOARD_REACTION_EVENTS_NS}`, 'img, .piece-417db', function(event) {
+        if (!window.isMobile) return;
+        suppressPieceImageDefault(event);
+    });
+
     $board.on(`contextmenu${window.BOARD_REACTION_EVENTS_NS}`, '.square-55d63', function(event) {
-        event.preventDefault();
+        if (event.cancelable) {
+            event.preventDefault();
+        }
         event.stopPropagation();
         const square = $(this).attr('data-square');
         if (!square || window.isReviewInteractionLocked()) return;
+        window.boardReactionSuppressTapUntil = Date.now() + 500;
+        window.openBoardReactionPicker(square);
+    });
+
+    $board.on(`contextmenu${window.BOARD_REACTION_EVENTS_NS}`, 'img, .piece-417db', function(event) {
+        suppressPieceImageDefault(event);
+        const square = $(this).closest('.square-55d63').attr('data-square');
+        if (!square || window.isReviewInteractionLocked()) return;
+        window.boardReactionSuppressTapUntil = Date.now() + 500;
         window.openBoardReactionPicker(square);
     });
 
@@ -230,16 +256,25 @@ window.setupBoardReactionUI = function() {
         const square = $(this).attr('data-square');
         if (!square || window.isReviewInteractionLocked()) return;
 
+        window.boardReactionLongPressTriggered = false;
         clearTimeout(window.boardReactionLongPressTimer);
         window.boardReactionLongPressTimer = setTimeout(() => {
+            window.boardReactionLongPressTriggered = true;
             window.boardReactionSuppressTapUntil = Date.now() + 500;
             window.openBoardReactionPicker(square);
         }, window.BOARD_REACTION_LONG_PRESS_MS);
     });
 
-    const cancelLongPress = () => {
+    const cancelLongPress = (event) => {
+        const longPressTriggered = window.boardReactionLongPressTriggered;
         clearTimeout(window.boardReactionLongPressTimer);
         window.boardReactionLongPressTimer = null;
+
+        if (longPressTriggered && event?.cancelable) {
+            event.preventDefault();
+        }
+
+        window.boardReactionLongPressTriggered = false;
     };
 
     $board.on(
@@ -247,6 +282,8 @@ window.setupBoardReactionUI = function() {
         '.square-55d63',
         cancelLongPress
     );
+
+    $board.find('img, .piece-417db').attr('draggable', 'false');
 };
 
 window.openBoardReactionPicker = function(square) {
