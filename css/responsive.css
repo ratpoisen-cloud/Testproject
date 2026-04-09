@@ -208,6 +208,14 @@
         gap: 12px;
     }
 
+    .lobby-hub-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hub-tile {
+        padding: 16px;
+    }
+
     .lobby-heading {
         width: 100%;
     }
@@ -217,20 +225,16 @@
         margin-left: 0;
     }
 
-    .lobby-subheader {
+    .finished-games-block {
         width: 100%;
         align-items: stretch;
     }
 
-    .lobby-view-toggle {
+    .finished-games-block .btn {
         width: 100%;
     }
 
-    .lobby-view-btn {
-        flex: 1;
-    }
-
-    .lobby-utility-btn {
+    .lobby-back-btn {
         width: 100%;
     }
 

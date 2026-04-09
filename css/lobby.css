@@ -54,6 +54,16 @@
     box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24);
 }
 
+.lobby-view {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.lobby-header-hub {
+    margin-bottom: 2px;
+}
+
 .lobby-header {
     display: flex;
     justify-content: space-between;
@@ -94,37 +104,76 @@
     box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-.lobby-subheader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-    padding: 6px 0 2px;
+.lobby-hub-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.lobby-view-toggle {
+.hub-tile {
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    background: color-mix(in srgb, var(--item-bg) 90%, var(--surface));
+    border-radius: 18px;
+    padding: 18px 16px;
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 6px;
-    padding: 3px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--surface) 90%, transparent);
-    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-}
-
-.lobby-view-btn {
-    border-width: 1px;
-    min-height: 36px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.lobby-view-btn.active {
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent-soft) 90%, var(--surface));
     color: var(--text);
+    text-align: left;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.hub-tile:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+    background: color-mix(in srgb, var(--item-hover-bg) 90%, var(--surface));
+}
+
+.hub-tile-primary {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--surface)), color-mix(in srgb, var(--accent-soft) 82%, var(--surface)));
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.hub-tile-icon {
+    font-size: 1.4rem;
+}
+
+.hub-tile-title {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.hub-tile-text {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.2;
+}
+
+.lobby-back-btn {
+    min-height: 36px;
+}
+
+.finished-games-block {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+#finished-games-list {
+    margin-top: 4px;
+}
+
+#finished-games-list .game-item {
+    background: color-mix(in srgb, var(--surface) 92%, var(--item-bg));
+    border-color: color-mix(in srgb, var(--border) 88%, transparent);
+}
+
+#finished-games-list .game-item:hover {
+    transform: none;
+    border-color: color-mix(in srgb, var(--border) 82%, transparent);
 }
 
 .lobby-utility-btn {
@@ -202,11 +251,43 @@
     flex-wrap: wrap;
 }
 
+.game-opponent-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
 .game-opponent {
     margin: 0;
     font-size: 1rem;
     font-weight: 680;
     color: var(--text);
+}
+
+.avatar-shell {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent-contrast);
+    background: color-mix(in srgb, var(--accent) 70%, var(--border));
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-fallback {
+    text-transform: uppercase;
 }
 
 .game-status-pill {
@@ -255,13 +336,13 @@
 }
 
 .game-turn-pill {
-    font-size: 0.68rem;
-    font-weight: 600;
+    font-size: 0.7rem;
+    font-weight: 700;
     border-radius: 999px;
-    padding: 2px 8px;
-    color: color-mix(in srgb, var(--accent) 95%, var(--text));
-    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    padding: 3px 9px;
+    color: var(--accent-contrast);
+    border: 1px solid color-mix(in srgb, var(--accent-active) 55%, transparent);
+    background: linear-gradient(135deg, var(--accent), var(--accent-active));
 }
 
 .game-actions {
@@ -299,6 +380,9 @@
 
 .player-name-row {
     margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .player-stats {
@@ -418,4 +502,10 @@
 .empty-lobby small {
     font-size: 0.8rem;
     opacity: 0.7;
+}
+
+@media (max-width: 980px) {
+    .lobby-hub-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }

@@ -9,8 +9,8 @@ window.selectedSquare = null;
 window.currentRoomId = null;
 window.pendingTakeback = null;
 window.dragSourceSquare = null; // Добавляем переменную для drag-and-drop
-window.lobbyViewMode = 'games';
-window.lobbyPlayersExpanded = {};
+window.lobbyCurrentScreen = 'hub';
+window.lobbyShowFinished = false;
 window.reviewMode = false;
 window.reviewPlyIndex = null;
 window.reviewGame = null;
@@ -306,26 +306,33 @@ function getLobbyNodes() {
     return {
         lobbySection: document.getElementById('lobby-section'),
         gameSection: document.getElementById('game-section'),
+        hubView: document.getElementById('lobby-view-hub'),
+        gamesView: document.getElementById('lobby-view-games'),
+        playersView: document.getElementById('lobby-view-players'),
+        hubCreateBtn: document.getElementById('hub-create-game'),
+        hubOpenGamesBtn: document.getElementById('hub-open-games'),
+        hubOpenPlayersBtn: document.getElementById('hub-open-players'),
         createGameBtn: document.getElementById('create-game-btn'),
         createGameModal: document.getElementById('create-game-modal'),
         createGameCancelBtn: document.getElementById('create-game-modal-cancel'),
         colorButtons: document.querySelectorAll('[data-create-color]'),
-        gamesViewBtn: document.getElementById('lobby-view-games'),
-        playersViewBtn: document.getElementById('lobby-view-players'),
+        backButtons: document.querySelectorAll('[data-lobby-back]'),
         gamesList: document.getElementById('games-list'),
+        finishedGamesList: document.getElementById('finished-games-list'),
+        toggleFinishedGamesBtn: document.getElementById('toggle-finished-games-btn'),
         playersList: document.getElementById('players-list'),
         clearFinishedBtn: document.getElementById('clear-finished-btn')
     };
 }
 
-function applyLobbyViewMode(nodes) {
-    const isGamesView = window.lobbyViewMode !== 'players';
-    nodes.gamesList?.classList.toggle('hidden', !isGamesView);
-    nodes.playersList?.classList.toggle('hidden', isGamesView);
-    nodes.gamesViewBtn?.classList.toggle('active', isGamesView);
-    nodes.playersViewBtn?.classList.toggle('active', !isGamesView);
-    nodes.clearFinishedBtn?.classList.toggle('hidden', !isGamesView);
-}
+window.setLobbyScreen = function(screen) {
+    const nodes = getLobbyNodes();
+    window.lobbyCurrentScreen = screen;
+
+    nodes.hubView?.classList.toggle('hidden', screen !== 'hub');
+    nodes.gamesView?.classList.toggle('hidden', screen !== 'games');
+    nodes.playersView?.classList.toggle('hidden', screen !== 'players');
+};
 
 function closeCreateGameModal(modal) {
     modal?.classList.add('hidden');
@@ -333,13 +340,14 @@ function closeCreateGameModal(modal) {
 
 function buildLobbyEmptyState() {
     return {
-        games: `
+        activeGames: `
             <div class="empty-lobby">
                 <p class="empty-lobby-title">Пока здесь пусто</p>
-                <p class="empty-lobby-text">Создайте новую партию, чтобы начать.</p>
+                <p class="empty-lobby-text">Активных партий нет. Создайте новую, чтобы начать.</p>
                 <button class="btn btn-primary empty-lobby-cta" type="button" data-empty-action="create-game">Создать новую игру</button>
             </div>
         `,
+        finishedGames: '<div class="empty-lobby">Завершённых партий пока нет</div>',
         players: '<div class="empty-lobby">Нет соперников<br><small>Сыграйте первую партию</small></div>'
     };
 }
@@ -371,6 +379,9 @@ function buildLobbyGameCardData(id, data, userId) {
     const isWaitingForOpponent = !isOver && !opponentUid;
     const isMyTurn = !isOver && !isWaitingForOpponent && data.turn === myColor;
     const opponent = myColor === 'white' ? (players.blackName || 'Ожидание...') : (players.whiteName || 'Ожидание...');
+    const opponentAvatar = myColor === 'white'
+        ? (players.blackPhotoURL || players.blackAvatar || '')
+        : (players.whitePhotoURL || players.whiteAvatar || '');
     const statusText = isOver ? 'Завершена' : (isWaitingForOpponent ? 'Ожидание' : 'В процессе');
     const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
 
@@ -382,10 +393,20 @@ function buildLobbyGameCardData(id, data, userId) {
         stateClass,
         myColor,
         opponent,
+        opponentAvatar,
         statusText,
         canDeleteFromLobby: isOver || isWaitingForOpponent,
         timeAgo: window.formatTimeAgo(data.lastMoveTime || data.createdAt || 0)
     };
+}
+
+function getAvatarMarkup(name, avatarUrl) {
+    const safeName = (name || 'Игрок').trim() || 'Игрок';
+    const initial = safeName.charAt(0).toUpperCase();
+    if (avatarUrl) {
+        return `<span class="avatar-shell"><img class="avatar-img" src="${avatarUrl}" alt="Аватар ${safeName}"></span>`;
+    }
+    return `<span class="avatar-shell avatar-fallback">${initial}</span>`;
 }
 
 function createLobbyGameElement(cardData, userId) {
@@ -395,14 +416,17 @@ function createLobbyGameElement(cardData, userId) {
         <div class="game-accent" aria-hidden="true"></div>
         <div class="game-info">
             <div class="game-title-row">
-                <p class="game-opponent">${cardData.opponent}</p>
+                <div class="game-opponent-wrap">
+                    ${getAvatarMarkup(cardData.opponent, cardData.opponentAvatar)}
+                    <p class="game-opponent">${cardData.opponent}</p>
+                </div>
                 <span class="game-status-pill ${cardData.stateClass}">${cardData.statusText}</span>
             </div>
             <div class="game-meta">
+                ${cardData.isMyTurn ? '<span class="game-turn-pill">Ваш ход</span>' : ''}
                 <span class="game-side">Вы ${cardData.myColor === 'white' ? 'белыми' : 'чёрными'}</span>
                 <span class="game-dot" aria-hidden="true">•</span>
                 <span class="game-time">${cardData.timeAgo}</span>
-                ${cardData.isMyTurn ? '<span class="game-turn-pill">Ваш ход</span>' : ''}
             </div>
         </div>
         <div class="game-actions">
@@ -448,6 +472,17 @@ window.initLobby = function() {
     }
     nodes.gameSection?.classList.add('hidden');
 
+    nodes.hubCreateBtn.onclick = async () => {
+        const user = await window.requireAuthForGame();
+        if (!user) return;
+        nodes.createGameModal?.classList.remove('hidden');
+    };
+    nodes.hubOpenGamesBtn.onclick = () => window.setLobbyScreen('games');
+    nodes.hubOpenPlayersBtn.onclick = () => window.setLobbyScreen('players');
+    nodes.backButtons.forEach((button) => {
+        button.onclick = () => window.setLobbyScreen('hub');
+    });
+
     nodes.createGameBtn.onclick = async () => {
         const user = await window.requireAuthForGame();
         if (!user) return;
@@ -468,16 +503,15 @@ window.initLobby = function() {
     nodes.createGameModal.onclick = (event) => {
         if (event.target === nodes.createGameModal) closeCreateGameModal(nodes.createGameModal);
     };
-    nodes.gamesViewBtn.onclick = () => {
-        window.lobbyViewMode = 'games';
-        applyLobbyViewMode(nodes);
-    };
-    nodes.playersViewBtn.onclick = () => {
-        window.lobbyViewMode = 'players';
-        applyLobbyViewMode(nodes);
-    };
+    if (nodes.toggleFinishedGamesBtn) {
+        nodes.toggleFinishedGamesBtn.onclick = () => {
+            window.lobbyShowFinished = !window.lobbyShowFinished;
+            nodes.finishedGamesList?.classList.toggle('hidden', !window.lobbyShowFinished);
+            nodes.toggleFinishedGamesBtn.textContent = window.lobbyShowFinished ? 'Скрыть завершённые' : 'Показать завершённые';
+        };
+    }
 
-    applyLobbyViewMode(nodes);
+    window.setLobbyScreen('hub');
 };
 
 // Загрузка игр в лобби
@@ -485,32 +519,45 @@ window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
     const nodes = getLobbyNodes();
     const gamesList = document.getElementById('games-list');
+    const finishedGamesList = document.getElementById('finished-games-list');
     const playersList = document.getElementById('players-list');
     window.watchGames((snap) => {
         resetLobbyContainers(gamesList, playersList);
+        if (finishedGamesList) finishedGamesList.innerHTML = '';
         const games = snap.val();
         if (!games) {
             const empty = buildLobbyEmptyState();
-            gamesList.innerHTML = empty.games;
+            gamesList.innerHTML = empty.activeGames;
             bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
+            if (finishedGamesList) finishedGamesList.innerHTML = empty.finishedGames;
             playersList.innerHTML = empty.players;
             return;
         }
 
         const sortedGames = sortLobbyGames(games);
-        let hasGames = false;
+        let hasActiveGames = false;
+        let hasFinishedGames = false;
 
         sortedGames.forEach(([id, data]) => {
             const cardData = buildLobbyGameCardData(id, data, user.uid);
             if (!cardData) return;
 
-            hasGames = true;
-            gamesList.appendChild(createLobbyGameElement(cardData, user.uid));
+            const cardNode = createLobbyGameElement(cardData, user.uid);
+            if (cardData.isOver) {
+                hasFinishedGames = true;
+                finishedGamesList?.appendChild(cardNode);
+            } else {
+                hasActiveGames = true;
+                gamesList.appendChild(cardNode);
+            }
         });
 
-        if (!hasGames) {
-            gamesList.innerHTML = buildLobbyEmptyState().games;
+        if (!hasActiveGames) {
+            gamesList.innerHTML = buildLobbyEmptyState().activeGames;
             bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
+        }
+        if (!hasFinishedGames && finishedGamesList) {
+            finishedGamesList.innerHTML = buildLobbyEmptyState().finishedGames;
         }
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
@@ -542,38 +589,32 @@ window.buildPlayersAggregate = function(sortedGames, userId) {
             opponentsMap.set(opponentUid, {
                 uid: opponentUid,
                 name: opponentName,
-                totalGames: 0,
-                activeGames: 0,
-                finishedGames: 0,
-                lastMoveTime: 0,
-                games: []
+                wins: 0,
+                losses: 0,
+                draws: 0,
+                lastMoveTime: 0
             });
         }
 
         const opponentCard = opponentsMap.get(opponentUid);
-        opponentCard.totalGames += 1;
-        opponentCard.activeGames += isFinished ? 0 : 1;
-        opponentCard.finishedGames += isFinished ? 1 : 0;
         opponentCard.lastMoveTime = Math.max(opponentCard.lastMoveTime, lastMoveTime);
-        opponentCard.games.push({
-            id: gameId,
-            status: isFinished ? 'Завершена' : 'В процессе',
-            isFinished,
-            myColor,
-            lastMoveTime,
-            resultLabel: isFinished ? window.getFinishedGameResultLabel(data) : ''
-        });
+
+        if (isFinished) {
+            const resultLabel = window.getFinishedGameResultLabel(data);
+            if (resultLabel === 'Ничья') {
+                opponentCard.draws += 1;
+            } else if (
+                (resultLabel === 'Победили белые' && myColor === 'white') ||
+                (resultLabel === 'Победили чёрные' && myColor === 'black')
+            ) {
+                opponentCard.wins += 1;
+            } else if (resultLabel.startsWith('Победили')) {
+                opponentCard.losses += 1;
+            }
+        }
     });
 
-    const players = Array.from(opponentsMap.values());
-    players.forEach((opponentCard) => {
-        opponentCard.games.sort((a, b) => {
-            if (a.isFinished !== b.isFinished) return a.isFinished ? 1 : -1;
-            return b.lastMoveTime - a.lastMoveTime;
-        });
-    });
-
-    return players.sort((a, b) => b.lastMoveTime - a.lastMoveTime);
+    return Array.from(opponentsMap.values()).sort((a, b) => b.lastMoveTime - a.lastMoveTime);
 };
 
 window.renderPlayersLobby = function(container, players) {
@@ -585,26 +626,22 @@ window.renderPlayersLobby = function(container, players) {
     }
 
     players.forEach((player) => {
-        const isExpanded = !!window.lobbyPlayersExpanded[player.uid];
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
         playerItem.innerHTML = `
             <div class="player-item-header">
                 <div class="player-info">
-                    <div class="player-name-row">Игрок: <b>${player.name}</b></div>
+                    <div class="player-name-row">${getAvatarMarkup(player.name, '')} <b>${player.name}</b></div>
                     <div class="player-stats">
-                        <span class="player-stat-pill">Всего: ${player.totalGames}</span>
-                        <span class="player-stat-pill">Активных: ${player.activeGames}</span>
-                        <span class="player-stat-pill">Завершённых: ${player.finishedGames}</span>
-                        <span class="game-time">${window.formatTimeAgo(player.lastMoveTime)}</span>
+                        <span class="player-stat-pill">Выиграно: ${player.wins}</span>
+                        <span class="player-stat-pill">Проиграно: ${player.losses}</span>
+                        <span class="player-stat-pill">Ничьи: ${player.draws}</span>
                     </div>
                 </div>
                 <div class="game-actions">
                     <button class="btn btn-sm play-btn player-play-btn">Новая партия</button>
-                    <button class="btn btn-sm btn-outline toggle-games-btn">${isExpanded ? 'Скрыть партии' : 'Показать партии'}</button>
                 </div>
             </div>
-            <div class="player-games-list ${isExpanded ? '' : 'hidden'}"></div>
         `;
 
         const playBtn = playerItem.querySelector('.player-play-btn');
@@ -614,41 +651,6 @@ window.renderPlayersLobby = function(container, players) {
             if (!user) return;
             document.getElementById('create-game-btn').click();
         };
-
-        const toggleBtn = playerItem.querySelector('.toggle-games-btn');
-        const gamesHistoryNode = playerItem.querySelector('.player-games-list');
-        toggleBtn.onclick = () => {
-            const nextExpanded = !window.lobbyPlayersExpanded[player.uid];
-            window.lobbyPlayersExpanded[player.uid] = nextExpanded;
-            toggleBtn.textContent = nextExpanded ? 'Скрыть партии' : 'Показать партии';
-            gamesHistoryNode.classList.toggle('hidden', !nextExpanded);
-        };
-
-        const historyHtml = player.games.map((game) => `
-            <div class="player-game-row ${game.isFinished ? 'finished' : 'active'}">
-                <div class="game-info">
-                    <div class="game-meta">
-                        <span class="game-id">${game.id}</span>
-                        <span class="game-status">${game.status}</span>
-                        <span class="game-time">${window.formatTimeAgo(game.lastMoveTime)}</span>
-                    </div>
-                    ${game.isFinished ? `<div class="player-game-result">${game.resultLabel}</div>` : ''}
-                    <small>Вы играли ${game.myColor === 'white' ? 'белыми' : 'черными'}</small>
-                </div>
-                <div class="game-actions">
-                    <button class="btn btn-sm play-btn open-player-game-btn" data-game-id="${game.id}">Открыть</button>
-                </div>
-            </div>
-        `).join('');
-        gamesHistoryNode.innerHTML = historyHtml || '<div class="empty-lobby">Пока нет партий</div>';
-
-        gamesHistoryNode.querySelectorAll('.open-player-game-btn').forEach((btn) => {
-            btn.onclick = (event) => {
-                event.stopPropagation();
-                const gameId = btn.dataset.gameId;
-                location.href = location.origin + location.pathname + `?room=${gameId}`;
-            };
-        });
 
         container.appendChild(playerItem);
     });
