@@ -333,7 +333,13 @@ function closeCreateGameModal(modal) {
 
 function buildLobbyEmptyState() {
     return {
-        games: '<div class="empty-lobby">Нет активных партий</div>',
+        games: `
+            <div class="empty-lobby">
+                <p class="empty-lobby-title">Пока здесь пусто</p>
+                <p class="empty-lobby-text">Создайте новую партию, чтобы начать.</p>
+                <button class="btn btn-primary empty-lobby-cta" type="button" data-empty-action="create-game">Создать новую игру</button>
+            </div>
+        `,
         players: '<div class="empty-lobby">Нет соперников<br><small>Сыграйте первую партию</small></div>'
     };
 }
@@ -363,12 +369,17 @@ function buildLobbyGameCardData(id, data, userId) {
     const myColor = players.white === userId ? 'white' : 'black';
     const opponentUid = myColor === 'white' ? players.black : players.white;
     const isWaitingForOpponent = !isOver && !opponentUid;
+    const isMyTurn = !isOver && !isWaitingForOpponent && data.turn === myColor;
     const opponent = myColor === 'white' ? (players.blackName || 'Ожидание...') : (players.whiteName || 'Ожидание...');
-    const statusText = isOver ? 'Завершена' : (isWaitingForOpponent ? 'Ожидание соперника' : 'В процессе');
+    const statusText = isOver ? 'Завершена' : (isWaitingForOpponent ? 'Ожидание' : 'В процессе');
+    const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
 
     return {
         id,
         isOver,
+        isWaitingForOpponent,
+        isMyTurn,
+        stateClass,
         myColor,
         opponent,
         statusText,
@@ -379,17 +390,19 @@ function buildLobbyGameCardData(id, data, userId) {
 
 function createLobbyGameElement(cardData, userId) {
     const item = document.createElement('div');
-    item.className = `game-item ${cardData.isOver ? 'finished' : 'active'}`;
+    item.className = `game-item ${cardData.stateClass}`;
     item.innerHTML = `
+        <div class="game-accent" aria-hidden="true"></div>
         <div class="game-info">
-            <p class="game-opponent">${cardData.opponent}</p>
-            <div class="game-status-row">
-                <span class="game-status-pill ${cardData.isOver ? 'finished' : 'active'}">${cardData.statusText}</span>
-                <span class="game-time">${cardData.timeAgo}</span>
+            <div class="game-title-row">
+                <p class="game-opponent">${cardData.opponent}</p>
+                <span class="game-status-pill ${cardData.stateClass}">${cardData.statusText}</span>
             </div>
             <div class="game-meta">
-                <span class="game-side">Вы играете ${cardData.myColor === 'white' ? 'белыми' : 'чёрными'}</span>
-                <span class="game-id">${cardData.id}</span>
+                <span class="game-side">Вы ${cardData.myColor === 'white' ? 'белыми' : 'чёрными'}</span>
+                <span class="game-dot" aria-hidden="true">•</span>
+                <span class="game-time">${cardData.timeAgo}</span>
+                ${cardData.isMyTurn ? '<span class="game-turn-pill">Ваш ход</span>' : ''}
             </div>
         </div>
         <div class="game-actions">
@@ -417,6 +430,12 @@ function createLobbyGameElement(cardData, userId) {
 function resetLobbyContainers(gamesList, playersList) {
     gamesList.innerHTML = '';
     playersList.innerHTML = '';
+}
+
+function bindLobbyEmptyStateActions(container, createGameBtn) {
+    const emptyActionBtn = container.querySelector('[data-empty-action="create-game"]');
+    if (!emptyActionBtn || !createGameBtn) return;
+    emptyActionBtn.onclick = () => createGameBtn.click();
 }
 
 window.initLobby = function() {
@@ -464,6 +483,7 @@ window.initLobby = function() {
 // Загрузка игр в лобби
 window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
+    const nodes = getLobbyNodes();
     const gamesList = document.getElementById('games-list');
     const playersList = document.getElementById('players-list');
     window.watchGames((snap) => {
@@ -472,6 +492,7 @@ window.loadLobby = function(user) {
         if (!games) {
             const empty = buildLobbyEmptyState();
             gamesList.innerHTML = empty.games;
+            bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
             playersList.innerHTML = empty.players;
             return;
         }
@@ -488,7 +509,8 @@ window.loadLobby = function(user) {
         });
 
         if (!hasGames) {
-            gamesList.innerHTML = '<div class="empty-lobby">Нет активных партий<br><small>Создайте новую игру!</small></div>';
+            gamesList.innerHTML = buildLobbyEmptyState().games;
+            bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
         }
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
