@@ -185,6 +185,16 @@ body.guest-state #user-menu-wrap {
     display: none !important;
 }
 
+body.guest-state #auth-buttons,
+body.guest-state .brand-mark {
+    display: none !important;
+}
+
+body.guest-state .top-bar {
+    min-height: 0;
+    margin-bottom: 0;
+}
+
 body.auth-state #auth-buttons {
     display: none !important;
 }
