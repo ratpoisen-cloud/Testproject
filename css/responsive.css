@@ -208,7 +208,29 @@
     }
 
     .hub-tile {
-        padding: 16px;
+        padding: 14px 15px;
+        min-height: 110px;
+        gap: 9px;
+    }
+
+    .hub-tile-icon {
+        width: 41px;
+        height: 41px;
+    }
+
+    .hub-tile-icon--create {
+        width: 43px;
+        height: 43px;
+    }
+
+    .hub-tile-icon--games {
+        width: 39px;
+        height: 39px;
+    }
+
+    .hub-tile-icon--players {
+        width: 42px;
+        height: 42px;
     }
 
     .lobby-heading {
