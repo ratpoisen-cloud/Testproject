@@ -164,6 +164,18 @@ body[data-ui-theme="amoled"] {
     --badge-white-text: #02070f;
     --badge-black-bg: #0e0e0e;
     --badge-black-text: #f0f4fa;
+    --highlight-my-turn: rgba(77, 158, 255, 0.32);
+    --shadow-accent: rgba(77, 158, 255, 0.36);
+    --board-last-move-outline: rgba(77, 158, 255, 0.68);
+    --board-check-outline: rgba(255, 107, 107, 0.96);
+    --board-check-glow: rgba(255, 107, 107, 0.75);
+    --board-reaction-bg: rgba(0, 0, 0, 0.76);
+    --board-reaction-border: rgba(255, 255, 255, 0.2);
+    --board-reaction-picker-bg: rgba(6, 8, 12, 0.97);
+    --board-reaction-picker-border: rgba(77, 158, 255, 0.34);
+    --board-reaction-option-bg: rgba(255, 255, 255, 0.06);
+    --system-control-bg: rgba(10, 10, 10, 0.98);
+    --system-control-active-bg: rgba(77, 158, 255, 0.18);
 }
 
 /* ====================== FOREST (тёплая зелёная) ====================== */
@@ -211,4 +223,16 @@ body[data-ui-theme="forest"] {
     --badge-white-text: #122012;
     --badge-black-bg: #1a2b1d;
     --badge-black-text: #e9f0e4;
+    --highlight-my-turn: rgba(156, 200, 138, 0.3);
+    --shadow-accent: rgba(126, 168, 110, 0.34);
+    --board-last-move-outline: rgba(156, 200, 138, 0.62);
+    --board-check-outline: rgba(200, 106, 106, 0.92);
+    --board-check-glow: rgba(184, 96, 96, 0.68);
+    --board-reaction-bg: rgba(14, 20, 15, 0.74);
+    --board-reaction-border: rgba(169, 191, 157, 0.22);
+    --board-reaction-picker-bg: rgba(21, 28, 22, 0.97);
+    --board-reaction-picker-border: rgba(126, 168, 109, 0.3);
+    --board-reaction-option-bg: rgba(233, 240, 228, 0.08);
+    --system-control-bg: rgba(28, 36, 29, 0.98);
+    --system-control-active-bg: rgba(156, 200, 138, 0.2);
 }
