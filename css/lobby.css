@@ -98,65 +98,124 @@
 
 .lobby-hub-grid {
     display: grid;
-    gap: 12px;
+    gap: 14px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .hub-tile {
-    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-    background: color-mix(in srgb, var(--item-bg) 90%, var(--surface));
-    border-radius: 18px;
-    padding: 18px 16px 16px;
+    --tile-border: color-mix(in srgb, var(--border) 82%, transparent);
+    --tile-bg: color-mix(in srgb, var(--item-bg) 92%, var(--surface));
+    --tile-bg-hover: color-mix(in srgb, var(--item-hover-bg) 90%, var(--surface));
+    --tile-shadow: 0 8px 20px color-mix(in srgb, #000 18%, transparent);
+    --tile-shadow-hover: 0 14px 30px color-mix(in srgb, #000 24%, transparent);
+    --tile-icon-shell: color-mix(in srgb, var(--surface) 74%, var(--item-bg));
+    --tile-icon-color: color-mix(in srgb, var(--text) 94%, var(--accent) 6%);
+    border: 1px solid var(--tile-border);
+    background: var(--tile-bg);
+    border-radius: 20px;
+    padding: 17px 16px 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 11px;
-    min-height: 132px;
+    gap: 12px;
+    min-height: 136px;
     color: var(--text);
     text-align: center;
-    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    box-shadow: var(--tile-shadow);
+    isolation: isolate;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
 }
 
-.hub-tile:hover {
+.hub-tile:hover,
+.hub-tile:focus-visible {
     transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
-    background: color-mix(in srgb, var(--item-hover-bg) 90%, var(--surface));
+    border-color: color-mix(in srgb, var(--accent) 25%, var(--tile-border));
+    background: var(--tile-bg-hover);
+    box-shadow: var(--tile-shadow-hover);
+}
+
+.hub-tile:focus-visible {
+    outline: none;
+}
+
+.hub-tile:active {
+    transform: translateY(0) scale(0.985);
+    box-shadow: 0 6px 14px color-mix(in srgb, #000 20%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 44%, var(--tile-border));
+    background: color-mix(in srgb, var(--tile-bg-hover) 85%, var(--accent-soft) 15%);
 }
 
 .hub-tile-primary {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--surface)), color-mix(in srgb, var(--accent-soft) 82%, var(--surface)));
-    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    --tile-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+    --tile-bg: linear-gradient(160deg, color-mix(in srgb, var(--accent) 32%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 78%, var(--surface)) 100%);
+    --tile-bg-hover: linear-gradient(160deg, color-mix(in srgb, var(--accent) 39%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 86%, var(--surface)) 100%);
+    --tile-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 20%, #000 18%);
+    --tile-shadow-hover: 0 16px 34px color-mix(in srgb, var(--accent) 26%, #000 20%);
+    --tile-icon-shell: color-mix(in srgb, var(--surface) 26%, var(--accent-soft));
+    --tile-icon-color: var(--accent-contrast);
+}
+
+.hub-tile-secondary {
+    --tile-icon-shell: color-mix(in srgb, var(--surface) 78%, var(--item-hover-bg));
+}
+
+.hub-tile-secondary--games {
+    --tile-border: color-mix(in srgb, var(--accent) 18%, var(--border));
+    --tile-icon-color: color-mix(in srgb, var(--accent) 66%, var(--text));
+}
+
+.hub-tile-secondary--players {
+    --tile-border: color-mix(in srgb, var(--text-secondary) 26%, var(--border));
+    --tile-icon-color: color-mix(in srgb, var(--text) 78%, var(--accent-soft) 22%);
+    --tile-bg: color-mix(in srgb, var(--item-bg) 84%, var(--surface));
+    --tile-bg-hover: color-mix(in srgb, var(--item-hover-bg) 86%, var(--surface));
 }
 
 .hub-tile-icon {
-    width: 48px;
-    height: 48px;
+    width: 54px;
+    height: 54px;
+    padding: 10px;
+    border-radius: 16px;
+    background: var(--tile-icon-shell);
+    color: var(--tile-icon-color);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 40%, transparent);
     display: block;
-    color: var(--text);
     object-fit: contain;
+    transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.hub-tile:hover .hub-tile-icon,
+.hub-tile:focus-visible .hub-tile-icon {
+    transform: translateY(-1px);
+}
+
+.hub-tile:active .hub-tile-icon {
+    transform: scale(0.97);
 }
 
 .hub-tile-icon--create {
-    width: 50px;
-    height: 50px;
-    transform: translateY(1px);
+    width: 58px;
+    height: 58px;
+    padding: 11px;
 }
 
 .hub-tile-icon--games {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
 }
 
 .hub-tile-icon--players {
-    width: 49px;
-    height: 49px;
+    width: 56px;
+    height: 56px;
 }
 
 .hub-tile-title {
-    font-weight: 700;
-    font-size: 1rem;
-    line-height: 1.2;
+    font-weight: 750;
+    font-size: 1.03rem;
+    line-height: 1.15;
+    letter-spacing: 0.01em;
 }
 
 .lobby-back-btn {
