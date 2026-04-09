@@ -43,6 +43,14 @@
     --move-list-active-bg: rgba(163, 193, 143, 0.2);
     --move-list-active-border: rgba(163, 193, 143, 0.48);
     --move-list-active-shadow: rgba(163, 193, 143, 0.6);
+    --board-last-move-outline: rgba(100, 180, 255, 0.6);
+    --board-check-outline: rgba(220, 60, 60, 0.95);
+    --board-check-glow: rgba(220, 60, 60, 0.75);
+    --board-reaction-bg: rgba(15, 17, 15, 0.68);
+    --board-reaction-border: rgba(255, 255, 255, 0.16);
+    --board-reaction-picker-bg: rgba(18, 20, 18, 0.96);
+    --board-reaction-picker-border: rgba(255, 255, 255, 0.12);
+    --board-reaction-option-bg: rgba(255, 255, 255, 0.05);
 
     --highlight-my-turn: color-mix(in srgb, var(--accent) 35%, transparent);
     --shadow-accent: color-mix(in srgb, var(--accent) 25%, transparent);
