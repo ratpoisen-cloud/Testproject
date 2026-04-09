@@ -51,128 +51,192 @@
 
 #lobby-section {
     border-color: color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24);
 }
 
 .lobby-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    gap: 18px;
     flex-wrap: wrap;
 }
 
 .lobby-heading {
     display: flex;
-    align-items: center;
-    min-height: 44px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-height: 48px;
 }
 
 .lobby-heading .section-title {
     text-align: left;
     color: var(--text);
-    font-size: 1.35rem;
+    font-size: 1.45rem;
+    letter-spacing: -0.01em;
 }
 
-.lobby-header-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-left: auto;
+.lobby-subtitle {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
 }
 
 .lobby-create-btn {
+    margin-left: auto;
     width: auto;
-    padding: 0 18px;
-    min-height: 42px;
+    min-height: 46px;
+    padding: 0 22px;
+    font-weight: 700;
+    box-shadow: 0 10px 20px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.lobby-subheader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
 }
 
 .lobby-view-toggle {
     display: flex;
     gap: 6px;
+    padding: 3px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.lobby-view-btn {
+    border-width: 1px;
+    min-height: 36px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
 }
 
 .lobby-view-btn.active {
     border-color: var(--accent);
-    background: var(--accent-soft);
+    background: color-mix(in srgb, var(--accent-soft) 90%, var(--surface));
+    color: var(--text);
+}
+
+.lobby-utility-btn {
+    min-height: 34px;
+    font-size: 0.78rem;
+    border-width: 1px;
+    color: var(--text-secondary);
+    opacity: 0.78;
+}
+
+.lobby-utility-btn:hover {
+    opacity: 1;
 }
 
 .games-grid {
     display: grid;
-    gap: 10px;
+    gap: 12px;
     margin: 16px 0 8px;
     max-height: 400px;
     overflow-y: auto;
 }
 
 .game-item {
-    background: var(--item-bg);
-    padding: 14px 16px;
-    border-radius: 16px;
+    background: color-mix(in srgb, var(--item-bg) 86%, var(--surface));
+    padding: 16px 18px;
+    border-radius: 18px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    border-left: 4px solid var(--accent);
-    transition: all 0.2s ease;
-    cursor: pointer;
+    align-items: flex-start;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
     gap: 15px;
     flex-wrap: wrap;
 }
 
 .game-item:hover {
-    background: var(--item-hover-bg);
-    transform: translateX(2px);
+    background: color-mix(in srgb, var(--item-hover-bg) 88%, var(--surface));
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    transform: translateY(-1px);
 }
 
 .game-item.finished {
-    border-left-color: var(--text-secondary);
-    opacity: 0.85;
-}
-
-.game-item.finished:hover {
-    opacity: 1;
+    border-color: color-mix(in srgb, var(--border) 90%, transparent);
 }
 
 .game-info {
     flex: 1;
-    min-width: 180px;
+    min-width: 220px;
 }
 
-.game-info div {
-    margin-bottom: 4px;
+.game-opponent {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.game-status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.game-status-pill {
+    font-size: 0.74rem;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 4px 10px;
+    border: 1px solid transparent;
+}
+
+.game-status-pill.active {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.game-status-pill.finished {
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    border-color: color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .game-meta {
     display: flex;
-    gap: 15px;
-    font-size: 0.75rem;
+    gap: 10px;
+    font-size: 0.77rem;
     color: var(--text-secondary);
-    margin: 5px 0;
+    margin: 0;
     flex-wrap: wrap;
+    align-items: center;
+}
+
+.game-side {
+    color: var(--text-secondary);
 }
 
 .game-id {
     font-family: monospace;
-    background: color-mix(in srgb, var(--surface) 84%, var(--text) 16%);
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.game-status {
-    font-weight: 500;
+    background: color-mix(in srgb, var(--surface) 90%, var(--text) 10%);
+    padding: 3px 8px;
+    border-radius: 999px;
 }
 
 .game-time {
-    background: color-mix(in srgb, var(--surface) 88%, var(--text) 12%);
-    padding: 2px 8px;
-    border-radius: 12px;
+    font-size: 0.76rem;
+    color: var(--text-secondary);
 }
 
 .game-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
 }
 
@@ -254,14 +318,14 @@
 }
 
 .play-btn {
-    min-width: 80px;
+    min-width: 90px;
     background: var(--accent);
     color: var(--accent-contrast);
     border: none;
-    padding: 6px 14px;
-    border-radius: 8px;
+    padding: 6px 16px;
+    border-radius: 10px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.85rem;
     transition: all 0.2s ease;
 }
@@ -276,20 +340,22 @@
 }
 
 .delete-btn {
-    background: var(--danger);
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 8px;
+    background: transparent;
+    color: color-mix(in srgb, var(--danger) 82%, var(--text-secondary));
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+    padding: 6px 12px;
+    border-radius: 10px;
     cursor: pointer;
     font-weight: 500;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     transition: all 0.2s ease;
+    opacity: 0.9;
 }
 
 .delete-btn:hover {
-    background: var(--danger-hover);
-    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+    opacity: 1;
 }
 
 .empty-lobby {

@@ -81,15 +81,16 @@
             <div class="lobby-header">
                 <div class="lobby-heading">
                     <h1 class="section-title section-title-tight">Мои партии</h1>
+                    <p class="lobby-subtitle">Активные и завершённые партии</p>
                 </div>
-                <div class="lobby-header-actions">
-                    <button id="create-game-btn" class="btn btn-primary lobby-create-btn">Создать новую игру</button>
-                    <div class="lobby-view-toggle" role="tablist" aria-label="Режим лобби">
-                        <button id="lobby-view-games" class="btn btn-outline btn-sm lobby-view-btn active" type="button">Партии</button>
-                        <button id="lobby-view-players" class="btn btn-outline btn-sm lobby-view-btn" type="button">Игроки</button>
-                    </div>
-                    <button id="clear-finished-btn" class="btn btn-outline">🗑️ Очистить завершённые</button>
+                <button id="create-game-btn" class="btn btn-primary lobby-create-btn">Создать новую игру</button>
+            </div>
+            <div class="lobby-subheader">
+                <div class="lobby-view-toggle" role="tablist" aria-label="Режим лобби">
+                    <button id="lobby-view-games" class="btn btn-outline btn-sm lobby-view-btn active" type="button">Партии</button>
+                    <button id="lobby-view-players" class="btn btn-outline btn-sm lobby-view-btn" type="button">Игроки</button>
                 </div>
+                <button id="clear-finished-btn" class="btn btn-outline btn-sm lobby-utility-btn">Очистить завершённые</button>
             </div>
             <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
             <div id="players-list" class="games-grid hidden">Загрузка игроков...</div>
