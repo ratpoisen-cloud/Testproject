@@ -16,6 +16,8 @@ window.PIECE_SETS = {
 window.BOARD_REACTIONS = ['💀', '🤡', '😭', '😏', '👀', '🔥', '😴', '⚰️', '🖕🏻', '💅🏻', '⚔️', '🏴‍☠️', '🤝', '🐒', '🤬', '💩'];
 window.BOARD_REACTION_TTL_MS = 7000;
 window.BOARD_REACTION_LONG_PRESS_MS = 450;
+window.BOARD_REACTION_EVENTS_NS = '.boardReaction';
+window.BOARD_MOBILE_TAP_EVENTS_NS = '.mobileBoardTap';
 window.boardReactionPickerSquare = null;
 window.boardReactionLongPressTimer = null;
 window.boardReactionSuppressTapUntil = 0;
@@ -213,9 +215,10 @@ window.setupBoardReactionUI = function() {
         window.__boardReactionGlobalHandlersBound = true;
     }
 
-    if (window.__boardReactionBoardHandlersBound) return;
+    const $board = $('#myBoard');
+    $board.off(window.BOARD_REACTION_EVENTS_NS);
 
-    $('#myBoard').on('contextmenu', '.square-55d63', function(event) {
+    $board.on(`contextmenu${window.BOARD_REACTION_EVENTS_NS}`, '.square-55d63', function(event) {
         event.preventDefault();
         event.stopPropagation();
         const square = $(this).attr('data-square');
@@ -223,7 +226,7 @@ window.setupBoardReactionUI = function() {
         window.openBoardReactionPicker(square);
     });
 
-    $('#myBoard').on('touchstart', '.square-55d63', function(event) {
+    $board.on(`touchstart${window.BOARD_REACTION_EVENTS_NS}`, '.square-55d63', function(event) {
         const square = $(this).attr('data-square');
         if (!square || window.isReviewInteractionLocked()) return;
 
@@ -239,8 +242,11 @@ window.setupBoardReactionUI = function() {
         window.boardReactionLongPressTimer = null;
     };
 
-    $('#myBoard').on('touchend touchcancel touchmove', '.square-55d63', cancelLongPress);
-    window.__boardReactionBoardHandlersBound = true;
+    $board.on(
+        `touchend${window.BOARD_REACTION_EVENTS_NS} touchcancel${window.BOARD_REACTION_EVENTS_NS} touchmove${window.BOARD_REACTION_EVENTS_NS}`,
+        '.square-55d63',
+        cancelLongPress
+    );
 };
 
 window.openBoardReactionPicker = function(square) {
@@ -447,8 +453,9 @@ window.handleDrop = function(source, target) {
 
 // Прикрепление обработчика кликов для мобильных устройств
 window.attachMobileClickHandler = function() {
-    $('#myBoard').off('click');
-    $('#myBoard').on('click', '.square-55d63', function(e) {
+    const $board = $('#myBoard');
+    $board.off(`click${window.BOARD_MOBILE_TAP_EVENTS_NS}`);
+    $board.on(`click${window.BOARD_MOBILE_TAP_EVENTS_NS}`, '.square-55d63', function(e) {
         e.stopPropagation();
         const square = $(this).attr('data-square');
         if (square) {
