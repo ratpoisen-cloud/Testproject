@@ -122,93 +122,167 @@ body[data-ui-theme="light"] {
 /* ====================== AMOLED (глубокий чёрный) ====================== */
 body[data-ui-theme="amoled"] {
     --bg: #000000;
-    --card: #0a0a0a;
-    --surface: #111111;
-    --accent: #4d9eff;
-    --accent-dark: #2e7be0;
+    --card: #07090d;
+    --surface: #0c1016;
+    --accent: #57a6ff;
+    --accent-dark: #347fdc;
     --danger: #ff6b6b;
     --success: #3ed18a;
     --text: #f0f4fa;
-    --text-secondary: #9ba9c0;
-    --border: #1a1a1a;
+    --text-secondary: #97a8c2;
+    --border: #1a2432;
 
     --top-bar-bg: rgba(0, 0, 0, 0.88);
-    --input-bg: #050505;
+    --input-bg: #04070c;
     --overlay-bg: rgba(0, 0, 0, 0.98);
-    --panel-muted-bg: rgba(15, 15, 15, 0.6);
-    --item-bg: #0a0a0a;
-    --item-hover-bg: #1a1a1a;
-    --move-list-bg: #050505;
+    --panel-muted-bg: rgba(10, 14, 20, 0.72);
+    --item-bg: #080c13;
+    --item-hover-bg: #111927;
+    --move-list-bg: #04070d;
     --toast-bg: rgba(8, 8, 8, 0.98);
     --toast-info-bg: rgba(15, 20, 30, 0.98);
-    --surface-elevated: #101010;
-    --modal-bg: #080808;
-    --input-bg-readonly: #0d0d0d;
-    --input-placeholder: #8f8f8f;
-    --accent-hover: #70b3ff;
-    --accent-active: #2e7be0;
-    --accent-contrast: #03070f;
-    --accent-soft: rgba(77, 158, 255, 0.16);
+    --surface-elevated: #111824;
+    --modal-bg: #0a1019;
+    --input-bg-readonly: #090f18;
+    --input-placeholder: #8597b4;
+    --accent-hover: #6ab2ff;
+    --accent-active: #347fdc;
+    --accent-contrast: #020812;
+    --accent-soft: rgba(87, 166, 255, 0.18);
     --danger-hover: #e55757;
-    --draw-bg: #161616;
-    --draw-text: #e4e4e4;
-    --draw-border: #2f2f2f;
-    --draw-hover: #1f1f1f;
-    --draw-hover-shadow: rgba(120, 120, 120, 0.3);
-    --status-my-turn-bg: linear-gradient(135deg, rgba(77, 158, 255, 0.38), rgba(77, 158, 255, 0.15));
-    --status-my-turn-border: rgba(77, 158, 255, 0.95);
-    --status-opponent-bg: rgba(255, 255, 255, 0.03);
-    --status-opponent-border: rgba(255, 255, 255, 0.16);
-    --status-passive-text: #9ba9c0;
-    --badge-white-bg: linear-gradient(135deg, #7fbcff, #4d9eff);
+    --draw-bg: #111722;
+    --draw-text: #d4dee9;
+    --draw-border: #2b3a50;
+    --draw-hover: #172132;
+    --draw-hover-shadow: rgba(74, 114, 170, 0.28);
+    --status-my-turn-bg: linear-gradient(135deg, rgba(87, 166, 255, 0.36), rgba(87, 166, 255, 0.12));
+    --status-my-turn-border: rgba(87, 166, 255, 0.88);
+    --status-opponent-bg: rgba(14, 19, 28, 0.9);
+    --status-opponent-border: rgba(67, 84, 110, 0.8);
+    --status-passive-text: #8ea1bf;
+    --badge-white-bg: linear-gradient(135deg, #85c1ff, #57a6ff);
     --badge-white-text: #02070f;
-    --badge-black-bg: #0e0e0e;
+    --badge-black-bg: #0b111a;
     --badge-black-text: #f0f4fa;
+    --highlight-my-turn: rgba(87, 166, 255, 0.32);
+    --shadow-accent: rgba(87, 166, 255, 0.34);
+    --board-last-move-outline: rgba(87, 166, 255, 0.68);
+    --board-check-outline: rgba(255, 107, 107, 0.96);
+    --board-check-glow: rgba(255, 107, 107, 0.75);
+    --board-reaction-bg: rgba(0, 0, 0, 0.76);
+    --board-reaction-border: rgba(255, 255, 255, 0.2);
+    --board-reaction-picker-bg: rgba(6, 8, 12, 0.97);
+    --board-reaction-picker-border: rgba(87, 166, 255, 0.34);
+    --board-reaction-option-bg: rgba(255, 255, 255, 0.06);
+    --system-control-bg: rgba(9, 13, 20, 0.98);
+    --system-control-active-bg: rgba(87, 166, 255, 0.2);
 }
 
 /* ====================== FOREST (тёплая зелёная) ====================== */
 body[data-ui-theme="forest"] {
     --bg: #0f1410;
-    --card: #1a211b;
-    --surface: #222a23;
-    --accent: #9cc88a;
-    --accent-dark: #7aa86d;
+    --card: #1a241b;
+    --surface: #233026;
+    --accent: #9fc78a;
+    --accent-dark: #789e65;
     --danger: #c86a6a;
     --success: #8ed47a;
     --text: #e9f0e4;
-    --text-secondary: #a3b39c;
-    --border: #2f3a2f;
+    --text-secondary: #a7b79f;
+    --border: #344336;
 
     --top-bar-bg: rgba(15, 20, 16, 0.85);
-    --input-bg: #141a15;
+    --input-bg: #141d16;
     --overlay-bg: rgba(10, 14, 11, 0.95);
-    --panel-muted-bg: rgba(25, 32, 26, 0.5);
-    --item-bg: #171f19;
-    --item-hover-bg: #212a23;
+    --panel-muted-bg: rgba(28, 38, 30, 0.56);
+    --item-bg: #172319;
+    --item-hover-bg: #223127;
     --move-list-bg: #0c120e;
     --toast-bg: rgba(18, 22, 19, 0.98);
     --toast-info-bg: rgba(25, 35, 28, 0.98);
-    --surface-elevated: #283128;
-    --modal-bg: #1a211b;
-    --input-bg-readonly: #1a231c;
-    --input-placeholder: #97a68f;
-    --accent-hover: #b2d89f;
-    --accent-active: #7aa86d;
+    --surface-elevated: #2a372d;
+    --modal-bg: #1b271e;
+    --input-bg-readonly: #1a261d;
+    --input-placeholder: #95a98f;
+    --accent-hover: #b0d29b;
+    --accent-active: #789e65;
     --accent-contrast: #10160f;
-    --accent-soft: rgba(156, 200, 138, 0.16);
-    --danger-hover: #b95a5a;
-    --draw-bg: #dce7d0;
-    --draw-text: #2b3729;
-    --draw-border: #afc39f;
-    --draw-hover: #e7f0dc;
-    --draw-hover-shadow: rgba(128, 156, 112, 0.28);
-    --status-my-turn-bg: linear-gradient(135deg, rgba(156, 200, 138, 0.34), rgba(156, 200, 138, 0.14));
-    --status-my-turn-border: rgba(156, 200, 138, 0.88);
-    --status-opponent-bg: rgba(255, 255, 255, 0.05);
-    --status-opponent-border: rgba(83, 102, 84, 0.82);
-    --status-passive-text: #afbcaa;
-    --badge-white-bg: linear-gradient(135deg, #cae4bc, #9cc88a);
+    --accent-soft: rgba(159, 199, 138, 0.17);
+    --danger-hover: #b55a5a;
+    --draw-bg: #d8e2cd;
+    --draw-text: #2b3929;
+    --draw-border: #a8bd99;
+    --draw-hover: #e3ecd8;
+    --draw-hover-shadow: rgba(118, 146, 102, 0.3);
+    --status-my-turn-bg: linear-gradient(135deg, rgba(159, 199, 138, 0.34), rgba(159, 199, 138, 0.14));
+    --status-my-turn-border: rgba(159, 199, 138, 0.84);
+    --status-opponent-bg: rgba(27, 37, 29, 0.85);
+    --status-opponent-border: rgba(83, 103, 84, 0.78);
+    --status-passive-text: #b0beaa;
+    --badge-white-bg: linear-gradient(135deg, #cee4c2, #9fc78a);
     --badge-white-text: #122012;
     --badge-black-bg: #1a2b1d;
     --badge-black-text: #e9f0e4;
+    --highlight-my-turn: rgba(156, 200, 138, 0.3);
+    --shadow-accent: rgba(125, 167, 108, 0.34);
+    --board-last-move-outline: rgba(159, 199, 138, 0.62);
+    --board-check-outline: rgba(200, 106, 106, 0.92);
+    --board-check-glow: rgba(184, 96, 96, 0.68);
+    --board-reaction-bg: rgba(14, 20, 15, 0.74);
+    --board-reaction-border: rgba(169, 191, 157, 0.22);
+    --board-reaction-picker-bg: rgba(21, 28, 22, 0.97);
+    --board-reaction-picker-border: rgba(124, 165, 108, 0.3);
+    --board-reaction-option-bg: rgba(233, 240, 228, 0.08);
+    --system-control-bg: rgba(28, 38, 30, 0.98);
+    --system-control-active-bg: rgba(159, 199, 138, 0.2);
+}
+
+/* ====================== AMOLED: характерные акценты ====================== */
+body[data-ui-theme="amoled"] .btn-primary {
+    background: linear-gradient(135deg, #67b0ff, #4a98f4 70%);
+    border: 1px solid rgba(131, 189, 255, 0.5);
+    box-shadow: 0 10px 24px rgba(16, 54, 102, 0.36);
+}
+
+body[data-ui-theme="amoled"] .btn-primary:hover {
+    box-shadow: 0 12px 28px rgba(28, 86, 158, 0.42);
+}
+
+body[data-ui-theme="amoled"] .btn-primary:active {
+    box-shadow: 0 8px 18px rgba(18, 60, 116, 0.32);
+}
+
+body[data-ui-theme="amoled"] .turn-status {
+    backdrop-filter: blur(6px);
+}
+
+body[data-ui-theme="amoled"] .modal-content,
+body[data-ui-theme="amoled"] .share-container input,
+body[data-ui-theme="amoled"] .input-field {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ====================== FOREST: характерные акценты ====================== */
+body[data-ui-theme="forest"] .btn-primary {
+    background: linear-gradient(135deg, #aed29a, #8eb879 72%);
+    border: 1px solid rgba(197, 220, 184, 0.5);
+    box-shadow: 0 10px 24px rgba(32, 52, 34, 0.28);
+}
+
+body[data-ui-theme="forest"] .btn-primary:hover {
+    box-shadow: 0 12px 26px rgba(42, 66, 44, 0.34);
+}
+
+body[data-ui-theme="forest"] .btn-primary:active {
+    box-shadow: 0 8px 18px rgba(30, 48, 31, 0.26);
+}
+
+body[data-ui-theme="forest"] .turn-status {
+    backdrop-filter: blur(4px);
+}
+
+body[data-ui-theme="forest"] .modal-content,
+body[data-ui-theme="forest"] .share-container input,
+body[data-ui-theme="forest"] .input-field {
+    box-shadow: inset 0 1px 0 rgba(235, 244, 228, 0.04);
 }

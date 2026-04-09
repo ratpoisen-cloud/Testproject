@@ -71,7 +71,7 @@ window.initThemeButtons = function() {
 // ==================== UI ТЕМЫ АККАУНТА ====================
 // Отвечает за: глобальную тему интерфейса (вне шахматной доски)
 
-window.UI_THEMES = ['default', 'dark', 'light'];
+window.UI_THEMES = ['default', 'dark', 'light', 'amoled', 'forest'];
 
 window.setUITheme = function(themeName) {
     if (!themeName || !window.UI_THEMES.includes(themeName)) {
