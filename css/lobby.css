@@ -1,22 +1,97 @@
+.guest-shell {
+    min-height: calc(100vh - 140px);
+    display: grid;
+    place-items: center;
+    padding: 20px 0 8vh;
+}
+
+.guest-panel {
+    width: min(92vw, 420px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 34px 30px;
+    border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+}
+
+.guest-logo {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    font-size: 1.6rem;
+    color: var(--accent-contrast);
+    background: linear-gradient(135deg, var(--accent), var(--accent-active));
+}
+
+.guest-title {
+    margin: 4px 0 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.guest-subtitle {
+    margin: 0 0 6px;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.guest-actions {
+    width: 100%;
+    display: grid;
+    gap: 10px;
+}
+
+.guest-actions .btn {
+    width: 100%;
+}
+
+#lobby-section {
+    border-color: color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+}
+
 .lobby-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    gap: 12px;
+    margin-bottom: 12px;
+    gap: 14px;
     flex-wrap: wrap;
+}
+
+.lobby-heading {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}
+
+.lobby-heading .section-title {
+    text-align: left;
+    color: var(--text);
+    font-size: 1.35rem;
 }
 
 .lobby-header-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
     flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.lobby-create-btn {
+    width: auto;
+    padding: 0 18px;
+    min-height: 42px;
 }
 
 .lobby-view-toggle {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .lobby-view-btn.active {
@@ -26,15 +101,15 @@
 
 .games-grid {
     display: grid;
-    gap: 12px;
-    margin: 20px 0;
+    gap: 10px;
+    margin: 16px 0 8px;
     max-height: 400px;
     overflow-y: auto;
 }
 
 .game-item {
     background: var(--item-bg);
-    padding: 16px 20px;
+    padding: 14px 16px;
     border-radius: 16px;
     display: flex;
     justify-content: space-between;
@@ -48,7 +123,7 @@
 
 .game-item:hover {
     background: var(--item-hover-bg);
-    transform: translateX(4px);
+    transform: translateX(2px);
 }
 
 .game-item.finished {

@@ -30,6 +30,7 @@
     <div class="main-container">
 
         <div class="top-bar">
+            <div class="brand-mark" aria-label="Fentanyl Chess Online">♞ Fentanyl Chess</div>
             <div id="user-menu-wrap" class="user-menu-wrap hidden">
                 <div id="user-info">
                     <div id="user-menu-trigger" class="user-menu-trigger user-trigger-block" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false">
@@ -64,10 +65,25 @@
             </div>
         </div>
 
+        <section id="guest-section" class="guest-shell hidden">
+            <div class="guest-panel card">
+                <div class="guest-logo" aria-hidden="true">♞</div>
+                <h1 class="guest-title">Fentanyl Chess</h1>
+                <p class="guest-subtitle">Войдите, чтобы продолжить игру.</p>
+                <div class="guest-actions">
+                    <button id="guest-login-google" class="btn btn-primary">Google</button>
+                    <button id="guest-login-email" class="btn btn-outline">Email</button>
+                </div>
+            </div>
+        </section>
+
         <div id="lobby-section" class="card hidden">
             <div class="lobby-header">
-                <h1 class="section-title section-title-tight">Мои партии</h1>
+                <div class="lobby-heading">
+                    <h1 class="section-title section-title-tight">Мои партии</h1>
+                </div>
                 <div class="lobby-header-actions">
+                    <button id="create-game-btn" class="btn btn-primary lobby-create-btn">Создать новую игру</button>
                     <div class="lobby-view-toggle" role="tablist" aria-label="Режим лобби">
                         <button id="lobby-view-games" class="btn btn-outline btn-sm lobby-view-btn active" type="button">Партии</button>
                         <button id="lobby-view-players" class="btn btn-outline btn-sm lobby-view-btn" type="button">Игроки</button>
@@ -77,7 +93,6 @@
             </div>
             <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
             <div id="players-list" class="games-grid hidden">Загрузка игроков...</div>
-            <button id="create-game-btn" class="btn btn-primary btn-large">Создать новую игру</button>
         </div>
 
         <div id="create-game-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="create-game-modal-title">
