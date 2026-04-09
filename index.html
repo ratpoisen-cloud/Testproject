@@ -78,22 +78,60 @@
         </section>
 
         <div id="lobby-section" class="card hidden">
-            <div class="lobby-header">
-                <div class="lobby-heading">
-                    <h1 class="section-title section-title-tight">Мои партии</h1>
-                    <p class="lobby-subtitle">Продолжайте активные партии</p>
+            <div id="lobby-view-hub" class="lobby-view">
+                <div class="lobby-header lobby-header-hub">
+                    <div class="lobby-heading">
+                        <h1 class="section-title section-title-tight">Лобби</h1>
+                        <p class="lobby-subtitle">Выберите, куда перейти дальше</p>
+                    </div>
                 </div>
-                <button id="create-game-btn" class="btn btn-primary lobby-create-btn">Создать новую игру</button>
-            </div>
-            <div class="lobby-subheader">
-                <div class="lobby-view-toggle" role="tablist" aria-label="Режим лобби">
-                    <button id="lobby-view-games" class="btn btn-outline btn-sm lobby-view-btn active" type="button">Партии</button>
-                    <button id="lobby-view-players" class="btn btn-outline btn-sm lobby-view-btn" type="button">Игроки</button>
+                <div class="lobby-hub-grid">
+                    <button id="hub-create-game" class="hub-tile hub-tile-primary" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">⚔️</span>
+                        <span class="hub-tile-title">Начать партию</span>
+                        <span class="hub-tile-text">Новая игра</span>
+                    </button>
+                    <button id="hub-open-games" class="hub-tile" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">♟️</span>
+                        <span class="hub-tile-title">Партии</span>
+                        <span class="hub-tile-text">Активные</span>
+                    </button>
+                    <button id="hub-open-players" class="hub-tile" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">👥</span>
+                        <span class="hub-tile-title">Игроки</span>
+                        <span class="hub-tile-text">Соперники</span>
+                    </button>
                 </div>
-                <button id="clear-finished-btn" class="btn btn-outline btn-sm lobby-utility-btn">Очистить завершённые</button>
             </div>
-            <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
-            <div id="players-list" class="games-grid hidden">Загрузка игроков...</div>
+
+            <div id="lobby-view-games" class="lobby-view hidden">
+                <div class="lobby-header">
+                    <button class="btn btn-outline btn-sm lobby-back-btn" type="button" data-lobby-back>← В лобби</button>
+                    <div class="lobby-heading">
+                        <h2 class="section-title section-title-tight">Партии</h2>
+                        <p class="lobby-subtitle">Активные и завершённые отдельно</p>
+                    </div>
+                </div>
+                <div id="games-list" class="games-grid">Загрузка ваших игр...</div>
+                <div class="finished-games-block">
+                    <button id="toggle-finished-games-btn" class="btn btn-outline btn-sm lobby-utility-btn" type="button">Показать завершённые</button>
+                    <button id="clear-finished-btn" class="btn btn-outline btn-sm lobby-utility-btn">Очистить завершённые</button>
+                </div>
+                <div id="finished-games-list" class="games-grid hidden"></div>
+            </div>
+
+            <div id="lobby-view-players" class="lobby-view hidden">
+                <div class="lobby-header">
+                    <button class="btn btn-outline btn-sm lobby-back-btn" type="button" data-lobby-back>← В лобби</button>
+                    <div class="lobby-heading">
+                        <h2 class="section-title section-title-tight">Игроки</h2>
+                        <p class="lobby-subtitle">Соперники и история результатов</p>
+                    </div>
+                </div>
+                <div id="players-list" class="games-grid">Загрузка игроков...</div>
+            </div>
+
+            <button id="create-game-btn" class="hidden" type="button" aria-hidden="true" tabindex="-1">Создать игру</button>
         </div>
 
         <div id="create-game-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="create-game-modal-title">
