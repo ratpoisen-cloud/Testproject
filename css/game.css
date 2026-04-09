@@ -11,6 +11,17 @@
     width: 100%;
     height: auto;
     display: block;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+#myBoard .piece-417db {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 .board-wrapper:hover {
