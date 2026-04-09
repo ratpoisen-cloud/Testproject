@@ -223,23 +223,7 @@
         height: 44px;
         padding: 8px;
         border-radius: 13px;
-        flex-shrink: 0;
-    }
-
-    .hub-tile-icon--create {
-        width: 47px;
-        height: 47px;
-        padding: 9px;
-    }
-
-    .hub-tile-icon--games {
-        width: 44px;
-        height: 44px;
-    }
-
-    .hub-tile-icon--players {
-        width: 46px;
-        height: 46px;
+        font-size: 1.62rem;
     }
 
     .hub-tile-title {
