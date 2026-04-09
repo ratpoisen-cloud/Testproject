@@ -231,6 +231,18 @@
     background: color-mix(in srgb, var(--text-secondary) 30%, var(--border));
 }
 
+.game-item.finished.result-win .game-accent {
+    background: color-mix(in srgb, var(--success) 55%, var(--border));
+}
+
+.game-item.finished.result-loss .game-accent {
+    background: color-mix(in srgb, var(--danger) 55%, var(--border));
+}
+
+.game-item.finished.result-draw .game-accent {
+    background: color-mix(in srgb, var(--text-secondary) 42%, var(--border));
+}
+
 .game-info {
     min-width: 0;
 }
@@ -309,6 +321,24 @@
     border-color: color-mix(in srgb, var(--border) 88%, transparent);
 }
 
+.game-status-pill.finished.result-win {
+    color: color-mix(in srgb, var(--success) 82%, var(--text));
+    background: color-mix(in srgb, var(--success) 16%, var(--surface));
+    border-color: color-mix(in srgb, var(--success) 34%, var(--border));
+}
+
+.game-status-pill.finished.result-loss {
+    color: color-mix(in srgb, var(--danger) 80%, var(--text));
+    background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+    border-color: color-mix(in srgb, var(--danger) 32%, var(--border));
+}
+
+.game-status-pill.finished.result-draw {
+    color: color-mix(in srgb, var(--text) 86%, var(--text-secondary));
+    background: color-mix(in srgb, var(--surface) 92%, var(--border));
+    border-color: color-mix(in srgb, var(--border) 86%, transparent);
+}
+
 .game-meta {
     display: flex;
     gap: 7px;
@@ -335,6 +365,18 @@
     color: var(--accent-contrast);
     border: 1px solid color-mix(in srgb, var(--accent-active) 55%, transparent);
     background: linear-gradient(135deg, var(--accent), var(--accent-active));
+}
+
+.game-turn-pill.my-turn {
+    color: var(--accent-contrast);
+    border-color: color-mix(in srgb, var(--accent-active) 55%, transparent);
+    background: linear-gradient(135deg, var(--accent), var(--accent-active));
+}
+
+.game-turn-pill.opponent-turn {
+    color: var(--text);
+    background: color-mix(in srgb, var(--item-hover-bg) 84%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
 }
 
 .game-actions {
@@ -390,6 +432,44 @@
     border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
     border-radius: 999px;
     padding: 3px 10px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.player-stat-pill:hover {
+    opacity: 0.92;
+}
+
+.player-stat-pill.is-active {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 26%, transparent) inset;
+}
+
+.player-stat-pill-win {
+    color: color-mix(in srgb, var(--success) 82%, var(--text));
+    background: color-mix(in srgb, var(--success) 14%, var(--surface));
+    border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+}
+
+.player-stat-pill-loss {
+    color: color-mix(in srgb, var(--danger) 82%, var(--text));
+    background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+    border-color: color-mix(in srgb, var(--danger) 26%, var(--border));
+}
+
+.player-stat-pill-draw {
+    color: color-mix(in srgb, var(--text) 90%, var(--text-secondary));
+    background: color-mix(in srgb, var(--surface) 90%, var(--item-bg));
+    border-color: color-mix(in srgb, var(--border) 76%, transparent);
+}
+
+.player-finished-list {
+    display: grid;
+    gap: 8px;
+}
+
+.player-finished-card {
+    margin-top: 2px;
 }
 
 

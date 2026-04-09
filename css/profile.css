@@ -172,21 +172,11 @@
     gap: 12px;
 }
 
-.brand-mark {
-    font-size: 0.92rem;
-    color: var(--text-secondary);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
 body.guest-state #user-menu-wrap {
     display: none !important;
 }
 
-body.guest-state #auth-buttons,
-body.guest-state .brand-mark {
+body.guest-state #auth-buttons {
     display: none !important;
 }
 
