@@ -113,7 +113,14 @@
 }
 
 body {
-    background: var(--bg);
+    background:
+        radial-gradient(
+            circle at 50% 30%,
+            color-mix(in srgb, var(--bg) 85%, var(--accent-soft)) 0%,
+            color-mix(in srgb, var(--bg) 92%, var(--accent-soft)) 34%,
+            var(--bg) 78%
+        ),
+        var(--bg);
     color: var(--text);
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     line-height: 1.45;

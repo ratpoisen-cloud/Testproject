@@ -114,13 +114,17 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 #lobby-section {
-    border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--surface-elevated) 34%, var(--card)),
-        color-mix(in srgb, var(--card) 95%, #141814)
+        color-mix(in srgb, var(--surface-elevated) 42%, var(--card)),
+        color-mix(in srgb, var(--card) 94%, #141814)
     );
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(232, 232, 216, 0.04);
+    box-shadow:
+        0 24px 52px rgba(0, 0, 0, 0.34),
+        0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent),
+        0 0 34px color-mix(in srgb, var(--accent) 12%, transparent),
+        inset 0 1px 0 rgba(232, 232, 216, 0.05);
 }
 
 .lobby-view {
@@ -190,11 +194,11 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile {
-    --tile-border: color-mix(in srgb, var(--accent) 12%, var(--border));
-    --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 56%, var(--item-bg)), color-mix(in srgb, var(--item-bg) 95%, #141814));
-    --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 64%, var(--item-hover-bg)), color-mix(in srgb, var(--item-hover-bg) 94%, #171c17));
-    --tile-shadow: 0 8px 20px color-mix(in srgb, #000 18%, transparent);
-    --tile-shadow-hover: 0 14px 30px color-mix(in srgb, #000 24%, transparent);
+    --tile-border: color-mix(in srgb, var(--accent) 18%, var(--border));
+    --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 62%, var(--item-bg)) 0%, color-mix(in srgb, var(--item-bg) 94%, #141814) 100%);
+    --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 72%, var(--item-hover-bg)) 0%, color-mix(in srgb, var(--item-hover-bg) 92%, #171c17) 100%);
+    --tile-shadow: 0 12px 26px color-mix(in srgb, #000 24%, transparent), 0 1px 0 color-mix(in srgb, var(--surface-elevated) 16%, transparent);
+    --tile-shadow-hover: 0 20px 36px color-mix(in srgb, #000 30%, transparent), 0 0 22px color-mix(in srgb, var(--accent) 12%, transparent);
     --tile-icon-shell: color-mix(in srgb, var(--surface) 74%, var(--item-bg));
     --tile-icon-color: color-mix(in srgb, var(--text) 94%, var(--accent) 6%);
     border: 1px solid var(--tile-border);
@@ -209,7 +213,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     min-height: 136px;
     color: var(--text);
     text-align: center;
-    box-shadow: var(--tile-shadow);
+    box-shadow: var(--tile-shadow), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 40%, transparent);
     isolation: isolate;
     -webkit-tap-highlight-color: transparent;
     transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
@@ -218,10 +222,10 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .hub-tile:hover,
 .hub-tile:focus-visible {
-    transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--accent) 25%, var(--tile-border));
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--accent) 34%, var(--tile-border));
     background: var(--tile-bg-hover);
-    box-shadow: var(--tile-shadow-hover);
+    box-shadow: var(--tile-shadow-hover), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 46%, transparent);
 }
 
 .hub-tile:focus-visible {
@@ -236,11 +240,11 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile-primary {
-    --tile-border: color-mix(in srgb, var(--accent) 42%, var(--border));
-    --tile-bg: linear-gradient(160deg, color-mix(in srgb, var(--accent) 32%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 78%, var(--surface)) 100%);
-    --tile-bg-hover: linear-gradient(160deg, color-mix(in srgb, var(--accent) 39%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 86%, var(--surface)) 100%);
-    --tile-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 20%, #000 18%);
-    --tile-shadow-hover: 0 16px 34px color-mix(in srgb, var(--accent) 26%, #000 20%);
+    --tile-border: color-mix(in srgb, var(--accent) 50%, var(--border));
+    --tile-bg: linear-gradient(160deg, color-mix(in srgb, var(--accent) 38%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 88%, var(--surface)) 100%);
+    --tile-bg-hover: linear-gradient(160deg, color-mix(in srgb, var(--accent) 46%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 94%, var(--surface)) 100%);
+    --tile-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 20%, #000 22%), 0 0 26px color-mix(in srgb, var(--accent) 18%, transparent);
+    --tile-shadow-hover: 0 20px 40px color-mix(in srgb, var(--accent) 26%, #000 24%), 0 0 34px color-mix(in srgb, var(--accent) 24%, transparent);
     --tile-icon-shell: color-mix(in srgb, var(--surface) 26%, var(--accent-soft));
     --tile-icon-color: var(--accent-contrast);
 }
