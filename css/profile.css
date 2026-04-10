@@ -6,21 +6,23 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     gap: 14px;
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--surface-elevated) 16%, transparent),
-        color-mix(in srgb, var(--surface) 9%, transparent)
+        color-mix(in srgb, var(--surface-elevated) 96%, var(--top-bar-bg)),
+        color-mix(in srgb, var(--surface) 94%, var(--top-bar-bg))
     );
-    border: 1px solid color-mix(in srgb, var(--border) 28%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
     border-radius: var(--radius-20);
     min-height: 56px;
-    padding: 9px 14px;
+    padding: 10px 14px;
     box-shadow:
-        0 12px 24px rgba(0, 0, 0, 0.24),
-        inset 0 1px 0 rgba(232, 232, 216, 0.04);
-    backdrop-filter: blur(7px);
+        0 10px 22px rgba(0, 0, 0, 0.26),
+        0 2px 6px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(232, 232, 216, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.16);
+    backdrop-filter: none;
 }
 
 .top-bar-left {
