@@ -1,6 +1,4 @@
 .top-bar {
-    position: sticky;
-    top: 12px;
     z-index: 260;
     isolation: isolate;
     display: grid;
