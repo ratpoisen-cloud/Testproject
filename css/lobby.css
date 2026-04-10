@@ -71,25 +71,23 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 
 .guest-brand {
-    width: 100%;
-    display: grid;
-    place-items: center;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    width: auto;
+    display: block;
 }
 
 .guest-brand .brand-wordmark--guest {
     display: block;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto;
 }
 
-.guest-brand .brand-wordmark--guest .brand-wordmark-asset {
+.guest-brand .brand-wordmark-img--guest {
     display: block;
-}
-
-.guest-brand .brand-wordmark--guest .brand-wordmark-img {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
+    height: auto;
+    margin: 0 auto;
 }
 
 .guest-title {
