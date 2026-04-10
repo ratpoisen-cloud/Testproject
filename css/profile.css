@@ -212,12 +212,6 @@ body.guest-state #auth-buttons {
     display: none !important;
 }
 
-body.guest-state .top-bar {
-    display: none !important;
-    min-height: 0;
-    margin-bottom: 0;
-}
-
 body.auth-state #auth-buttons {
     display: none !important;
 }
