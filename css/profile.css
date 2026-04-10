@@ -9,18 +9,18 @@
     gap: 16px;
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--surface-elevated) 76%, transparent),
-        color-mix(in srgb, var(--surface) 86%, transparent)
+        color-mix(in srgb, var(--surface-elevated) 18%, transparent),
+        color-mix(in srgb, var(--surface) 12%, transparent)
     );
     border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
     border-radius: var(--radius-20);
     min-height: 52px;
     padding: 10px 14px;
     box-shadow:
-        0 10px 24px rgba(0, 0, 0, 0.24),
-        0 0 0 1px color-mix(in srgb, var(--surface-elevated) 60%, transparent) inset,
-        inset 0 1px 0 rgba(232, 232, 216, 0.05);
-    backdrop-filter: blur(8px);
+        0 8px 18px rgba(0, 0, 0, 0.2),
+        0 0 0 1px color-mix(in srgb, var(--surface-elevated) 24%, transparent) inset,
+        inset 0 1px 0 rgba(232, 232, 216, 0.04);
+    backdrop-filter: blur(6px);
 }
 
 .top-bar-right {

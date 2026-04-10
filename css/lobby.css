@@ -117,13 +117,13 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     border-color: color-mix(in srgb, var(--accent) 30%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--surface-elevated) 42%, var(--card)),
-        color-mix(in srgb, var(--card) 94%, #141814)
+        color-mix(in srgb, var(--surface-elevated) 14%, transparent),
+        color-mix(in srgb, var(--surface) 10%, transparent)
     );
     box-shadow:
-        0 20px 40px rgba(0, 0, 0, 0.4),
-        0 0 12px color-mix(in srgb, var(--accent) 6%, transparent),
-        inset 0 1px 0 rgba(232, 232, 216, 0.04);
+        0 18px 34px rgba(0, 0, 0, 0.34),
+        0 0 10px color-mix(in srgb, var(--accent) 4%, transparent),
+        inset 0 1px 0 rgba(232, 232, 216, 0.06);
 }
 
 .lobby-view {
@@ -194,19 +194,14 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .hub-tile {
     --tile-border: color-mix(in srgb, var(--accent) 10%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
-    --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 62%, var(--item-bg)) 0%, color-mix(in srgb, var(--item-bg) 94%, #141814) 100%);
-    --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 72%, var(--item-hover-bg)) 0%, color-mix(in srgb, var(--item-hover-bg) 92%, #171c17) 100%);
-    --tile-shadow: 0 12px 26px color-mix(in srgb, #000 24%, transparent), 0 1px 0 color-mix(in srgb, var(--surface-elevated) 16%, transparent);
-    --tile-shadow-hover: 0 20px 36px color-mix(in srgb, #000 30%, transparent), 0 0 22px color-mix(in srgb, var(--accent) 12%, transparent);
+    --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 12%, transparent) 0%, color-mix(in srgb, var(--surface) 7%, transparent) 100%);
+    --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 20%, transparent) 0%, color-mix(in srgb, var(--surface) 14%, transparent) 100%);
+    --tile-shadow: 0 12px 24px color-mix(in srgb, #000 22%, transparent), 0 1px 0 color-mix(in srgb, var(--surface-elevated) 12%, transparent);
+    --tile-shadow-hover: 0 20px 34px color-mix(in srgb, #000 28%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 8%, transparent);
     --tile-icon-shell: color-mix(in srgb, var(--surface) 74%, var(--item-bg));
     --tile-icon-color: color-mix(in srgb, var(--text) 94%, var(--accent) 6%);
     border: 1px solid var(--tile-border);
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,0.02),
-            rgba(0,0,0,0.2)
-        );
+    background: var(--tile-bg);
     border-radius: 20px;
     padding: 17px 16px 16px;
     display: flex;
@@ -217,7 +212,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     min-height: 136px;
     color: var(--text);
     text-align: center;
-    box-shadow: var(--tile-shadow), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 40%, transparent);
+    box-shadow: var(--tile-shadow), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 22%, transparent);
     isolation: isolate;
     -webkit-tap-highlight-color: transparent;
     transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
@@ -229,7 +224,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     transform: translateY(-3px);
     border-color: color-mix(in srgb, var(--accent) 34%, var(--tile-border));
     background: var(--tile-bg-hover);
-    box-shadow: var(--tile-shadow-hover), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 46%, transparent);
+    box-shadow: var(--tile-shadow-hover), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 30%, transparent);
 }
 
 .hub-tile:focus-visible {
@@ -245,10 +240,10 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .hub-tile-primary {
     --tile-border: color-mix(in srgb, var(--accent) 50%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
-    --tile-bg: linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 40%, var(--surface)) 100%);
-    --tile-bg-hover: linear-gradient(160deg, color-mix(in srgb, var(--accent) 46%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 94%, var(--surface)) 100%);
-    --tile-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 10%, #000 20%);
-    --tile-shadow-hover: 0 20px 40px color-mix(in srgb, var(--accent) 26%, #000 24%), 0 0 34px color-mix(in srgb, var(--accent) 24%, transparent);
+    --tile-bg: linear-gradient(160deg, color-mix(in srgb, var(--accent) 10%, transparent) 0%, color-mix(in srgb, var(--accent-soft) 12%, transparent) 100%);
+    --tile-bg-hover: linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, transparent) 0%, color-mix(in srgb, var(--accent-soft) 20%, transparent) 100%);
+    --tile-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 8%, #000 20%);
+    --tile-shadow-hover: 0 18px 36px color-mix(in srgb, var(--accent) 14%, #000 24%), 0 0 20px color-mix(in srgb, var(--accent) 14%, transparent);
     --tile-icon-shell: color-mix(in srgb, var(--surface) 26%, var(--accent-soft));
     --tile-icon-color: var(--accent-contrast);
 }
@@ -265,8 +260,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .hub-tile-secondary--players {
     --tile-border: color-mix(in srgb, var(--text-secondary) 26%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     --tile-icon-color: color-mix(in srgb, var(--text) 78%, var(--accent-soft) 22%);
-    --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface) 74%, var(--item-bg)), color-mix(in srgb, var(--item-bg) 94%, #141814));
-    --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 66%, var(--item-hover-bg)), color-mix(in srgb, var(--item-hover-bg) 93%, #171c17));
+    --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface) 10%, transparent), color-mix(in srgb, var(--item-bg) 8%, transparent));
+    --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 18%, transparent), color-mix(in srgb, var(--item-hover-bg) 14%, transparent));
 }
 
 .hub-tile-icon {
@@ -349,7 +344,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 #finished-games-list .game-item {
-    background: color-mix(in srgb, var(--surface) 92%, var(--item-bg));
+    background: color-mix(in srgb, var(--surface) 8%, transparent);
     border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 88%, transparent);
 }
 
@@ -387,26 +382,28 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .game-item {
-    background: color-mix(in srgb, var(--item-bg) 86%, var(--surface));
+    background: color-mix(in srgb, var(--item-bg) 12%, transparent);
     padding: 14px 16px;
     border-radius: 16px;
     display: grid;
     grid-template-columns: 4px minmax(0, 1fr) auto;
     align-items: center;
     border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 78%, transparent);
-    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     gap: 12px;
+    box-shadow: 0 10px 20px color-mix(in srgb, #000 18%, transparent), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 16%, transparent);
 }
 
 .game-item:hover {
-    background: color-mix(in srgb, var(--item-hover-bg) 84%, var(--surface));
+    background: color-mix(in srgb, var(--item-hover-bg) 18%, transparent);
     border-color: color-mix(in srgb, var(--accent) 20%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     transform: translateY(-1px);
+    box-shadow: 0 14px 24px color-mix(in srgb, #000 24%, transparent), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 22%, transparent);
 }
 
 .game-item.finished {
     border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 88%, transparent);
-    background: color-mix(in srgb, var(--item-bg) 78%, var(--surface));
+    background: color-mix(in srgb, var(--item-bg) 8%, transparent);
     opacity: 0.88;
 }
 
@@ -416,13 +413,13 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .game-item.invite-focus {
     border-color: color-mix(in srgb, var(--accent) 42%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
-    background: color-mix(in srgb, var(--accent) 9%, var(--item-bg));
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent) inset;
 }
 
 .game-item.my-turn-focus {
     border-color: color-mix(in srgb, var(--success) 44%, var(--accent));
-    background: color-mix(in srgb, var(--success) 8%, var(--item-bg));
+    background: color-mix(in srgb, var(--success) 8%, transparent);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 32%, transparent) inset;
 }
 
@@ -648,13 +645,14 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .player-item {
-    background: var(--item-bg);
+    background: color-mix(in srgb, var(--item-bg) 10%, transparent);
     border-radius: 16px;
     padding: 18px 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 78%, transparent);
+    box-shadow: 0 12px 22px color-mix(in srgb, #000 18%, transparent), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 15%, transparent);
 }
 
 .player-item-header {
