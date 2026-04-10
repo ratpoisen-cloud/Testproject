@@ -294,8 +294,13 @@ window.getRequestedJoinColor = function() {
 
 window.applyRemotePgnUpdate = function(pgn) {
     if (!window.game || !pgn || pgn === window.game.pgn()) return false;
-
-    window.game.load_pgn(pgn);
+    try {
+        window.game.load_pgn(pgn);
+    } catch (error) {
+        console.error('Ошибка синхронизации PGN:', error);
+        window.notify('Не удалось синхронизировать партию. Обновите страницу.', 'error', 3200);
+        return false;
+    }
     window.syncReviewStateFromCurrentGame();
 
     window.pendingMove = null;
@@ -403,7 +408,9 @@ function buildLobbyEmptyState() {
 }
 
 function sortLobbyGames(games) {
-    return Object.entries(games).sort((a, b) => {
+    return Object.entries(games)
+        .filter(([, gameData]) => gameData && typeof gameData === 'object')
+        .sort((a, b) => {
         const aData = a[1];
         const bData = b[1];
         const aOver = aData.gameState === 'game_over';
@@ -421,7 +428,8 @@ function sortLobbyGames(games) {
 
 function buildLobbyGameCardData(id, data, userId) {
     const players = data.players;
-    if (!players || (players.white !== userId && players.black !== userId)) return null;
+    if (!players || typeof players !== 'object') return null;
+    if (players.white !== userId && players.black !== userId) return null;
 
     const isOver = data.gameState === 'game_over';
     const myColor = players.white === userId ? 'white' : 'black';
@@ -589,11 +597,16 @@ window.initLobby = function() {
 // Загрузка игр в лобби
 window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
+    if (typeof window.__lobbyWatchUnsubscribe === 'function') {
+        window.__lobbyWatchUnsubscribe();
+        window.__lobbyWatchUnsubscribe = null;
+    }
+
     const nodes = getLobbyNodes();
     const gamesList = document.getElementById('games-list');
     const finishedGamesList = nodes.finishedGamesList;
     const playersList = document.getElementById('players-list');
-    window.watchGames((snap) => {
+    window.__lobbyWatchUnsubscribe = window.watchGames((snap) => {
         resetLobbyContainers(gamesList, finishedGamesList, playersList);
         const games = snap.val();
         if (!games) {
@@ -772,6 +785,10 @@ function setGameSectionVisibility() {
 
 function initLocalGameState() {
     window.game = new Chess();
+    window.currentRoomId = null;
+    window.pendingDraw = null;
+    window.pendingTakeback = null;
+    window.playerColor = null;
     window.lastKnownGameState = null;
     window.lastRenderedMoveHistoryLength = 0;
     window.syncReviewStateFromCurrentGame();

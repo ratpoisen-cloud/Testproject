@@ -50,6 +50,15 @@ window.setupAuth = function() {
         hideModalById('game-modal');
         hideModalById('board-settings-menu');
         document.getElementById('email-error')?.classList.add('hidden');
+        if (typeof window.__lobbyWatchUnsubscribe === 'function') {
+            window.__lobbyWatchUnsubscribe();
+            window.__lobbyWatchUnsubscribe = null;
+        }
+        window.pendingDraw = null;
+        window.pendingTakeback = null;
+        window.pendingMove = null;
+        window.currentRoomId = null;
+        window.playerColor = null;
         window.watchFirebaseCleanup?.();
         if (window.history?.replaceState) {
             window.history.replaceState({}, '', `${window.location.origin}${window.location.pathname}`);
@@ -230,6 +239,7 @@ window.setupAuth = function() {
             const userName = window.getUserName(user);
             userNameEl.innerText = userName;
             applyUserAvatar(user);
+            window.initClearFinishedButton?.(user.uid);
             
             if (!new URLSearchParams(window.location.search).get('room')) {
                 if (window.loadLobby) window.loadLobby(user);
