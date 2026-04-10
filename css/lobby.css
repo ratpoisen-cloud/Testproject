@@ -11,7 +11,7 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 0;
+    gap: 10px;
     padding: 42px 30px;
     border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
@@ -41,6 +41,16 @@
     opacity: 0.88;
 }
 
+.brand-wordmark--guest {
+    width: clamp(140px, 42vw, 220px);
+    opacity: 0.94;
+}
+
+.brand-wordmark--top {
+    width: clamp(92px, 13vw, 150px);
+    opacity: 0.88;
+}
+
 .brand-wordmark--footer {
     width: clamp(90px, 12vw, 130px);
     opacity: 0.75;
@@ -58,14 +68,21 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 
+.guest-brand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
 .guest-title {
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     font-size: 1.3rem;
     font-weight: 700;
 }
 
 .guest-subtitle {
-    margin: 22px 0 0;
+    margin: 0;
     color: color-mix(in srgb, var(--text-secondary) 88%, var(--text));
     font-size: 0.94rem;
     text-align: center;
@@ -75,7 +92,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     width: 100%;
     display: grid;
     gap: 10px;
-    margin-top: 22px;
+    margin-top: 8px;
 }
 
 .guest-actions .btn {
@@ -96,7 +113,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .lobby-header-hub {
     margin-bottom: 2px;
     align-items: flex-start;
-    justify-content: space-between;
+    justify-content: flex-start;
     flex-wrap: nowrap;
 }
 
@@ -125,12 +142,11 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     min-height: 48px;
 }
 
-.lobby-brand {
+.top-lobby-brand {
     display: inline-flex;
     align-items: center;
     justify-content: flex-end;
-    flex: 0 0 auto;
-    min-height: 48px;
+    min-height: 40px;
 }
 
 .lobby-heading .section-title {

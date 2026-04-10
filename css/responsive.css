@@ -241,14 +241,16 @@
         flex-wrap: wrap;
     }
 
-    .lobby-brand {
-        width: 100%;
-        justify-content: flex-start;
-        min-height: 0;
+    .top-lobby-brand {
+        min-height: 36px;
     }
 
-    .brand-wordmark--hub {
-        width: clamp(92px, 36vw, 132px);
+    .brand-wordmark--top {
+        width: clamp(84px, 30vw, 124px);
+    }
+
+    .brand-wordmark--guest {
+        width: clamp(124px, 54vw, 200px);
     }
 
     .app-footer {

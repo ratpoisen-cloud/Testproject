@@ -31,12 +31,14 @@ window.setupAuth = function() {
             if (!gameSection || gameSection.classList.contains('hidden')) {
                 lobbySection?.classList.remove('hidden');
             }
+            window.updateTopLobbyBrandVisibility?.();
             return;
         }
 
         lobbySection?.classList.add('hidden');
         gameSection?.classList.add('hidden');
         guestSection?.classList.remove('hidden');
+        window.updateTopLobbyBrandVisibility?.();
     };
 
     const hideModalById = (id) => {

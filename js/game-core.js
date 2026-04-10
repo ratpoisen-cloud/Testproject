@@ -436,6 +436,20 @@ function getLobbyNodes() {
     };
 }
 
+window.updateTopLobbyBrandVisibility = function() {
+    const nodes = getLobbyNodes();
+    const topBrand = document.getElementById('top-lobby-brand');
+    if (!topBrand) return;
+
+    const isAuthorized = Boolean(window.currentUser);
+    const isLobbyVisible = Boolean(nodes.lobbySection && !nodes.lobbySection.classList.contains('hidden'));
+    const isGameVisible = Boolean(nodes.gameSection && !nodes.gameSection.classList.contains('hidden'));
+    const isHubScreen = (window.lobbyCurrentScreen || 'hub') === 'hub';
+    const shouldShow = isAuthorized && isLobbyVisible && !isGameVisible && isHubScreen;
+
+    topBrand.classList.toggle('hidden', !shouldShow);
+};
+
 window.setLobbyScreen = function(screen) {
     const nodes = getLobbyNodes();
     const safeScreen = ['hub', 'games', 'players'].includes(screen) ? screen : 'hub';
@@ -444,6 +458,7 @@ window.setLobbyScreen = function(screen) {
     nodes.hubView?.classList.toggle('hidden', safeScreen !== 'hub');
     nodes.gamesView?.classList.toggle('hidden', safeScreen !== 'games');
     nodes.playersView?.classList.toggle('hidden', safeScreen !== 'players');
+    window.updateTopLobbyBrandVisibility?.();
 
     return safeScreen;
 };
@@ -1176,6 +1191,7 @@ window.renderPlayersLobby = function(container, players) {
 function setGameSectionVisibility() {
     document.getElementById('game-section').classList.remove('hidden');
     document.getElementById('lobby-section').classList.add('hidden');
+    window.updateTopLobbyBrandVisibility?.();
 }
 
 function initLocalGameState() {
