@@ -71,11 +71,10 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 
 .guest-brand {
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    width: auto;
-    display: block;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .guest-brand .brand-wordmark--guest {
