@@ -24,6 +24,8 @@ window.playersExpandedResultFilter = {};
 window.pendingDirectChallengeOpponent = null;
 window.lobbyNotifiedDirectChallenges = new Set();
 window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
+window.lobbyLastSnapshotByGame = new Map();
+window.lobbyHasProcessedFirstSnapshot = false;
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -595,6 +597,17 @@ function resolveTurnColorCode(gameData) {
     if (turn === 'w' || turn === 'b') return turn;
     if (turn === 'white') return 'w';
     if (turn === 'black') return 'b';
+    if (turn === 'W' || turn === 'WHITE') return 'w';
+    if (turn === 'B' || turn === 'BLACK') return 'b';
+
+    const fen = String(gameData?.fen || '').trim();
+    if (fen) {
+        const fenParts = fen.split(/\s+/);
+        const fenTurn = fenParts[1];
+        if (fenTurn === 'w' || fenTurn === 'b') {
+            return fenTurn;
+        }
+    }
 
     const pgn = String(gameData?.pgn || '').trim();
     if (!pgn) return null;
@@ -629,6 +642,30 @@ function persistSeenDirectChallengeIds(idsSet) {
     } catch (error) {
         console.warn('Не удалось сохранить seen direct challenges в localStorage:', error);
     }
+}
+
+function extractDirectInvite(data) {
+    const invite = data?.players?.invite;
+    if (!invite || invite.type !== 'direct_challenge') return null;
+    return invite;
+}
+
+function shouldNotifyDirectInvite(data, userId) {
+    const invite = extractDirectInvite(data);
+    if (!invite) return false;
+    return invite.targetUid === userId && invite.createdByUid !== userId;
+}
+
+function hasRoomBecameActiveForUser(previousData, currentData, userId) {
+    const previousCard = previousData ? buildLobbyGameCardData('', previousData, userId) : null;
+    const currentCard = buildLobbyGameCardData('', currentData, userId);
+
+    if (!currentCard || currentCard.isOver || currentCard.isWaitingForOpponent) {
+        return false;
+    }
+
+    if (!previousCard) return true;
+    return previousCard.isOver || previousCard.isWaitingForOpponent;
 }
 
 function buildLobbyGameCardData(id, data, userId) {
@@ -715,7 +752,7 @@ function bindAvatarFallbackHandlers(rootNode) {
 
 function createLobbyGameElement(cardData, userId) {
     const item = document.createElement('div');
-    item.className = `game-item ${cardData.stateClass} ${cardData.resultClass || ''}`.trim();
+    item.className = `game-item ${cardData.stateClass} ${cardData.isMyTurn ? 'my-turn-focus' : ''} ${cardData.resultClass || ''}`.trim();
     item.innerHTML = `
         <div class="game-accent" aria-hidden="true"></div>
         <div class="game-info">
@@ -727,6 +764,7 @@ function createLobbyGameElement(cardData, userId) {
                 ${cardData.statusText ? `<span class="game-status-pill ${cardData.stateClass} ${cardData.resultClass}">${cardData.statusText}</span>` : ''}
             </div>
             <div class="game-meta">
+                ${cardData.isMyTurn ? '<span class="game-my-turn-dot" aria-hidden="true"></span>' : ''}
                 ${cardData.turnLabel ? `<span class="game-turn-pill ${cardData.turnClass}">${cardData.turnLabel}</span>` : ''}
                 ${cardData.resultComment ? `<span class="game-finish-note">${cardData.resultComment}</span>` : ''}
                 <span class="game-side">Вы ${cardData.myColor === 'white' ? 'белыми' : 'чёрными'}</span>
@@ -736,7 +774,7 @@ function createLobbyGameElement(cardData, userId) {
         </div>
         <div class="game-actions">
             <button class="btn btn-sm play-btn">${cardData.isOver ? 'Смотреть' : 'Играть'}</button>
-            <button class="btn btn-sm rematch-btn ${cardData.isOver ? '' : 'hidden'}">Реванш</button>
+            <button class="btn btn-primary btn-sm rematch-btn ${cardData.isOver ? '' : 'hidden'}">Реванш</button>
             <button class="btn btn-sm delete-btn ${cardData.canDeleteFromLobby ? '' : 'hidden'}" data-game-id="${cardData.id}">Удалить</button>
         </div>
     `;
@@ -856,6 +894,8 @@ window.initLobby = function() {
 window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
     window.lobbyNotifiedDirectChallenges = getSeenDirectChallengeIds();
+    window.lobbyLastSnapshotByGame = new Map();
+    window.lobbyHasProcessedFirstSnapshot = false;
     if (typeof window.__lobbyWatchUnsubscribe === 'function') {
         window.__lobbyWatchUnsubscribe();
         window.__lobbyWatchUnsubscribe = null;
@@ -869,6 +909,7 @@ window.loadLobby = function(user) {
         resetLobbyContainers(gamesList, finishedGamesList, playersList);
         const games = snap.val();
         if (!games) {
+            window.lobbyLastSnapshotByGame = new Map();
             const empty = buildLobbyEmptyState();
             gamesList.innerHTML = empty.activeGames;
             bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
@@ -878,25 +919,26 @@ window.loadLobby = function(user) {
         }
 
         const sortedGames = sortLobbyGames(games);
+        const wasFirstSnapshot = !window.lobbyHasProcessedFirstSnapshot;
         let hasActiveGames = false;
         let hasFinishedGames = false;
+        const nextSnapshotByGame = new Map();
 
         sortedGames.forEach(([id, data]) => {
+            const previousData = window.lobbyLastSnapshotByGame.get(id) || null;
+            nextSnapshotByGame.set(id, data);
             const cardData = buildLobbyGameCardData(id, data, user.uid);
             if (!cardData) return;
 
-            const invite = data?.players?.invite;
-            const hasStarted = isGameStarted(data);
-            if (
-                invite?.type === 'direct_challenge' &&
-                invite.targetUid === user.uid &&
-                invite.createdByUid !== user.uid &&
-                !hasStarted &&
-                !window.lobbyNotifiedDirectChallenges.has(id)
-            ) {
+            if (shouldNotifyDirectInvite(data, user.uid) && !window.lobbyNotifiedDirectChallenges.has(id)) {
+                const invite = extractDirectInvite(data);
                 window.lobbyNotifiedDirectChallenges.add(id);
                 persistSeenDirectChallengeIds(window.lobbyNotifiedDirectChallenges);
                 window.notify(`${invite.createdByName || 'Игрок'} приглашает вас в новую партию`, 'info', 4200);
+            }
+
+            if (!wasFirstSnapshot && hasRoomBecameActiveForUser(previousData, data, user.uid)) {
+                window.notify(`Новая активная партия с ${cardData.opponent}`, 'success', 3200);
             }
 
             const cardNode = createLobbyGameElement(cardData, user.uid);
@@ -921,6 +963,8 @@ window.loadLobby = function(user) {
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
         window.renderPlayersLobby(playersList, playersAggregate);
+        window.lobbyHasProcessedFirstSnapshot = true;
+        window.lobbyLastSnapshotByGame = nextSnapshotByGame;
     });
 };
 
