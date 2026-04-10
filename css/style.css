@@ -20,7 +20,9 @@
 
 #email-modal h3 {
     margin: 0 0 4px;
-    font-size: 1.12rem;
+    font-size: 1.2rem;
+    letter-spacing: 0.01em;
+    font-weight: 700;
     line-height: 1.3;
 }
 
