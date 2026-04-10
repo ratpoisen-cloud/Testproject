@@ -246,6 +246,13 @@
     opacity: 1;
 }
 
+.lobby-games-toggle-btn.is-active {
+    opacity: 1;
+    color: var(--text);
+    border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
 .games-grid {
     display: grid;
     gap: 10px;
@@ -414,6 +421,16 @@
     align-items: center;
 }
 
+.game-finish-note {
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 3px 8px;
+    color: color-mix(in srgb, var(--text) 90%, var(--text-secondary));
+    background: color-mix(in srgb, var(--surface) 92%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+}
+
 .game-side {
     color: var(--text-secondary);
 }
@@ -449,6 +466,7 @@
     gap: 6px;
     align-items: center;
     justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 .player-item {

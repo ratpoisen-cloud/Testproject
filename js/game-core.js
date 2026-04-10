@@ -38,6 +38,32 @@ window.getReactionCycleKey = function() {
     return `${window.game.turn()}_${window.game.history().length}`;
 };
 
+window.createRematchGameFromRoom = async function(roomId) {
+    if (!roomId) return null;
+
+    const playersData = (await get(window.getPlayersRef(roomId))).val();
+    if (!playersData?.white || !playersData?.black) {
+        window.notify("Не удалось создать реванш: данные игроков недоступны", "error");
+        return null;
+    }
+
+    const newId = window.generateRoomId();
+    await set(window.getGameRef(newId), {
+        players: {
+            white: playersData.black,
+            whiteName: playersData.blackName,
+            black: playersData.white,
+            blackName: playersData.whiteName
+        },
+        pgn: new Chess().pgn(),
+        fen: 'start',
+        gameState: 'active',
+        createdAt: Date.now()
+    });
+
+    return newId;
+};
+
 window.canSendBoardReaction = function() {
     const cycleKey = window.getReactionCycleKey();
     if (window.reactionRateLimitState.cycleKey !== cycleKey) {
@@ -288,6 +314,39 @@ window.getFinishedGamePerspective = function(gameData, userId) {
     return { key: 'draws', label: window.getFinishedGameResultLabel(gameData), className: 'result-draw' };
 };
 
+window.getFinishedGameTerminationLabel = function(gameData) {
+    if (!gameData || gameData.gameState !== 'game_over') return '';
+
+    const resignColor = gameData.resign;
+    if (resignColor === 'w') return 'Сдались белые';
+    if (resignColor === 'b') return 'Сдались чёрные';
+
+    const pgn = String(gameData.pgn || '');
+    const terminationHeader = pgn.match(/\[Termination\s+"([^"]+)"\]/i)?.[1] || '';
+    const combined = `${terminationHeader} ${String(gameData.message || '')}`.toLowerCase();
+
+    if (combined.includes('мат')) return 'Мат';
+    if (combined.includes('пат')) return 'Пат';
+    if (combined.includes('троекрат')) return 'Троекратное повторение';
+    if (combined.includes('недостат')) return 'Недостаточно фигур';
+    if (combined.includes('соглаш')) return 'По соглашению';
+
+    const replayGame = new Chess();
+    if (pgn) {
+        try {
+            replayGame.load_pgn(pgn);
+        } catch (error) {
+            console.warn('Не удалось загрузить PGN для причины завершения:', error);
+        }
+    }
+
+    if (replayGame.in_checkmate?.()) return 'Мат';
+    if (replayGame.in_stalemate?.()) return 'Пат';
+    if (replayGame.in_threefold_repetition?.()) return 'Троекратное повторение';
+    if (replayGame.insufficient_material?.()) return 'Недостаточно фигур';
+    return '';
+};
+
 window.getRequestedJoinColor = function() {
     const colorParam = new URLSearchParams(window.location.search).get('color');
     if (colorParam === 'w' || colorParam === 'b') return colorParam;
@@ -366,7 +425,9 @@ function getLobbyNodes() {
         colorButtons: document.querySelectorAll('[data-create-color]'),
         backButtons: document.querySelectorAll('[data-lobby-back]'),
         finishedGamesList: document.getElementById('finished-games-list'),
-        toggleFinishedGamesBtn: document.getElementById('toggle-finished-games-btn')
+        showActiveGamesBtn: document.getElementById('show-active-games-btn'),
+        showFinishedGamesBtn: document.getElementById('show-finished-games-btn'),
+        clearFinishedBtn: document.getElementById('clear-finished-btn')
     };
 }
 
@@ -394,10 +455,14 @@ function closeCreateGameModal(modal) {
     }
 }
 
-function syncFinishedGamesVisibility(toggleBtn, finishedList) {
-    if (!toggleBtn || !finishedList) return;
-    finishedList.classList.toggle('hidden', !window.lobbyShowFinished);
-    toggleBtn.textContent = window.lobbyShowFinished ? 'Скрыть завершённые' : 'Показать завершённые';
+function syncLobbyGamesFilterVisibility(nodes, gamesList, finishedList) {
+    if (!nodes || !gamesList || !finishedList) return;
+    const showFinished = window.lobbyShowFinished;
+    gamesList.classList.toggle('hidden', showFinished);
+    finishedList.classList.toggle('hidden', !showFinished);
+    nodes.showActiveGamesBtn?.classList.toggle('is-active', !showFinished);
+    nodes.showFinishedGamesBtn?.classList.toggle('is-active', showFinished);
+    nodes.clearFinishedBtn?.classList.toggle('hidden', !showFinished);
 }
 
 async function openCreateGameModal(nodes) {
@@ -595,6 +660,7 @@ function buildLobbyGameCardData(id, data, userId) {
                 ? (invite.targetUid === userId ? 'Приглашение' : 'Приглашение отправлено')
                 : ''));
     const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
+    const resultComment = isOver ? window.getFinishedGameTerminationLabel(data) : '';
 
     return {
         id,
@@ -606,6 +672,7 @@ function buildLobbyGameCardData(id, data, userId) {
         opponent,
         opponentAvatar,
         statusText,
+        resultComment,
         resultClass: resultState?.className || '',
         turnLabel: !isOver && !isWaitingForOpponent ? (isMyTurn ? 'Ваш ход' : 'Ход соперника') : '',
         turnClass: isMyTurn ? 'my-turn' : 'opponent-turn',
@@ -661,21 +728,34 @@ function createLobbyGameElement(cardData, userId) {
             </div>
             <div class="game-meta">
                 ${cardData.turnLabel ? `<span class="game-turn-pill ${cardData.turnClass}">${cardData.turnLabel}</span>` : ''}
+                ${cardData.resultComment ? `<span class="game-finish-note">${cardData.resultComment}</span>` : ''}
                 <span class="game-side">Вы ${cardData.myColor === 'white' ? 'белыми' : 'чёрными'}</span>
                 <span class="game-dot" aria-hidden="true">•</span>
                 <span class="game-time">${cardData.timeAgo}</span>
             </div>
         </div>
         <div class="game-actions">
-            <button class="btn btn-sm play-btn">Играть</button>
+            <button class="btn btn-sm play-btn">${cardData.isOver ? 'Смотреть' : 'Играть'}</button>
+            <button class="btn btn-sm rematch-btn ${cardData.isOver ? '' : 'hidden'}">Реванш</button>
             <button class="btn btn-sm delete-btn ${cardData.canDeleteFromLobby ? '' : 'hidden'}" data-game-id="${cardData.id}">Удалить</button>
         </div>
     `;
 
     item.querySelector('.play-btn').onclick = (event) => {
         event.stopPropagation();
-        location.href = `${location.origin}${location.pathname}?room=${cardData.id}`;
+        const viewParam = cardData.isOver ? '&view=finished' : '';
+        location.href = `${location.origin}${location.pathname}?room=${cardData.id}${viewParam}`;
     };
+
+    const rematchBtn = item.querySelector('.rematch-btn');
+    if (rematchBtn && cardData.isOver) {
+        rematchBtn.onclick = async (event) => {
+            event.stopPropagation();
+            const newId = await window.createRematchGameFromRoom(cardData.id);
+            if (!newId) return;
+            location.href = `${location.origin}${location.pathname}?room=${newId}`;
+        };
+    }
 
     const deleteBtn = item.querySelector('.delete-btn');
     if (deleteBtn && cardData.canDeleteFromLobby) {
@@ -753,12 +833,19 @@ window.initLobby = function() {
         if (event.target === nodes.createGameModal) closeCreateGameModal(nodes.createGameModal);
     };
     window.lobbyShowFinished = false;
-    syncFinishedGamesVisibility(nodes.toggleFinishedGamesBtn, nodes.finishedGamesList);
+    const gamesListNode = document.getElementById('games-list');
+    syncLobbyGamesFilterVisibility(nodes, gamesListNode, nodes.finishedGamesList);
 
-    if (nodes.toggleFinishedGamesBtn) {
-        nodes.toggleFinishedGamesBtn.onclick = () => {
-            window.lobbyShowFinished = !window.lobbyShowFinished;
-            syncFinishedGamesVisibility(nodes.toggleFinishedGamesBtn, nodes.finishedGamesList);
+    if (nodes.showActiveGamesBtn) {
+        nodes.showActiveGamesBtn.onclick = () => {
+            window.lobbyShowFinished = false;
+            syncLobbyGamesFilterVisibility(nodes, gamesListNode, nodes.finishedGamesList);
+        };
+    }
+    if (nodes.showFinishedGamesBtn) {
+        nodes.showFinishedGamesBtn.onclick = () => {
+            window.lobbyShowFinished = true;
+            syncLobbyGamesFilterVisibility(nodes, gamesListNode, nodes.finishedGamesList);
         };
     }
 
@@ -830,7 +917,7 @@ window.loadLobby = function(user) {
             finishedGamesList.innerHTML = buildLobbyEmptyState().finishedGames;
         }
 
-        syncFinishedGamesVisibility(nodes.toggleFinishedGamesBtn, finishedGamesList);
+        syncLobbyGamesFilterVisibility(nodes, gamesList, finishedGamesList);
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
         window.renderPlayersLobby(playersList, playersAggregate);
@@ -980,6 +1067,7 @@ function initLocalGameState() {
     window.syncReviewStateFromCurrentGame();
     window.activeReactions = [];
     window.reactionRateLimitState = { cycleKey: window.getReactionCycleKey(), count: 0 };
+    window.shouldAutoEnterFinishedReview = false;
 }
 
 async function ensureGameExists(gameRef, roomId) {
@@ -1008,6 +1096,11 @@ function subscribeToGameUpdates(gameRef) {
         window.setActiveReactionsFromState(data.reactions || []);
         window.applyRemotePgnUpdate(data.pgn);
         window.updateUI(data);
+        if (window.shouldAutoEnterFinishedReview && data.gameState === 'game_over' && typeof window.enterReviewMode === 'function') {
+            const maxPly = window.game?.history?.().length || 0;
+            window.enterReviewMode(maxPly);
+            window.shouldAutoEnterFinishedReview = false;
+        }
     });
 }
 
@@ -1026,8 +1119,10 @@ window.initGame = async function(roomId) {
     const gameRef = window.getGameRef(roomId);
     const playersRef = window.getPlayersRef(roomId);
     const requestedJoinColor = window.getRequestedJoinColor();
+    const openMode = new URLSearchParams(window.location.search).get('view');
     
     initLocalGameState();
+    window.shouldAutoEnterFinishedReview = openMode === 'finished';
     await ensureGameExists(gameRef, roomId);
     await window.addPlayerToGame(playersRef, uid, uName, requestedJoinColor);
     
