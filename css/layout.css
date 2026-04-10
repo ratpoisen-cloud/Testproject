@@ -1,7 +1,17 @@
 .main-container {
     max-width: 1400px;
+    min-height: 100dvh;
     margin: 0 auto;
-    padding: 22px 20px 28px;
+    padding: 16px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#guest-section,
+#lobby-section,
+#game-section {
+    width: 100%;
 }
 
 .game-shell {

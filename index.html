@@ -30,7 +30,8 @@
     <div class="main-container">
 
         <div class="top-bar">
-            <div id="user-menu-wrap" class="user-menu-wrap hidden">
+            <div class="top-bar-left">
+                <div id="user-menu-wrap" class="user-menu-wrap hidden">
                 <div id="user-info">
                     <div id="user-menu-trigger" class="user-menu-trigger user-trigger-block" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false">
                         <div class="user-avatar-shell">
@@ -54,13 +55,14 @@
                     </div>
                     <button id="logout-btn" class="user-menu-item user-menu-item-danger" type="button" role="menuitem">Выйти</button>
                 </div>
+                </div>
             </div>
             <div class="top-bar-right">
+                <button id="back-to-lobby-btn" class="btn btn-outline back-to-lobby-btn" type="button" aria-label="В лобби" title="В лобби">←</button>
                 <div id="auth-buttons" class="auth-group">
                     <button id="login-google" class="btn btn-primary">Google</button>
                     <button id="login-email-trigger" class="btn btn-outline">Email</button>
                 </div>
-                <button id="back-to-lobby-btn" class="btn btn-outline back-to-lobby-btn" type="button" aria-label="В лобби" title="В лобби">←</button>
                 <div id="top-lobby-brand" class="top-lobby-brand" role="img" aria-label="GO CHESS">
                     <div class="brand-wordmark brand-wordmark--top">
                         <picture class="brand-wordmark-asset brand-wordmark-asset-light">
