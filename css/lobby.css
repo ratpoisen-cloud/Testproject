@@ -13,7 +13,7 @@
     text-align: center;
     gap: 10px;
     padding: 42px 30px;
-    border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+    border-color: color-mix(in srgb, var(--accent) 38%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
 }
 
@@ -114,17 +114,16 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 #lobby-section {
-    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-color: color-mix(in srgb, var(--accent) 30%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     background: linear-gradient(
         180deg,
         color-mix(in srgb, var(--surface-elevated) 42%, var(--card)),
         color-mix(in srgb, var(--card) 94%, #141814)
     );
     box-shadow:
-        0 24px 52px rgba(0, 0, 0, 0.34),
-        0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent),
-        0 0 34px color-mix(in srgb, var(--accent) 12%, transparent),
-        inset 0 1px 0 rgba(232, 232, 216, 0.05);
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 0 12px color-mix(in srgb, var(--accent) 6%, transparent),
+        inset 0 1px 0 rgba(232, 232, 216, 0.04);
 }
 
 .lobby-view {
@@ -148,7 +147,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     gap: 18px;
     flex-wrap: wrap;
     padding-bottom: 8px;
-    border-bottom: 1px solid color-mix(in srgb, var(--accent) 12%, var(--border));
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 12%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .app-footer {
@@ -194,7 +193,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile {
-    --tile-border: color-mix(in srgb, var(--accent) 18%, var(--border));
+    --tile-border: color-mix(in srgb, var(--accent) 10%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 62%, var(--item-bg)) 0%, color-mix(in srgb, var(--item-bg) 94%, #141814) 100%);
     --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 72%, var(--item-hover-bg)) 0%, color-mix(in srgb, var(--item-hover-bg) 92%, #171c17) 100%);
     --tile-shadow: 0 12px 26px color-mix(in srgb, #000 24%, transparent), 0 1px 0 color-mix(in srgb, var(--surface-elevated) 16%, transparent);
@@ -202,7 +201,12 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     --tile-icon-shell: color-mix(in srgb, var(--surface) 74%, var(--item-bg));
     --tile-icon-color: color-mix(in srgb, var(--text) 94%, var(--accent) 6%);
     border: 1px solid var(--tile-border);
-    background: var(--tile-bg);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255,255,255,0.02),
+            rgba(0,0,0,0.2)
+        );
     border-radius: 20px;
     padding: 17px 16px 16px;
     display: flex;
@@ -240,10 +244,10 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile-primary {
-    --tile-border: color-mix(in srgb, var(--accent) 50%, var(--border));
-    --tile-bg: linear-gradient(160deg, color-mix(in srgb, var(--accent) 38%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 88%, var(--surface)) 100%);
+    --tile-border: color-mix(in srgb, var(--accent) 50%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
+    --tile-bg: linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 40%, var(--surface)) 100%);
     --tile-bg-hover: linear-gradient(160deg, color-mix(in srgb, var(--accent) 46%, var(--surface)) 0%, color-mix(in srgb, var(--accent-soft) 94%, var(--surface)) 100%);
-    --tile-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 20%, #000 22%), 0 0 26px color-mix(in srgb, var(--accent) 18%, transparent);
+    --tile-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 10%, #000 20%);
     --tile-shadow-hover: 0 20px 40px color-mix(in srgb, var(--accent) 26%, #000 24%), 0 0 34px color-mix(in srgb, var(--accent) 24%, transparent);
     --tile-icon-shell: color-mix(in srgb, var(--surface) 26%, var(--accent-soft));
     --tile-icon-color: var(--accent-contrast);
@@ -254,12 +258,12 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile-secondary--games {
-    --tile-border: color-mix(in srgb, var(--accent) 18%, var(--border));
+    --tile-border: color-mix(in srgb, var(--accent) 18%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     --tile-icon-color: color-mix(in srgb, var(--accent) 66%, var(--text));
 }
 
 .hub-tile-secondary--players {
-    --tile-border: color-mix(in srgb, var(--text-secondary) 26%, var(--border));
+    --tile-border: color-mix(in srgb, var(--text-secondary) 26%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     --tile-icon-color: color-mix(in srgb, var(--text) 78%, var(--accent-soft) 22%);
     --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface) 74%, var(--item-bg)), color-mix(in srgb, var(--item-bg) 94%, #141814));
     --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 66%, var(--item-hover-bg)), color-mix(in srgb, var(--item-hover-bg) 93%, #171c17));
@@ -312,7 +316,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     line-height: 1.15;
     color: color-mix(in srgb, var(--accent) 78%, var(--text));
     background: color-mix(in srgb, var(--accent) 14%, var(--surface));
-    border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     border-radius: 999px;
     padding: 2px 8px;
 }
@@ -346,12 +350,12 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 #finished-games-list .game-item {
     background: color-mix(in srgb, var(--surface) 92%, var(--item-bg));
-    border-color: color-mix(in srgb, var(--border) 88%, transparent);
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 88%, transparent);
 }
 
 #finished-games-list .game-item:hover {
     transform: none;
-    border-color: color-mix(in srgb, var(--border) 82%, transparent);
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 82%, transparent);
 }
 
 .lobby-utility-btn {
@@ -360,7 +364,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     border-width: 1px;
     color: var(--text-secondary);
     opacity: 0.66;
-    border-color: color-mix(in srgb, var(--border) 88%, transparent);
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 88%, transparent);
 }
 
 .lobby-utility-btn:hover {
@@ -370,7 +374,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .lobby-games-toggle-btn.is-active {
     opacity: 1;
     color: var(--text);
-    border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+    border-color: color-mix(in srgb, var(--accent) 36%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
 
@@ -389,29 +393,29 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: grid;
     grid-template-columns: 4px minmax(0, 1fr) auto;
     align-items: center;
-    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 78%, transparent);
     transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
     gap: 12px;
 }
 
 .game-item:hover {
     background: color-mix(in srgb, var(--item-hover-bg) 84%, var(--surface));
-    border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+    border-color: color-mix(in srgb, var(--accent) 20%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     transform: translateY(-1px);
 }
 
 .game-item.finished {
-    border-color: color-mix(in srgb, var(--border) 88%, transparent);
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 88%, transparent);
     background: color-mix(in srgb, var(--item-bg) 78%, var(--surface));
     opacity: 0.88;
 }
 
 .game-item.waiting {
-    border-color: color-mix(in srgb, var(--border) 85%, transparent);
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 85%, transparent);
 }
 
 .game-item.invite-focus {
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+    border-color: color-mix(in srgb, var(--accent) 42%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     background: color-mix(in srgb, var(--accent) 9%, var(--item-bg));
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent) inset;
 }
@@ -434,34 +438,34 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     background: linear-gradient(
         180deg,
         color-mix(in srgb, var(--accent) 82%, var(--success)),
-        color-mix(in srgb, var(--accent) 62%, var(--border))
+        color-mix(in srgb, var(--accent) 62%, color-mix(in srgb, var(--border) 80%, #ffffff 8%))
     );
 }
 
 .game-accent {
     align-self: stretch;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--accent) 55%, var(--border));
+    background: color-mix(in srgb, var(--accent) 55%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .game-item.waiting .game-accent {
-    background: color-mix(in srgb, var(--text-secondary) 42%, var(--border));
+    background: color-mix(in srgb, var(--text-secondary) 42%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .game-item.finished .game-accent {
-    background: color-mix(in srgb, var(--text-secondary) 30%, var(--border));
+    background: color-mix(in srgb, var(--text-secondary) 30%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .game-item.finished.result-win .game-accent {
-    background: color-mix(in srgb, var(--success) 55%, var(--border));
+    background: color-mix(in srgb, var(--success) 55%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .game-item.finished.result-loss .game-accent {
-    background: color-mix(in srgb, var(--danger) 55%, var(--border));
+    background: color-mix(in srgb, var(--danger) 55%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .game-item.finished.result-draw .game-accent {
-    background: color-mix(in srgb, var(--text-secondary) 42%, var(--border));
+    background: color-mix(in srgb, var(--text-secondary) 42%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .game-info {
@@ -502,7 +506,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--accent-contrast);
-    background: color-mix(in srgb, var(--accent) 70%, var(--border));
+    background: color-mix(in srgb, var(--accent) 70%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .avatar-img {
@@ -532,14 +536,14 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .game-status-pill.waiting {
     color: color-mix(in srgb, var(--text-secondary) 88%, var(--text));
-    background: color-mix(in srgb, var(--surface) 94%, var(--border));
-    border-color: color-mix(in srgb, var(--border) 85%, transparent);
+    background: color-mix(in srgb, var(--surface) 94%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 85%, transparent);
 }
 
 .game-status-pill.invite {
     color: color-mix(in srgb, var(--accent) 88%, var(--text));
     background: color-mix(in srgb, var(--accent) 15%, var(--surface));
-    border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+    border-color: color-mix(in srgb, var(--accent) 38%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     font-weight: 700;
 }
 
@@ -555,25 +559,25 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .game-status-pill.finished {
     color: var(--text-secondary);
     background: color-mix(in srgb, var(--surface) 94%, transparent);
-    border-color: color-mix(in srgb, var(--border) 88%, transparent);
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 88%, transparent);
 }
 
 .game-status-pill.finished.result-win {
     color: color-mix(in srgb, var(--success) 82%, var(--text));
     background: color-mix(in srgb, var(--success) 16%, var(--surface));
-    border-color: color-mix(in srgb, var(--success) 34%, var(--border));
+    border-color: color-mix(in srgb, var(--success) 34%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .game-status-pill.finished.result-loss {
     color: color-mix(in srgb, var(--danger) 80%, var(--text));
     background: color-mix(in srgb, var(--danger) 14%, var(--surface));
-    border-color: color-mix(in srgb, var(--danger) 32%, var(--border));
+    border-color: color-mix(in srgb, var(--danger) 32%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .game-status-pill.finished.result-draw {
     color: color-mix(in srgb, var(--text) 86%, var(--text-secondary));
-    background: color-mix(in srgb, var(--surface) 92%, var(--border));
-    border-color: color-mix(in srgb, var(--border) 86%, transparent);
+    background: color-mix(in srgb, var(--surface) 92%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 86%, transparent);
 }
 
 .game-meta {
@@ -592,8 +596,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     border-radius: 999px;
     padding: 3px 8px;
     color: color-mix(in srgb, var(--text) 90%, var(--text-secondary));
-    background: color-mix(in srgb, var(--surface) 92%, var(--border));
-    border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+    background: color-mix(in srgb, var(--surface) 92%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
+    border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 85%, transparent);
 }
 
 .game-my-turn-dot {
@@ -632,7 +636,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .game-turn-pill.opponent-turn {
     color: var(--text);
     background: color-mix(in srgb, var(--item-hover-bg) 84%, var(--surface));
-    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 78%, transparent);
 }
 
 .game-actions {
@@ -650,7 +654,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 78%, transparent);
 }
 
 .player-item-header {
@@ -660,7 +664,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     gap: 12px;
     flex-wrap: wrap;
     padding-bottom: 10px;
-    border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 72%, transparent);
 }
 
 .player-info {
@@ -686,7 +690,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     font-size: 0.78rem;
     color: var(--text-secondary);
     background: color-mix(in srgb, var(--surface) 84%, transparent);
-    border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+    border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 68%, transparent);
     border-radius: 999px;
     padding: 3px 10px;
     cursor: pointer;
@@ -705,19 +709,19 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .player-stat-pill-win {
     color: color-mix(in srgb, var(--success) 82%, var(--text));
     background: color-mix(in srgb, var(--success) 14%, var(--surface));
-    border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+    border-color: color-mix(in srgb, var(--success) 28%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .player-stat-pill-loss {
     color: color-mix(in srgb, var(--danger) 82%, var(--text));
     background: color-mix(in srgb, var(--danger) 12%, var(--surface));
-    border-color: color-mix(in srgb, var(--danger) 26%, var(--border));
+    border-color: color-mix(in srgb, var(--danger) 26%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
 
 .player-stat-pill-draw {
     color: color-mix(in srgb, var(--text) 90%, var(--text-secondary));
     background: color-mix(in srgb, var(--surface) 90%, var(--item-bg));
-    border-color: color-mix(in srgb, var(--border) 76%, transparent);
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 76%, transparent);
 }
 
 .player-finished-list {
@@ -755,7 +759,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .delete-btn {
     background: transparent;
     color: color-mix(in srgb, var(--danger) 65%, var(--text-secondary));
-    border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--danger) 28%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     padding: 6px 11px;
     border-radius: 10px;
     cursor: pointer;
@@ -767,7 +771,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .delete-btn:hover {
     background: color-mix(in srgb, var(--danger) 12%, transparent);
-    border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+    border-color: color-mix(in srgb, var(--danger) 55%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     opacity: 1;
 }
 
@@ -775,7 +779,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     text-align: center;
     padding: 36px 22px;
     color: var(--text-secondary);
-    border: 1px dashed color-mix(in srgb, var(--border) 82%, transparent);
+    border: 1px dashed color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 82%, transparent);
     border-radius: 14px;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
 }
