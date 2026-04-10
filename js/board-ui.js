@@ -18,10 +18,88 @@ window.BOARD_REACTION_TTL_MS = 7000;
 window.BOARD_REACTION_LONG_PRESS_MS = 450;
 window.BOARD_REACTION_EVENTS_NS = '.boardReaction';
 window.BOARD_MOBILE_TAP_EVENTS_NS = '.mobileBoardTap';
+window.BOARD_RESIZE_SYNC_DELAY_MS = 80;
 window.boardReactionPickerSquare = null;
 window.boardReactionLongPressTimer = null;
 window.boardReactionSuppressTapUntil = 0;
 window.boardReactionLongPressTriggered = false;
+window.__boardResizeSyncObserver = null;
+window.__boardResizeSyncRafId = null;
+window.__boardResizeSyncTimeoutId = null;
+
+window.syncBoardSizeWithLayout = function() {
+    if (!window.board || typeof window.board.resize !== 'function') {
+        return;
+    }
+
+    window.board.resize();
+    window.renderBoardReactions?.();
+
+    if (window.boardReactionPickerSquare) {
+        window.openBoardReactionPicker(window.boardReactionPickerSquare);
+    }
+};
+
+window.scheduleBoardResizeSync = function() {
+    if (!window.board || typeof window.board.resize !== 'function') {
+        return;
+    }
+
+    if (window.__boardResizeSyncRafId) {
+        cancelAnimationFrame(window.__boardResizeSyncRafId);
+    }
+
+    window.__boardResizeSyncRafId = requestAnimationFrame(() => {
+        window.__boardResizeSyncRafId = null;
+        window.syncBoardSizeWithLayout();
+    });
+
+    if (window.__boardResizeSyncTimeoutId) {
+        clearTimeout(window.__boardResizeSyncTimeoutId);
+    }
+
+    window.__boardResizeSyncTimeoutId = setTimeout(() => {
+        window.__boardResizeSyncTimeoutId = null;
+        window.syncBoardSizeWithLayout();
+    }, window.BOARD_RESIZE_SYNC_DELAY_MS);
+};
+
+window.initBoardResizeSync = function() {
+    const boardArea = document.querySelector('.board-area');
+    const mainColumn = document.querySelector('.game-main-column');
+
+    if (!boardArea || !mainColumn) {
+        return;
+    }
+
+    if (window.__boardResizeSyncObserver) {
+        window.__boardResizeSyncObserver.disconnect();
+    }
+
+    if (typeof ResizeObserver === 'undefined') {
+        window.__boardResizeSyncObserver = null;
+        window.scheduleBoardResizeSync();
+        return;
+    }
+
+    const observer = new ResizeObserver(() => {
+        window.scheduleBoardResizeSync();
+    });
+
+    observer.observe(boardArea);
+    observer.observe(mainColumn);
+    window.__boardResizeSyncObserver = observer;
+
+    const section = document.getElementById('game-section');
+    if (section && !section.__boardResizeSyncTransitionBound) {
+        section.addEventListener('transitionend', () => {
+            window.scheduleBoardResizeSync();
+        });
+        section.__boardResizeSyncTransitionBound = true;
+    }
+
+    window.scheduleBoardResizeSync();
+};
 
 window.getNormalizedPieceSet = function(setName) {
     if (!setName) {
@@ -100,6 +178,8 @@ window.rebuildBoardWithCurrentState = function() {
 
     window.setupBoardReactionUI();
     window.renderBoardReactions();
+    window.initBoardResizeSync();
+    window.scheduleBoardResizeSync();
 };
 
 window.applyPieceSet = function(setName) {
@@ -149,6 +229,8 @@ window.initBoard = function(playerColor) {
 
     window.setupBoardReactionUI();
     window.renderBoardReactions();
+    window.initBoardResizeSync();
+    window.scheduleBoardResizeSync();
     
     return window.board;
 };
