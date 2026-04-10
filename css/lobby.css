@@ -114,27 +114,27 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 #lobby-section {
-    border: none;
+    border: 1px solid transparent;
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--surface-elevated) 12%, transparent),
-        color-mix(in srgb, var(--surface) 8%, transparent)
+        color-mix(in srgb, var(--surface-elevated) 8%, transparent),
+        color-mix(in srgb, var(--surface) 6%, transparent)
     );
     overflow: visible;
     box-shadow:
-        0 20px 36px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(232, 232, 216, 0.03);
+        0 14px 32px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(232, 232, 216, 0.02);
 }
 
 .lobby-view {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
     overflow: visible;
 }
 
 .lobby-header-hub {
-    margin-bottom: 2px;
+    margin-bottom: 0;
     align-items: flex-start;
     justify-content: flex-start;
     flex-wrap: nowrap;
@@ -143,17 +143,17 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .lobby-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-    gap: 18px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    gap: 14px;
     flex-wrap: wrap;
-    padding-bottom: 10px;
+    padding: 4px 0 2px;
     border-bottom: none;
 }
 
 .app-footer {
     margin-top: 18px;
-    padding-top: 8px;
+    padding-top: 2px;
     display: flex;
     justify-content: center;
 }
@@ -162,21 +162,14 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
-    min-height: 48px;
-}
-
-.top-lobby-brand {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-end;
-    min-height: 40px;
+    gap: 6px;
+    min-height: 46px;
 }
 
 .lobby-heading .section-title {
     text-align: left;
     color: var(--text);
-    font-size: 1.5rem;
+    font-size: clamp(1.34rem, 2.7vw, 1.54rem);
     font-weight: 730;
     letter-spacing: -0.015em;
     line-height: 1.15;
@@ -184,8 +177,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .lobby-subtitle {
     margin: 0;
-    font-size: 0.93rem;
-    line-height: 1.35;
+    font-size: 0.92rem;
+    line-height: 1.32;
     color: color-mix(in srgb, var(--text-secondary) 90%, var(--text));
 }
 
@@ -194,7 +187,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: grid;
     gap: 16px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding-top: 8px;
+    padding-top: 2px;
 }
 
 .hub-tile {
