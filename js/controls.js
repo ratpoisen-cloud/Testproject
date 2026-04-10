@@ -78,6 +78,11 @@ window.setupGameControls = function(gameRef, roomId) {
         return Boolean(window.game?.game_over?.() || window.lastKnownGameState === 'game_over');
     };
 
+    const hasOpponentJoined = async () => {
+        const players = (await get(window.getPlayersRef(roomId))).val() || {};
+        return Boolean(players.white && players.black);
+    };
+
     // ===== Confirm / Cancel move =====
     const bindPendingMoveControls = () => {
         // Подтверждение хода
@@ -359,7 +364,18 @@ window.setupGameControls = function(gameRef, roomId) {
                 window.notify("Запрос уже отправлен", "warning");
                 return;
             }
-            window.sendDrawRequest(gameRef, roomId);
+            hasOpponentJoined()
+                .then((joined) => {
+                    if (!joined) {
+                        window.notify("Невозможно предложить ничью до подключения соперника", "warning");
+                        return;
+                    }
+                    window.sendDrawRequest(gameRef, roomId);
+                })
+                .catch((error) => {
+                    console.error(error);
+                    window.notify("Не удалось проверить состав игроков", "error");
+                });
         });
 
         // Слушатель запроса на ничью
@@ -379,12 +395,15 @@ window.setupGameControls = function(gameRef, roomId) {
                     return;
                 }
 
+                window.pendingDraw = request;
                 if (request.from !== window.playerColor && !request.answered) {
                     document.getElementById('draw-request-text').innerHTML =
                         `${request.fromName || 'Соперник'} предлагает ничью`;
                     drawRequestBox?.classList.remove('hidden');
-                    window.pendingDraw = request;
+                    return;
                 }
+
+                drawRequestBox?.classList.add('hidden');
             });
         }
 
