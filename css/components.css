@@ -4,15 +4,15 @@
     padding: 0 var(--btn-padding-x);
     border: 1px solid transparent;
     border-radius: var(--btn-radius);
-    font-weight: 600;
+    font-weight: 650;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.24s ease, transform 0.2s ease;
     font-size: var(--btn-font-size);
-    letter-spacing: 0.01em;
+    letter-spacing: 0.012em;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    line-height: 1.2;
+    line-height: 1.1;
     text-align: center;
 }
 
@@ -104,7 +104,7 @@
         color-mix(in srgb, var(--surface-elevated) 55%, var(--card)),
         color-mix(in srgb, var(--card) 94%, #151915)
     );
-    padding: 28px;
+    padding: 30px;
     border-radius: var(--radius-24);
     border: 1px solid color-mix(in srgb, var(--accent) 12%, var(--border));
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(232, 232, 216, 0.04);
@@ -113,10 +113,11 @@
 .section-title {
     font-size: clamp(1.55rem, 2.4vw, var(--font-size-xl));
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
     color: var(--text);
-    font-weight: 700;
-    letter-spacing: 0.01em;
+    font-weight: 720;
+    letter-spacing: 0.008em;
+    line-height: 1.2;
 }
 
 .section-title-tight {
