@@ -398,7 +398,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     padding: 14px 16px;
     border-radius: 16px;
     display: grid;
-    grid-template-columns: 4px minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 78%, transparent);
     transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
@@ -452,9 +452,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .game-accent {
-    align-self: stretch;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--accent) 55%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
+    display: none;
 }
 
 .game-item.waiting .game-accent {
