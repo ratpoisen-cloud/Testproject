@@ -72,9 +72,24 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .guest-brand {
     width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: grid;
+    place-items: center;
+}
+
+.guest-brand .brand-wordmark--guest {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.guest-brand .brand-wordmark--guest .brand-wordmark-asset {
+    display: block;
+}
+
+.guest-brand .brand-wordmark--guest .brand-wordmark-img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .guest-title {
