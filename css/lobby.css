@@ -1,8 +1,8 @@
 .guest-shell {
-    min-height: calc(100vh - 140px);
+    min-height: calc(100vh - 168px);
     display: grid;
     place-items: center;
-    padding: 20px 0 8vh;
+    padding: 12px 0 10vh;
 }
 
 .guest-panel {
@@ -11,8 +11,8 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 10px;
-    padding: 42px 30px;
+    gap: 12px;
+    padding: 40px 30px;
     border-color: color-mix(in srgb, var(--accent) 38%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
 }
@@ -106,7 +106,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     width: 100%;
     display: grid;
     gap: 10px;
-    margin-top: 8px;
+    margin-top: 10px;
 }
 
 .guest-actions .btn {
@@ -114,7 +114,6 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 #lobby-section {
-    border: 1px solid transparent;
     background: linear-gradient(
         180deg,
         color-mix(in srgb, var(--surface-elevated) 8%, transparent),
@@ -129,7 +128,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .lobby-view {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 20px;
     overflow: visible;
 }
 
@@ -144,10 +143,10 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 8px;
-    gap: 14px;
+    margin-bottom: 4px;
+    gap: 12px;
     flex-wrap: wrap;
-    padding: 4px 0 2px;
+    padding: 2px 0 0;
     border-bottom: none;
 }
 
@@ -162,8 +161,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
-    min-height: 46px;
+    gap: 5px;
+    min-height: 44px;
 }
 
 .lobby-heading .section-title {
@@ -185,9 +184,9 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .lobby-hub-grid {
     display: grid;
-    gap: 16px;
+    gap: 14px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding-top: 2px;
+    padding-top: 4px;
 }
 
 .hub-tile {
