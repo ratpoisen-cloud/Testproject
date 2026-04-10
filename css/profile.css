@@ -80,29 +80,33 @@
 .back-to-lobby-btn {
     min-height: 42px;
     padding: 0 15px;
-    border-width: 1px;
+    border: none;
     border-radius: 14px;
     font-size: 0.9rem;
     line-height: 1;
     opacity: 0.92;
+    background: color-mix(in srgb, var(--surface) 26%, transparent);
+    color: color-mix(in srgb, var(--text-secondary) 92%, var(--text));
+    box-shadow: none;
 }
 
 .back-to-lobby-btn:hover {
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    color: var(--text);
     opacity: 1;
 }
 
 #back-to-lobby-btn {
     display: none;
-    background: var(--panel-muted-bg);
-    border-color: rgba(255, 255, 255, 0.16);
-    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--surface) 26%, transparent);
+    border: none;
+    color: color-mix(in srgb, var(--text-secondary) 92%, var(--text));
     opacity: 0.9;
 }
 
 #back-to-lobby-btn:hover {
     color: var(--accent);
-    border-color: var(--accent);
-    background: var(--accent-soft);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
 
 .main-container:has(#game-section:not(.hidden)) #back-to-lobby-btn {
