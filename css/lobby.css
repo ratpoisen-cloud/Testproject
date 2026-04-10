@@ -10,8 +10,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 34px 30px;
+    text-align: center;
+    gap: 0;
+    padding: 42px 30px;
     border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
 }
@@ -36,14 +37,14 @@
 }
 
 .brand-wordmark--hero {
-    width: min(100%, 320px);
-    margin-top: 2px;
+    width: min(100%, 340px);
+    max-width: 340px;
+    margin: 0 auto;
 }
 
-.brand-wordmark--lobby {
-    width: clamp(130px, 18vw, 190px);
-    margin-left: auto;
-    opacity: 0.95;
+.brand-wordmark--topbar {
+    width: clamp(110px, 14vw, 170px);
+    opacity: 0.88;
 }
 
 .brand-wordmark--footer {
@@ -62,16 +63,6 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: inline-flex;
 }
 
-.guest-logo {
-    width: 54px;
-    height: 54px;
-    border-radius: 16px;
-    display: grid;
-    place-items: center;
-    font-size: 1.6rem;
-    color: var(--accent-contrast);
-    background: linear-gradient(135deg, var(--accent), var(--accent-active));
-}
 
 .guest-title {
     margin: 4px 0 0;
@@ -80,19 +71,32 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .guest-subtitle {
-    margin: 0 0 6px;
-    color: var(--text-secondary);
-    font-size: 0.95rem;
+    margin: 22px 0 0;
+    color: color-mix(in srgb, var(--text-secondary) 88%, var(--text));
+    font-size: 0.94rem;
+    text-align: center;
 }
 
 .guest-actions {
     width: 100%;
     display: grid;
     gap: 10px;
+    margin-top: 22px;
 }
 
 .guest-actions .btn {
     width: 100%;
+}
+
+.lobby-chrome-brand {
+    display: none;
+    justify-content: flex-end;
+    align-items: center;
+    margin: -4px 0 8px;
+}
+
+.main-container:has(#lobby-section:not(.hidden)) .lobby-chrome-brand {
+    display: flex;
 }
 
 #lobby-section {

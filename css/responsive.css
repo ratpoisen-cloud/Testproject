@@ -164,6 +164,10 @@
         width: auto;
     }
 
+    .lobby-chrome-brand {
+        display: none !important;
+    }
+
     .user-menu-wrap {
         min-height: var(--system-control-height);
         flex: 1;
@@ -241,12 +245,15 @@
     }
 
     .brand-wordmark--hero {
-        width: min(100%, 260px);
+        width: min(100%, 288px);
     }
 
-    .brand-wordmark--lobby {
-        width: clamp(120px, 46vw, 170px);
-        margin-left: 0;
+    .lobby-chrome-brand {
+        margin: 0 0 10px;
+    }
+
+    .brand-wordmark--topbar {
+        width: clamp(96px, 34vw, 140px);
     }
 
     .app-footer {
