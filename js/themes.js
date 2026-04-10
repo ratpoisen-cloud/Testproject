@@ -73,12 +73,27 @@ window.initThemeButtons = function() {
 
 window.UI_THEMES = ['default', 'dark', 'light', 'amoled', 'forest'];
 
+window.updateGuestWordmark = function(themeName) {
+    const guestWordmarkImg = document.getElementById('guest-wordmark-img');
+    if (!guestWordmarkImg) return;
+
+    const useLightWordmark = ['dark', 'amoled', 'forest'].includes(themeName);
+    const nextSrc = useLightWordmark
+        ? 'assets/logo/gochess_wordmark_light.svg'
+        : 'assets/logo/gochess_wordmark_dark.svg';
+
+    if (guestWordmarkImg.getAttribute('src') !== nextSrc) {
+        guestWordmarkImg.setAttribute('src', nextSrc);
+    }
+};
+
 window.setUITheme = function(themeName) {
     if (!themeName || !window.UI_THEMES.includes(themeName)) {
         themeName = 'default';
     }
 
     document.body.setAttribute('data-ui-theme', themeName);
+    window.updateGuestWordmark(themeName);
     localStorage.setItem('chess-ui-theme', themeName);
 
     const uiThemeSelect = document.getElementById('ui-theme-select');
