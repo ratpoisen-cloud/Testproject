@@ -21,6 +21,9 @@ window.activeReactions = [];
 window.reactionRateLimitState = { cycleKey: null, count: 0 };
 window.BOARD_REACTION_MAX_PER_CYCLE = 5;
 window.playersExpandedResultFilter = {};
+window.pendingDirectChallengeOpponent = null;
+window.lobbyNotifiedDirectChallenges = new Set();
+window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -357,6 +360,8 @@ function getLobbyNodes() {
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
         createGameBtn: document.getElementById('create-game-btn'),
         createGameModal: document.getElementById('create-game-modal'),
+        createGameModalTitle: document.getElementById('create-game-modal-title'),
+        createGameModalDesc: document.getElementById('create-game-modal-desc'),
         createGameCancelBtn: document.getElementById('create-game-modal-cancel'),
         colorButtons: document.querySelectorAll('[data-create-color]'),
         backButtons: document.querySelectorAll('[data-lobby-back]'),
@@ -379,6 +384,14 @@ window.setLobbyScreen = function(screen) {
 
 function closeCreateGameModal(modal) {
     modal?.classList.add('hidden');
+    window.pendingDirectChallengeOpponent = null;
+    const nodes = getLobbyNodes();
+    if (nodes.createGameModalTitle) {
+        nodes.createGameModalTitle.textContent = 'Выберите сторону';
+    }
+    if (nodes.createGameModalDesc) {
+        nodes.createGameModalDesc.textContent = 'За кого хотите играть в новой партии?';
+    }
 }
 
 function syncFinishedGamesVisibility(toggleBtn, finishedList) {
@@ -390,7 +403,71 @@ function syncFinishedGamesVisibility(toggleBtn, finishedList) {
 async function openCreateGameModal(nodes) {
     const user = await window.requireAuthForGame();
     if (!user) return;
+    window.pendingDirectChallengeOpponent = null;
+    if (nodes.createGameModalTitle) {
+        nodes.createGameModalTitle.textContent = 'Выберите сторону';
+    }
+    if (nodes.createGameModalDesc) {
+        nodes.createGameModalDesc.textContent = 'За кого хотите играть в новой партии?';
+    }
     nodes.createGameModal?.classList.remove('hidden');
+}
+
+function openDirectChallengeModal(nodes, opponent) {
+    if (!opponent?.uid) return;
+    window.pendingDirectChallengeOpponent = opponent;
+    if (nodes.createGameModalTitle) {
+        nodes.createGameModalTitle.textContent = 'Новая партия с игроком';
+    }
+    if (nodes.createGameModalDesc) {
+        nodes.createGameModalDesc.textContent = `За кого хотите играть против ${opponent.name || 'соперника'}?`;
+    }
+    nodes.createGameModal?.classList.remove('hidden');
+}
+
+function resolveDirectChallengeColors(colorChoice) {
+    if (colorChoice === 'w') return { creatorColor: 'white', opponentColor: 'black' };
+    if (colorChoice === 'b') return { creatorColor: 'black', opponentColor: 'white' };
+    return Math.random() < 0.5
+        ? { creatorColor: 'white', opponentColor: 'black' }
+        : { creatorColor: 'black', opponentColor: 'white' };
+}
+
+async function createDirectChallengeGame({ creator, opponent, colorChoice }) {
+    const roomId = window.generateRoomId();
+    const now = Date.now();
+    const { creatorColor, opponentColor } = resolveDirectChallengeColors(colorChoice);
+    const creatorIsWhite = creatorColor === 'white';
+    const creatorName = window.getUserName(creator);
+    const creatorPhoto = creator?.photoURL || creator?.user_metadata?.avatar_url || '';
+
+    const players = {
+        white: creatorIsWhite ? creator.uid : opponent.uid,
+        whiteName: creatorIsWhite ? creatorName : (opponent.name || 'Игрок'),
+        black: creatorIsWhite ? opponent.uid : creator.uid,
+        blackName: creatorIsWhite ? (opponent.name || 'Игрок') : creatorName,
+        whitePhotoURL: creatorIsWhite ? creatorPhoto : (opponent.avatarUrl || ''),
+        blackPhotoURL: creatorIsWhite ? (opponent.avatarUrl || '') : creatorPhoto,
+        invite: {
+            type: 'direct_challenge',
+            createdByUid: creator.uid,
+            createdByName: creatorName,
+            targetUid: opponent.uid,
+            targetName: opponent.name || 'Игрок',
+            createdAt: now
+        }
+    };
+
+    await window.set(window.getGameRef(roomId), {
+        players,
+        pgn: new Chess().pgn(),
+        fen: 'start',
+        gameState: 'active',
+        createdAt: now,
+        lastMoveTime: now
+    });
+
+    return roomId;
 }
 
 function buildLobbyEmptyState() {
@@ -426,6 +503,50 @@ function sortLobbyGames(games) {
     });
 }
 
+function getGameMoveCount(gameData) {
+    if (!gameData) return 0;
+    if (Number.isFinite(gameData?.lastMove)) return 1;
+    if (Number.isFinite(gameData?.turn)) return 1;
+
+    const pgn = String(gameData?.pgn || '').trim();
+    if (!pgn) return 0;
+
+    try {
+        const tempGame = new Chess();
+        tempGame.load_pgn(pgn);
+        return tempGame.history().length;
+    } catch (error) {
+        console.warn('Не удалось распарсить PGN при определении старта игры:', error);
+        return 0;
+    }
+}
+
+function isGameStarted(gameData) {
+    return getGameMoveCount(gameData) > 0;
+}
+
+function getSeenDirectChallengeIds() {
+    try {
+        const raw = localStorage.getItem(window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY);
+        if (!raw) return new Set();
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return new Set();
+        return new Set(parsed.filter((id) => typeof id === 'string'));
+    } catch (error) {
+        console.warn('Не удалось восстановить seen direct challenges из localStorage:', error);
+        return new Set();
+    }
+}
+
+function persistSeenDirectChallengeIds(idsSet) {
+    try {
+        const compact = Array.from(idsSet).slice(-300);
+        localStorage.setItem(window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY, JSON.stringify(compact));
+    } catch (error) {
+        console.warn('Не удалось сохранить seen direct challenges в localStorage:', error);
+    }
+}
+
 function buildLobbyGameCardData(id, data, userId) {
     const players = data.players;
     if (!players || typeof players !== 'object') return null;
@@ -441,7 +562,17 @@ function buildLobbyGameCardData(id, data, userId) {
         ? (players.blackPhotoURL || players.blackAvatar || '')
         : (players.whitePhotoURL || players.whiteAvatar || '');
     const resultState = isOver ? window.getFinishedGamePerspective(data, userId) : null;
-    const statusText = isOver ? resultState.label : (isWaitingForOpponent ? 'Ожидание' : '');
+    const invite = players.invite && players.invite.type === 'direct_challenge' ? players.invite : null;
+    const isDirectInvite = Boolean(invite);
+    const hasStarted = isGameStarted(data);
+    const showInviteStatus = isDirectInvite && !hasStarted && !isOver;
+    const statusText = isOver
+        ? resultState.label
+        : (isWaitingForOpponent
+            ? 'Ожидание'
+            : (showInviteStatus
+                ? (invite.targetUid === userId ? 'Приглашение' : 'Приглашение отправлено')
+                : ''));
     const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
 
     return {
@@ -569,10 +700,29 @@ window.initLobby = function() {
     nodes.createGameBtn.onclick = () => openCreateGameModal(nodes);
 
     nodes.colorButtons.forEach((btn) => {
-        btn.onclick = () => {
-            const id = window.generateRoomId();
+        btn.onclick = async () => {
+            const user = await window.requireAuthForGame();
+            if (!user) return;
             const color = btn.dataset.createColor;
+            const directOpponent = window.pendingDirectChallengeOpponent;
             closeCreateGameModal(nodes.createGameModal);
+            if (directOpponent?.uid) {
+                try {
+                    const roomId = await createDirectChallengeGame({
+                        creator: user,
+                        opponent: directOpponent,
+                        colorChoice: color
+                    });
+                    window.notify(`Приглашение отправлено игроку ${directOpponent.name || 'Игрок'}`, 'success', 2600);
+                    location.href = location.origin + location.pathname + `?room=${roomId}`;
+                } catch (error) {
+                    console.error('Ошибка создания адресной партии:', error);
+                    window.notify('Не удалось создать адресную партию', 'error', 3000);
+                }
+                return;
+            }
+
+            const id = window.generateRoomId();
             location.href = location.origin + location.pathname + `?room=${id}&color=${encodeURIComponent(color)}`;
         };
     });
@@ -597,6 +747,7 @@ window.initLobby = function() {
 // Загрузка игр в лобби
 window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
+    window.lobbyNotifiedDirectChallenges = getSeenDirectChallengeIds();
     if (typeof window.__lobbyWatchUnsubscribe === 'function') {
         window.__lobbyWatchUnsubscribe();
         window.__lobbyWatchUnsubscribe = null;
@@ -625,6 +776,20 @@ window.loadLobby = function(user) {
         sortedGames.forEach(([id, data]) => {
             const cardData = buildLobbyGameCardData(id, data, user.uid);
             if (!cardData) return;
+
+            const invite = data?.players?.invite;
+            const hasStarted = isGameStarted(data);
+            if (
+                invite?.type === 'direct_challenge' &&
+                invite.targetUid === user.uid &&
+                invite.createdByUid !== user.uid &&
+                !hasStarted &&
+                !window.lobbyNotifiedDirectChallenges.has(id)
+            ) {
+                window.lobbyNotifiedDirectChallenges.add(id);
+                persistSeenDirectChallengeIds(window.lobbyNotifiedDirectChallenges);
+                window.notify(`${invite.createdByName || 'Игрок'} приглашает вас в новую партию`, 'info', 4200);
+            }
 
             const cardNode = createLobbyGameElement(cardData, user.uid);
             if (cardData.isOver) {
@@ -730,7 +895,7 @@ window.renderPlayersLobby = function(container, players) {
                     </div>
                 </div>
                 <div class="game-actions">
-                    <button class="btn btn-sm play-btn player-play-btn">Новая партия</button>
+                    <button class="btn btn-sm play-btn player-play-btn">Играть</button>
                 </div>
             </div>
             ${selectedFilter ? `
@@ -745,7 +910,7 @@ window.renderPlayersLobby = function(container, players) {
             event.stopPropagation();
             const user = await window.requireAuthForGame();
             if (!user) return;
-            getLobbyNodes().createGameBtn?.click();
+            openDirectChallengeModal(getLobbyNodes(), player);
         };
 
         playerItem.querySelectorAll('[data-result-filter]').forEach((filterBtn) => {
