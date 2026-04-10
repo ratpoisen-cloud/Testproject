@@ -289,6 +289,20 @@
     border-color: color-mix(in srgb, var(--border) 85%, transparent);
 }
 
+.game-item.my-turn-focus {
+    border-color: color-mix(in srgb, var(--success) 44%, var(--accent));
+    background: color-mix(in srgb, var(--success) 8%, var(--item-bg));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 32%, transparent) inset;
+}
+
+.game-item.my-turn-focus .game-accent {
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--success) 82%, var(--accent)),
+        color-mix(in srgb, var(--success) 58%, var(--accent))
+    );
+}
+
 .game-accent {
     align-self: stretch;
     border-radius: 999px;
@@ -429,6 +443,15 @@
     color: color-mix(in srgb, var(--text) 90%, var(--text-secondary));
     background: color-mix(in srgb, var(--surface) 92%, var(--border));
     border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.game-my-turn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--success) 92%, #00ff7f);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface) 88%, transparent);
+    flex-shrink: 0;
 }
 
 .game-side {
