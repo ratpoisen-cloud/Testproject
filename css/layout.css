@@ -2,10 +2,10 @@
     max-width: 1400px;
     min-height: 100dvh;
     margin: 0 auto;
-    padding: 16px 20px 32px;
+    padding: 18px 20px 36px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 14px;
 }
 
 #guest-section,
@@ -18,6 +18,7 @@
     width: 100%;
     display: flex;
     justify-content: center;
+    padding-top: 2px;
 }
 
 .game-layout-2col {
@@ -57,13 +58,13 @@
 .game-status-header {
     width: 100%;
     max-width: 100%;
-    margin: 0 0 var(--space-24) 0;
+    margin: 0 0 var(--space-20) 0;
 }
 
 .board-settings-bar {
     width: 100%;
     max-width: 100%;
-    margin: 0 0 var(--space-8);
+    margin: 0 0 var(--space-10);
 }
 
 .board-wrapper {
@@ -85,7 +86,7 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--board-stack-gap);
-    margin-top: var(--space-12);
+    margin-top: var(--space-14);
 }
 
 .controls-group {
