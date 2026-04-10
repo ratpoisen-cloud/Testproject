@@ -525,6 +525,25 @@ function isGameStarted(gameData) {
     return getGameMoveCount(gameData) > 0;
 }
 
+function resolveTurnColorCode(gameData) {
+    const turn = gameData?.turn;
+    if (turn === 'w' || turn === 'b') return turn;
+    if (turn === 'white') return 'w';
+    if (turn === 'black') return 'b';
+
+    const pgn = String(gameData?.pgn || '').trim();
+    if (!pgn) return null;
+
+    try {
+        const tempGame = new Chess();
+        tempGame.load_pgn(pgn);
+        return tempGame.turn();
+    } catch (error) {
+        console.warn('Не удалось распарсить PGN при определении очереди хода в лобби:', error);
+        return null;
+    }
+}
+
 function getSeenDirectChallengeIds() {
     try {
         const raw = localStorage.getItem(window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY);
@@ -554,9 +573,11 @@ function buildLobbyGameCardData(id, data, userId) {
 
     const isOver = data.gameState === 'game_over';
     const myColor = players.white === userId ? 'white' : 'black';
+    const myColorCode = myColor === 'white' ? 'w' : 'b';
     const opponentUid = myColor === 'white' ? players.black : players.white;
     const isWaitingForOpponent = !isOver && !opponentUid;
-    const isMyTurn = !isOver && !isWaitingForOpponent && data.turn === myColor;
+    const currentTurnCode = resolveTurnColorCode(data);
+    const isMyTurn = !isOver && !isWaitingForOpponent && currentTurnCode === myColorCode;
     const opponent = myColor === 'white' ? (players.blackName || 'Ожидание...') : (players.whiteName || 'Ожидание...');
     const opponentAvatar = myColor === 'white'
         ? (players.blackPhotoURL || players.blackAvatar || '')
@@ -565,7 +586,7 @@ function buildLobbyGameCardData(id, data, userId) {
     const invite = players.invite && players.invite.type === 'direct_challenge' ? players.invite : null;
     const isDirectInvite = Boolean(invite);
     const hasStarted = isGameStarted(data);
-    const showInviteStatus = isDirectInvite && !hasStarted && !isOver;
+    const showInviteStatus = isDirectInvite && !isOver && !hasStarted && isWaitingForOpponent;
     const statusText = isOver
         ? resultState.label
         : (isWaitingForOpponent
