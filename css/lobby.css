@@ -126,6 +126,7 @@
     isolation: isolate;
     -webkit-tap-highlight-color: transparent;
     transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    position: relative;
 }
 
 .hub-tile:hover,
@@ -205,6 +206,35 @@
     font-size: 1.03rem;
     line-height: 1.15;
     letter-spacing: 0.01em;
+}
+
+.hub-tile-title-wrap {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.hub-tile-subtitle {
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.15;
+    color: color-mix(in srgb, var(--accent) 78%, var(--text));
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+    border-radius: 999px;
+    padding: 2px 8px;
+}
+
+.hub-tile-notify-dot {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 90%, #ff3b30);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface) 95%, transparent);
 }
 
 .lobby-back-btn {
@@ -289,6 +319,12 @@
     border-color: color-mix(in srgb, var(--border) 85%, transparent);
 }
 
+.game-item.invite-focus {
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+    background: color-mix(in srgb, var(--accent) 9%, var(--item-bg));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent) inset;
+}
+
 .game-item.my-turn-focus {
     border-color: color-mix(in srgb, var(--success) 44%, var(--accent));
     background: color-mix(in srgb, var(--success) 8%, var(--item-bg));
@@ -300,6 +336,14 @@
         180deg,
         color-mix(in srgb, var(--success) 82%, var(--accent)),
         color-mix(in srgb, var(--success) 58%, var(--accent))
+    );
+}
+
+.game-item.invite-focus .game-accent {
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--accent) 82%, var(--success)),
+        color-mix(in srgb, var(--accent) 62%, var(--border))
     );
 }
 
@@ -399,6 +443,22 @@
     color: color-mix(in srgb, var(--text-secondary) 88%, var(--text));
     background: color-mix(in srgb, var(--surface) 94%, var(--border));
     border-color: color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.game-status-pill.invite {
+    color: color-mix(in srgb, var(--accent) 88%, var(--text));
+    background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+    border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+    font-weight: 700;
+}
+
+.game-invite-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 88%, #ff3b30);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--surface) 80%, transparent);
+    flex-shrink: 0;
 }
 
 .game-status-pill.finished {
