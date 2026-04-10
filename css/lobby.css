@@ -114,8 +114,13 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 #lobby-section {
-    border-color: color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
-    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24);
+    border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--surface-elevated) 34%, var(--card)),
+        color-mix(in srgb, var(--card) 95%, #141814)
+    );
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(232, 232, 216, 0.04);
 }
 
 .lobby-view {
@@ -138,7 +143,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     margin-bottom: 12px;
     gap: 18px;
     flex-wrap: wrap;
-    padding-bottom: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 12%, var(--border));
 }
 
 .app-footer {
@@ -184,9 +190,9 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile {
-    --tile-border: color-mix(in srgb, var(--border) 82%, transparent);
-    --tile-bg: color-mix(in srgb, var(--item-bg) 92%, var(--surface));
-    --tile-bg-hover: color-mix(in srgb, var(--item-hover-bg) 90%, var(--surface));
+    --tile-border: color-mix(in srgb, var(--accent) 12%, var(--border));
+    --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 56%, var(--item-bg)), color-mix(in srgb, var(--item-bg) 95%, #141814));
+    --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 64%, var(--item-hover-bg)), color-mix(in srgb, var(--item-hover-bg) 94%, #171c17));
     --tile-shadow: 0 8px 20px color-mix(in srgb, #000 18%, transparent);
     --tile-shadow-hover: 0 14px 30px color-mix(in srgb, #000 24%, transparent);
     --tile-icon-shell: color-mix(in srgb, var(--surface) 74%, var(--item-bg));
@@ -251,8 +257,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .hub-tile-secondary--players {
     --tile-border: color-mix(in srgb, var(--text-secondary) 26%, var(--border));
     --tile-icon-color: color-mix(in srgb, var(--text) 78%, var(--accent-soft) 22%);
-    --tile-bg: color-mix(in srgb, var(--item-bg) 84%, var(--surface));
-    --tile-bg-hover: color-mix(in srgb, var(--item-hover-bg) 86%, var(--surface));
+    --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface) 74%, var(--item-bg)), color-mix(in srgb, var(--item-bg) 94%, #141814));
+    --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 66%, var(--item-hover-bg)), color-mix(in srgb, var(--item-hover-bg) 93%, #171c17));
 }
 
 .hub-tile-icon {
