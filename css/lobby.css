@@ -42,6 +42,11 @@
     margin: 0 auto;
 }
 
+.brand-wordmark--hero .brand-wordmark-asset {
+    width: 100%;
+    justify-content: center;
+}
+
 .brand-wordmark--topbar {
     width: clamp(110px, 14vw, 170px);
     opacity: 0.88;
@@ -90,13 +95,19 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .lobby-chrome-brand {
     display: none;
-    justify-content: flex-end;
+    position: absolute;
+    top: 50%;
+    right: 0;
     align-items: center;
-    margin: -4px 0 8px;
+    transform: translateY(-50%);
 }
 
 .main-container:has(#lobby-section:not(.hidden)) .lobby-chrome-brand {
     display: flex;
+}
+
+.main-container:has(#lobby-section:not(.hidden)) .top-bar {
+    position: relative;
 }
 
 #lobby-section {
