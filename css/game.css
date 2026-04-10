@@ -334,6 +334,7 @@
 
 .board-settings-bar {
     position: relative;
+    z-index: 180;
     min-height: 0;
     height: 0;
 }
@@ -342,7 +343,7 @@
     position: absolute;
     top: 0;
     right: 0;
-    z-index: 220;
+    z-index: 1;
     width: min(280px, calc(100vw - (var(--system-control-mobile-gutter) * 2)));
     background: var(--system-control-bg);
     border: var(--system-control-border);

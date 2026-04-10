@@ -14,6 +14,10 @@ window.initBoardSettingsControls = function() {
 
     if (toggleBtn && menu) {
         toggleBtn.addEventListener('click', () => {
+            const willOpen = menu.classList.contains('hidden');
+            if (willOpen) {
+                window.closeUserMenu?.();
+            }
             menu.classList.toggle('hidden');
         });
 
