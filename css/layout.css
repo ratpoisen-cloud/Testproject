@@ -5,7 +5,7 @@
     padding: 16px 20px 32px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
 }
 
 #guest-section,

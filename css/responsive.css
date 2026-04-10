@@ -152,14 +152,17 @@
 
     .main-container {
         padding: 10px 10px 22px;
-        gap: 2px;
+        gap: 6px;
     }
 
     .top-bar {
-        top: 8px;
+        top: 6px;
         grid-template-columns: minmax(0, 1fr);
-        gap: 9px;
+        gap: 8px;
+        min-height: 52px;
+        margin-bottom: 14px;
         padding: 8px 10px;
+        border-radius: 16px;
     }
 
     .top-bar-left,
@@ -170,6 +173,7 @@
 
     .top-bar-right {
         justify-content: space-between;
+        gap: 8px;
     }
 
     .user-menu-wrap {
@@ -250,9 +254,9 @@
     }
 
     .top-lobby-brand {
-        min-height: 34px;
+        min-height: 32px;
         margin-left: auto;
-        padding-left: 6px;
+        padding-left: 4px;
     }
 
     .brand-wordmark--top {
