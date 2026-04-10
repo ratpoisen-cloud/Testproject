@@ -36,19 +36,8 @@
     max-width: 100%;
 }
 
-.brand-wordmark--hero {
-    width: min(100%, 340px);
-    max-width: 340px;
-    margin: 0 auto;
-}
-
-.brand-wordmark--hero .brand-wordmark-asset {
-    width: 100%;
-    justify-content: center;
-}
-
-.brand-wordmark--topbar {
-    width: clamp(110px, 14vw, 170px);
+.brand-wordmark--hub {
+    width: clamp(110px, 15vw, 180px);
     opacity: 0.88;
 }
 
@@ -93,23 +82,6 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     width: 100%;
 }
 
-.lobby-chrome-brand {
-    display: none;
-    position: absolute;
-    top: 50%;
-    right: 0;
-    align-items: center;
-    transform: translateY(-50%);
-}
-
-.main-container:has(#lobby-section:not(.hidden)) .lobby-chrome-brand {
-    display: flex;
-}
-
-.main-container:has(#lobby-section:not(.hidden)) .top-bar {
-    position: relative;
-}
-
 #lobby-section {
     border-color: color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
     box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24);
@@ -123,6 +95,9 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .lobby-header-hub {
     margin-bottom: 2px;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: nowrap;
 }
 
 .lobby-header {
@@ -147,6 +122,14 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+    min-height: 48px;
+}
+
+.lobby-brand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
     min-height: 48px;
 }
 
