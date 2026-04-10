@@ -20,6 +20,7 @@
         0 1px 3px rgba(0, 0, 0, 0.12),
         inset 0 1px 0 rgba(232, 232, 216, 0.08);
     backdrop-filter: none;
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
 }
 
 .top-bar-left {
@@ -69,11 +70,17 @@
     border-radius: 12px;
     background: transparent;
     box-shadow: none;
+    transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.22s ease, transform 0.16s ease;
 }
 
 .user-trigger-block:hover {
     background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
     border-color: color-mix(in srgb, var(--border) 92%, transparent);
+    transform: translateY(-1px);
+}
+
+.user-trigger-block:active {
+    transform: translateY(0) scale(0.99);
 }
 
 .user-menu-trigger[aria-expanded="true"] {
@@ -98,12 +105,18 @@
     background: color-mix(in srgb, var(--surface) 26%, transparent);
     color: color-mix(in srgb, var(--text-secondary) 92%, var(--text));
     box-shadow: none;
+    transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 
 .back-to-lobby-btn:hover {
     background: color-mix(in srgb, var(--accent) 10%, var(--surface));
     color: var(--text);
     opacity: 1;
+    transform: translateY(-1px);
+}
+
+.back-to-lobby-btn:active {
+    transform: translateY(0) scale(0.99);
 }
 
 #back-to-lobby-btn {
@@ -112,11 +125,17 @@
     border: none;
     color: color-mix(in srgb, var(--text-secondary) 92%, var(--text));
     opacity: 0.9;
+    transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 
 #back-to-lobby-btn:hover {
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    transform: translateY(-1px);
+}
+
+#back-to-lobby-btn:active {
+    transform: translateY(0) scale(0.99);
 }
 
 .main-container:has(#game-section:not(.hidden)) #back-to-lobby-btn {
@@ -176,7 +195,7 @@
     font-weight: 500;
     padding: 10px 14px;
     cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.16s ease, color 0.16s ease;
 }
 
 .user-menu-item:hover {
