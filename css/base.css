@@ -1,9 +1,9 @@
 :root {
-    --bg: #0f110f;
-    --card: #171917;
-    --surface: #1d211d;
-    --surface-elevated: #242924;
-    --top-bar-bg: rgba(17, 20, 17, 0.74);
+    --bg: #050607;
+    --card: #0d0f10;
+    --surface: #121416;
+    --surface-elevated: #191c1f;
+    --top-bar-bg: rgba(10, 12, 14, 0.72);
     --panel-muted-bg: rgba(232, 232, 216, 0.035);
     --overlay-bg: rgba(8, 10, 9, 0.78);
     --modal-bg: #171c18;
@@ -116,8 +116,8 @@ body {
     background:
         radial-gradient(
             circle at 50% 20%,
-            color-mix(in srgb, var(--bg) 96%, #000) 0%,
-            color-mix(in srgb, var(--bg) 98%, #000) 40%,
+            color-mix(in srgb, var(--bg) 94%, #000) 0%,
+            color-mix(in srgb, var(--bg) 98%, #000) 34%,
             var(--bg) 85%
         ),
         var(--bg);

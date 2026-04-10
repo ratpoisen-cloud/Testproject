@@ -114,16 +114,15 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 #lobby-section {
-    border-color: color-mix(in srgb, var(--accent) 30%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
+    border: none;
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--surface-elevated) 14%, transparent),
-        color-mix(in srgb, var(--surface) 10%, transparent)
+        color-mix(in srgb, var(--surface-elevated) 12%, transparent),
+        color-mix(in srgb, var(--surface) 8%, transparent)
     );
     box-shadow:
-        0 18px 34px rgba(0, 0, 0, 0.34),
-        0 0 10px color-mix(in srgb, var(--accent) 4%, transparent),
-        inset 0 1px 0 rgba(232, 232, 216, 0.06);
+        0 20px 36px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(232, 232, 216, 0.03);
 }
 
 .lobby-view {
@@ -147,7 +146,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     gap: 18px;
     flex-wrap: wrap;
     padding-bottom: 8px;
-    border-bottom: 1px solid color-mix(in srgb, var(--accent) 12%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
+    border-bottom: none;
 }
 
 .app-footer {
@@ -193,7 +192,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile {
-    --tile-border: color-mix(in srgb, var(--accent) 10%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
+    --tile-border: color-mix(in srgb, var(--accent) 8%, color-mix(in srgb, var(--border) 72%, transparent));
     --tile-bg: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 12%, transparent) 0%, color-mix(in srgb, var(--surface) 7%, transparent) 100%);
     --tile-bg-hover: linear-gradient(165deg, color-mix(in srgb, var(--surface-elevated) 20%, transparent) 0%, color-mix(in srgb, var(--surface) 14%, transparent) 100%);
     --tile-shadow: 0 12px 24px color-mix(in srgb, #000 22%, transparent), 0 1px 0 color-mix(in srgb, var(--surface-elevated) 12%, transparent);
@@ -662,7 +661,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     gap: 12px;
     flex-wrap: wrap;
     padding-bottom: 10px;
-    border-bottom: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 72%, transparent);
+    border-bottom: none;
 }
 
 .player-info {
