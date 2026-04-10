@@ -16,6 +16,52 @@
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
 }
 
+
+.brand-wordmark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+}
+
+.brand-wordmark-asset {
+    display: none;
+}
+
+.brand-wordmark-asset .brand-wordmark-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+}
+
+.brand-wordmark--hero {
+    width: min(100%, 320px);
+    margin-top: 2px;
+}
+
+.brand-wordmark--lobby {
+    width: clamp(130px, 18vw, 190px);
+    margin-left: auto;
+    opacity: 0.95;
+}
+
+.brand-wordmark--footer {
+    width: clamp(90px, 12vw, 130px);
+    opacity: 0.75;
+}
+
+body[data-ui-theme="light"] .brand-wordmark-asset-dark,
+body[data-ui-theme="default"] .brand-wordmark-asset-dark {
+    display: inline-flex;
+}
+
+body[data-ui-theme="dark"] .brand-wordmark-asset-light,
+body[data-ui-theme="amoled"] .brand-wordmark-asset-light,
+body[data-ui-theme="forest"] .brand-wordmark-asset-light {
+    display: inline-flex;
+}
+
 .guest-logo {
     width: 54px;
     height: 54px;
@@ -72,6 +118,13 @@
     gap: 18px;
     flex-wrap: wrap;
     padding-bottom: 4px;
+}
+
+.app-footer {
+    margin-top: 18px;
+    padding-top: 8px;
+    display: flex;
+    justify-content: center;
 }
 
 .lobby-heading {
