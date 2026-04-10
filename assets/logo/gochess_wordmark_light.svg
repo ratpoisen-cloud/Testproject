@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="360" viewBox="0 0 1400 360" fill="none">
+  <title>GO CHESS wordmark</title>
+  <rect width="1400" height="360" fill="none"/>
+  <g transform="translate(110 78)">
+    <text x="0" y="190"
+          font-family="Inter, Arial, Helvetica, sans-serif"
+          font-size="200"
+          font-weight="700"
+          letter-spacing="-0.03em"
+          fill="#7eb87e">GO</text>
+    <text x="330" y="200"
+          font-family="Inter, Arial, Helvetica, sans-serif"
+          font-size="218"
+          font-weight="700"
+          letter-spacing="0.03em"
+          fill="#1c2533">CHESS</text>
+  </g>
+</svg>
