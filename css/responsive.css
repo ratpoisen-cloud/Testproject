@@ -156,7 +156,7 @@
     }
 
     .top-bar {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: auto minmax(0, 1fr);
         gap: 8px;
         min-height: 52px;
         margin-bottom: 0;
@@ -166,28 +166,32 @@
 
     .top-bar-left,
     .top-bar-right {
-        width: 100%;
+        width: auto;
         min-width: 0;
     }
 
     .top-bar-right {
-        justify-content: space-between;
+        justify-content: flex-end;
+        justify-self: end;
         gap: 10px;
     }
 
     .user-menu-wrap {
         min-height: var(--system-control-height);
-        width: 100%;
+        width: auto;
         min-width: 0;
+        max-width: 100%;
     }
 
     #user-info,
     .user-menu-trigger {
-        width: 100%;
+        width: auto;
         min-width: 0;
+        max-width: 100%;
     }
 
     #user-name {
+        max-width: min(42vw, 170px);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
