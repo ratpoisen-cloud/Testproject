@@ -235,6 +235,28 @@
         width: 100%;
     }
 
+
+    .lobby-header-hub {
+        align-items: flex-start;
+    }
+
+    .brand-wordmark--hero {
+        width: min(100%, 260px);
+    }
+
+    .brand-wordmark--lobby {
+        width: clamp(120px, 46vw, 170px);
+        margin-left: 0;
+    }
+
+    .app-footer {
+        margin-top: 12px;
+    }
+
+    .brand-wordmark--footer {
+        width: clamp(86px, 32vw, 118px);
+    }
+
     .finished-games-block {
         width: 100%;
         align-items: stretch;
