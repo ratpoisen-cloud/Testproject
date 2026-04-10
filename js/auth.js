@@ -173,9 +173,14 @@ window.setupAuth = function() {
         userMenu?.classList.add('hidden');
         userMenuTrigger?.setAttribute('aria-expanded', 'false');
     };
+    window.closeUserMenu = closeUserMenu;
 
     const toggleUserMenu = () => {
         if (!userMenu) return;
+        const willOpen = userMenu.classList.contains('hidden');
+        if (willOpen) {
+            document.getElementById('board-settings-menu')?.classList.add('hidden');
+        }
         userMenu.classList.toggle('hidden');
         userMenuTrigger?.setAttribute('aria-expanded', String(!userMenu.classList.contains('hidden')));
     };
