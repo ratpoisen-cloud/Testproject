@@ -120,6 +120,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
         color-mix(in srgb, var(--surface-elevated) 12%, transparent),
         color-mix(in srgb, var(--surface) 8%, transparent)
     );
+    overflow: visible;
     box-shadow:
         0 20px 36px rgba(0, 0, 0, 0.4),
         inset 0 1px 0 rgba(232, 232, 216, 0.03);
@@ -129,6 +130,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow: visible;
 }
 
 .lobby-header-hub {
@@ -189,6 +191,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: grid;
     gap: 14px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding-top: 6px;
 }
 
 .hub-tile {
@@ -220,7 +223,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .hub-tile:hover,
 .hub-tile:focus-visible {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     border-color: color-mix(in srgb, var(--accent) 34%, var(--tile-border));
     background: var(--tile-bg-hover);
     box-shadow: var(--tile-shadow-hover), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 30%, transparent);
@@ -328,6 +331,16 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .lobby-back-btn {
     min-height: 36px;
+    border: none;
+    background: color-mix(in srgb, var(--surface) 26%, transparent);
+    color: color-mix(in srgb, var(--text-secondary) 90%, var(--text));
+    opacity: 0.9;
+}
+
+.lobby-back-btn:hover {
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    color: var(--text);
+    opacity: 1;
 }
 
 .finished-games-block {
@@ -417,16 +430,16 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .game-item.my-turn-focus {
-    border-color: color-mix(in srgb, var(--success) 44%, var(--accent));
-    background: color-mix(in srgb, var(--success) 8%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 32%, transparent) inset;
+    border-color: color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 78%, transparent);
+    background: color-mix(in srgb, var(--item-bg) 12%, transparent);
+    box-shadow: 0 10px 20px color-mix(in srgb, #000 18%, transparent), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 16%, transparent);
 }
 
 .game-item.my-turn-focus .game-accent {
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--success) 82%, var(--accent)),
-        color-mix(in srgb, var(--success) 58%, var(--accent))
+        color-mix(in srgb, var(--success) 66%, var(--accent)),
+        color-mix(in srgb, var(--success) 48%, var(--accent))
     );
 }
 
@@ -637,7 +650,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .game-actions {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
@@ -731,17 +744,27 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 
+.play-btn,
+.rematch-btn,
+.delete-btn {
+    min-width: 92px;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 620;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
 .play-btn {
-    min-width: 88px;
     background: var(--accent);
     color: var(--accent-contrast);
     border: none;
-    padding: 6px 14px;
-    border-radius: 10px;
-    cursor: pointer;
     font-weight: 650;
-    font-size: 0.82rem;
-    transition: all 0.2s ease;
 }
 
 .play-btn:hover {
@@ -757,13 +780,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     background: transparent;
     color: color-mix(in srgb, var(--danger) 65%, var(--text-secondary));
     border: 1px solid color-mix(in srgb, var(--danger) 28%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
-    padding: 6px 11px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.76rem;
-    transition: all 0.2s ease;
-    opacity: 0.76;
+    font-weight: 600;
+    opacity: 0.84;
 }
 
 .delete-btn:hover {

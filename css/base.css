@@ -114,12 +114,9 @@
 
 body {
     background:
-        radial-gradient(
-            circle at 50% 20%,
-            color-mix(in srgb, var(--bg) 94%, #000) 0%,
-            color-mix(in srgb, var(--bg) 98%, #000) 34%,
-            var(--bg) 85%
-        ),
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 46%),
+        radial-gradient(circle at 50% 100%, rgba(163, 193, 143, 0.04) 0%, rgba(163, 193, 143, 0) 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--bg) 88%, #0a0d0b), var(--bg) 72%),
         var(--bg);
     color: var(--text);
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
