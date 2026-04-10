@@ -106,7 +106,5 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Обработка изменения размера окна (адаптивность доски)
 window.addEventListener('resize', () => {
-    if (window.board) {
-        requestAnimationFrame(() => window.board.resize());
-    }
+    window.scheduleBoardResizeSync?.();
 });
