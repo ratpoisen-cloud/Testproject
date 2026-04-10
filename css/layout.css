@@ -1,7 +1,7 @@
 .main-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 18px 18px 24px;
+    padding: 22px 20px 28px;
 }
 
 .game-shell {
@@ -47,7 +47,7 @@
 .game-status-header {
     width: 100%;
     max-width: 100%;
-    margin: 0 0 var(--space-20) 0;
+    margin: 0 0 var(--space-24) 0;
 }
 
 .board-settings-bar {
@@ -75,7 +75,7 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--board-stack-gap);
-    margin-top: var(--space-8);
+    margin-top: var(--space-12);
 }
 
 .controls-group {
