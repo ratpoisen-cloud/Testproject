@@ -5,21 +5,20 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     margin-bottom: 0;
-    gap: 12px;
+    gap: 10px;
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--surface-elevated) 96%, var(--top-bar-bg)),
-        color-mix(in srgb, var(--surface) 94%, var(--top-bar-bg))
+        color-mix(in srgb, var(--surface-elevated) 92%, transparent),
+        color-mix(in srgb, var(--surface) 90%, transparent)
     );
-    border: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 52%, transparent);
     border-radius: var(--radius-20);
-    min-height: 58px;
-    padding: 10px 16px;
+    min-height: 54px;
+    padding: 8px 14px;
     box-shadow:
-        0 10px 22px rgba(0, 0, 0, 0.26),
-        0 2px 6px rgba(0, 0, 0, 0.16),
-        inset 0 1px 0 rgba(232, 232, 216, 0.1),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.16);
+        0 6px 14px rgba(0, 0, 0, 0.2),
+        0 1px 3px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(232, 232, 216, 0.08);
     backdrop-filter: none;
 }
 
@@ -34,18 +33,18 @@
     display: inline-flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 8px;
     margin-left: auto;
 }
 
 .user-menu-wrap {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     padding: 0;
     position: relative;
     z-index: 1;
-    min-height: 44px;
+    min-height: 42px;
 }
 
 #user-info {
@@ -219,9 +218,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: flex-end;
-    min-height: 38px;
+    min-height: 36px;
     margin-left: 4px;
-    padding-left: 6px;
+    padding-left: 4px;
 }
 
 body.guest-state #user-menu-wrap {

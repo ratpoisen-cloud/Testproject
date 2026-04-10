@@ -384,8 +384,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     display: grid;
     gap: 12px;
     margin: 12px 0 10px;
-    max-height: 400px;
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
 }
 
 .game-item {
