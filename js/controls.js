@@ -18,27 +18,8 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const runRematch = async () => {
         hideElement('game-modal');
-
-        const playersData = (await get(window.getPlayersRef(roomId))).val();
-        if (!playersData?.white || !playersData?.black) {
-            window.notify("Не удалось создать реванш: данные игроков недоступны", "error");
-            return;
-        }
-        const newId = window.generateRoomId();
-
-        await set(window.getGameRef(newId), {
-            players: {
-                white: playersData.black,
-                whiteName: playersData.blackName,
-                black: playersData.white,
-                blackName: playersData.whiteName
-            },
-            pgn: new Chess().pgn(),
-            fen: 'start',
-            gameState: 'active',
-            createdAt: Date.now()
-        });
-
+        const newId = await window.createRematchGameFromRoom(roomId);
+        if (!newId) return;
         location.href = location.origin + location.pathname + `?room=${newId}`;
     };
 

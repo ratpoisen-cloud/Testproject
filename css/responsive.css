@@ -253,6 +253,7 @@
     }
 
     .play-btn,
+    .rematch-btn,
     .delete-btn {
         padding: 6px 14px;
     }
