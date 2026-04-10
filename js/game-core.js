@@ -437,17 +437,10 @@ function getLobbyNodes() {
 }
 
 window.updateTopLobbyBrandVisibility = function() {
-    const nodes = getLobbyNodes();
     const topBrand = document.getElementById('top-lobby-brand');
     if (!topBrand) return;
 
-    const isAuthorized = Boolean(window.currentUser);
-    const isLobbyVisible = Boolean(nodes.lobbySection && !nodes.lobbySection.classList.contains('hidden'));
-    const isGameVisible = Boolean(nodes.gameSection && !nodes.gameSection.classList.contains('hidden'));
-    const isHubScreen = (window.lobbyCurrentScreen || 'hub') === 'hub';
-    const shouldShow = isAuthorized && isLobbyVisible && !isGameVisible && isHubScreen;
-
-    topBrand.classList.toggle('hidden', !shouldShow);
+    topBrand.classList.remove('hidden');
 };
 
 window.setLobbyScreen = function(screen) {
