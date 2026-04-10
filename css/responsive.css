@@ -164,10 +164,6 @@
         width: auto;
     }
 
-    .lobby-chrome-brand {
-        display: none !important;
-    }
-
     .user-menu-wrap {
         min-height: var(--system-control-height);
         flex: 1;
@@ -242,18 +238,17 @@
 
     .lobby-header-hub {
         align-items: flex-start;
+        flex-wrap: wrap;
     }
 
-    .brand-wordmark--hero {
-        width: min(100%, 288px);
+    .lobby-brand {
+        width: 100%;
+        justify-content: flex-start;
+        min-height: 0;
     }
 
-    .lobby-chrome-brand {
-        margin: 0 0 10px;
-    }
-
-    .brand-wordmark--topbar {
-        width: clamp(96px, 34vw, 140px);
+    .brand-wordmark--hub {
+        width: clamp(92px, 36vw, 132px);
     }
 
     .app-footer {
