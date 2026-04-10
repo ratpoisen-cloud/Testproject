@@ -24,6 +24,7 @@ window.playersExpandedResultFilter = {};
 window.pendingDirectChallengeOpponent = null;
 window.lobbyNotifiedDirectChallenges = new Set();
 window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
+window.DIRECT_INVITE_HANDLED_STORAGE_KEY = 'chess_direct_invite_handled_v1';
 window.lobbyLastSnapshotByGame = new Map();
 window.lobbyHasProcessedFirstSnapshot = false;
 
@@ -419,6 +420,8 @@ function getLobbyNodes() {
         hubCreateBtn: document.getElementById('hub-create-game'),
         hubOpenGamesBtn: document.getElementById('hub-open-games'),
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
+        hubGamesInviteDot: document.getElementById('hub-games-invite-dot'),
+        hubGamesInviteLabel: document.getElementById('hub-games-invite-label'),
         createGameBtn: document.getElementById('create-game-btn'),
         createGameModal: document.getElementById('create-game-modal'),
         createGameModalTitle: document.getElementById('create-game-modal-title'),
@@ -465,6 +468,12 @@ function syncLobbyGamesFilterVisibility(nodes, gamesList, finishedList) {
     nodes.showActiveGamesBtn?.classList.toggle('is-active', !showFinished);
     nodes.showFinishedGamesBtn?.classList.toggle('is-active', showFinished);
     nodes.clearFinishedBtn?.classList.toggle('hidden', !showFinished);
+}
+
+function updateGamesHubInviteIndicator(nodes, inviteCount = 0) {
+    const hasInvites = inviteCount > 0;
+    nodes?.hubGamesInviteDot?.classList.toggle('hidden', !hasInvites);
+    nodes?.hubGamesInviteLabel?.classList.toggle('hidden', !hasInvites);
 }
 
 async function openCreateGameModal(nodes) {
@@ -554,20 +563,42 @@ function buildLobbyEmptyState() {
 function sortLobbyGames(games) {
     return Object.entries(games)
         .filter(([, gameData]) => gameData && typeof gameData === 'object')
+        .map((entry, index) => ({ entry, index }))
         .sort((a, b) => {
-        const aData = a[1];
-        const bData = b[1];
-        const aOver = aData.gameState === 'game_over';
-        const bOver = bData.gameState === 'game_over';
+            const aData = a.entry[1];
+            const bData = b.entry[1];
+            const aOver = aData.gameState === 'game_over';
+            const bOver = bData.gameState === 'game_over';
 
-        if (aOver === bOver) {
+            if (aOver !== bOver) return aOver ? 1 : -1;
+
+            const userId = window.currentUser?.uid || '';
+            if (!aOver && !bOver && userId) {
+                const aIsInvite = isDirectInvitePendingForRoom(a.entry[0], aData, userId);
+                const bIsInvite = isDirectInvitePendingForRoom(b.entry[0], bData, userId);
+                if (aIsInvite !== bIsInvite) return aIsInvite ? -1 : 1;
+
+                const aIsMyTurn = isMyTurnForLobbyGame(aData, userId);
+                const bIsMyTurn = isMyTurnForLobbyGame(bData, userId);
+                if (aIsMyTurn !== bIsMyTurn) return aIsMyTurn ? -1 : 1;
+            }
+
             const aTime = aData.lastMoveTime || aData.createdAt || 0;
             const bTime = bData.lastMoveTime || bData.createdAt || 0;
-            return bTime - aTime;
-        }
+            if (aTime !== bTime) return bTime - aTime;
+            return a.index - b.index;
+        })
+        .map(({ entry }) => entry);
+}
 
-        return aOver ? 1 : -1;
-    });
+function isMyTurnForLobbyGame(gameData, userId) {
+    if (!gameData || !userId || gameData.gameState === 'game_over') return false;
+    const players = gameData.players || {};
+    const myColor = players.white === userId ? 'w' : (players.black === userId ? 'b' : null);
+    if (!myColor) return false;
+    const opponentUid = players.white === userId ? players.black : players.white;
+    if (!opponentUid) return false;
+    return resolveTurnColorCode(gameData) === myColor;
 }
 
 function getGameMoveCount(gameData) {
@@ -644,6 +675,36 @@ function persistSeenDirectChallengeIds(idsSet) {
     }
 }
 
+function getHandledDirectInviteIds() {
+    try {
+        const raw = localStorage.getItem(window.DIRECT_INVITE_HANDLED_STORAGE_KEY);
+        if (!raw) return new Set();
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return new Set();
+        return new Set(parsed.filter((id) => typeof id === 'string'));
+    } catch (error) {
+        console.warn('Не удалось восстановить handled direct invites из localStorage:', error);
+        return new Set();
+    }
+}
+
+function persistHandledDirectInviteIds(idsSet) {
+    try {
+        const compact = Array.from(idsSet).slice(-300);
+        localStorage.setItem(window.DIRECT_INVITE_HANDLED_STORAGE_KEY, JSON.stringify(compact));
+    } catch (error) {
+        console.warn('Не удалось сохранить handled direct invites в localStorage:', error);
+    }
+}
+
+function markDirectInviteAsHandled(roomId) {
+    if (!roomId) return;
+    window.lobbyHandledDirectInvites = window.lobbyHandledDirectInvites || getHandledDirectInviteIds();
+    if (window.lobbyHandledDirectInvites.has(roomId)) return;
+    window.lobbyHandledDirectInvites.add(roomId);
+    persistHandledDirectInviteIds(window.lobbyHandledDirectInvites);
+}
+
 function extractDirectInvite(data) {
     const invite = data?.players?.invite;
     if (!invite || invite.type !== 'direct_challenge') return null;
@@ -654,6 +715,14 @@ function shouldNotifyDirectInvite(data, userId) {
     const invite = extractDirectInvite(data);
     if (!invite) return false;
     return invite.targetUid === userId && invite.createdByUid !== userId;
+}
+
+function isDirectInvitePendingForRoom(roomId, data, userId) {
+    const invite = extractDirectInvite(data);
+    if (!invite || !roomId || !userId || data?.gameState === 'game_over') return false;
+    if (invite.targetUid !== userId || invite.createdByUid === userId) return false;
+    if (isGameStarted(data)) return false;
+    return !window.lobbyHandledDirectInvites?.has?.(roomId);
 }
 
 function hasRoomBecameActiveForUser(previousData, currentData, userId) {
@@ -688,13 +757,14 @@ function buildLobbyGameCardData(id, data, userId) {
     const invite = players.invite && players.invite.type === 'direct_challenge' ? players.invite : null;
     const isDirectInvite = Boolean(invite);
     const hasStarted = isGameStarted(data);
-    const showInviteStatus = isDirectInvite && !isOver && !hasStarted && isWaitingForOpponent;
+    const isInviteForMe = isDirectInvitePendingForRoom(id, data, userId);
+    const showInviteStatus = isInviteForMe || (isDirectInvite && !isOver && !hasStarted && isWaitingForOpponent);
     const statusText = isOver
         ? resultState.label
         : (isWaitingForOpponent
             ? 'Ожидание'
             : (showInviteStatus
-                ? (invite.targetUid === userId ? 'Приглашение' : 'Приглашение отправлено')
+                ? (isInviteForMe ? 'Приглашение' : 'Приглашение отправлено')
                 : ''));
     const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
     const resultComment = isOver ? window.getFinishedGameTerminationLabel(data) : '';
@@ -709,6 +779,7 @@ function buildLobbyGameCardData(id, data, userId) {
         opponent,
         opponentAvatar,
         statusText,
+        isInviteForMe,
         resultComment,
         resultClass: resultState?.className || '',
         turnLabel: !isOver && !isWaitingForOpponent ? (isMyTurn ? 'Ваш ход' : 'Ход соперника') : '',
@@ -752,7 +823,7 @@ function bindAvatarFallbackHandlers(rootNode) {
 
 function createLobbyGameElement(cardData, userId) {
     const item = document.createElement('div');
-    item.className = `game-item ${cardData.stateClass} ${cardData.isMyTurn ? 'my-turn-focus' : ''} ${cardData.resultClass || ''}`.trim();
+    item.className = `game-item ${cardData.stateClass} ${cardData.isMyTurn ? 'my-turn-focus' : ''} ${cardData.isInviteForMe ? 'invite-focus' : ''} ${cardData.resultClass || ''}`.trim();
     item.innerHTML = `
         <div class="game-accent" aria-hidden="true"></div>
         <div class="game-info">
@@ -761,9 +832,10 @@ function createLobbyGameElement(cardData, userId) {
                     ${getAvatarMarkup(cardData.opponent, cardData.opponentAvatar)}
                     <p class="game-opponent">${cardData.opponent}</p>
                 </div>
-                ${cardData.statusText ? `<span class="game-status-pill ${cardData.stateClass} ${cardData.resultClass}">${cardData.statusText}</span>` : ''}
+                ${cardData.statusText ? `<span class="game-status-pill ${cardData.isInviteForMe ? 'invite' : cardData.stateClass} ${cardData.resultClass}">${cardData.statusText}</span>` : ''}
             </div>
             <div class="game-meta">
+                ${cardData.isInviteForMe ? '<span class="game-invite-dot" aria-hidden="true"></span><span class="game-turn-pill opponent-turn">Вас пригласили</span>' : ''}
                 ${cardData.isMyTurn ? '<span class="game-my-turn-dot" aria-hidden="true"></span>' : ''}
                 ${cardData.turnLabel ? `<span class="game-turn-pill ${cardData.turnClass}">${cardData.turnLabel}</span>` : ''}
                 ${cardData.resultComment ? `<span class="game-finish-note">${cardData.resultComment}</span>` : ''}
@@ -781,6 +853,7 @@ function createLobbyGameElement(cardData, userId) {
 
     item.querySelector('.play-btn').onclick = (event) => {
         event.stopPropagation();
+        if (cardData.isInviteForMe) markDirectInviteAsHandled(cardData.id);
         const viewParam = cardData.isOver ? '&view=finished' : '';
         location.href = `${location.origin}${location.pathname}?room=${cardData.id}${viewParam}`;
     };
@@ -894,6 +967,7 @@ window.initLobby = function() {
 window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
     window.lobbyNotifiedDirectChallenges = getSeenDirectChallengeIds();
+    window.lobbyHandledDirectInvites = getHandledDirectInviteIds();
     window.lobbyLastSnapshotByGame = new Map();
     window.lobbyHasProcessedFirstSnapshot = false;
     if (typeof window.__lobbyWatchUnsubscribe === 'function') {
@@ -915,6 +989,7 @@ window.loadLobby = function(user) {
             bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
             if (finishedGamesList) finishedGamesList.innerHTML = empty.finishedGames;
             playersList.innerHTML = empty.players;
+            updateGamesHubInviteIndicator(nodes, 0);
             return;
         }
 
@@ -922,6 +997,7 @@ window.loadLobby = function(user) {
         const wasFirstSnapshot = !window.lobbyHasProcessedFirstSnapshot;
         let hasActiveGames = false;
         let hasFinishedGames = false;
+        let pendingInvitesCount = 0;
         const nextSnapshotByGame = new Map();
 
         sortedGames.forEach(([id, data]) => {
@@ -929,6 +1005,7 @@ window.loadLobby = function(user) {
             nextSnapshotByGame.set(id, data);
             const cardData = buildLobbyGameCardData(id, data, user.uid);
             if (!cardData) return;
+            if (cardData.isInviteForMe) pendingInvitesCount += 1;
 
             if (shouldNotifyDirectInvite(data, user.uid) && !window.lobbyNotifiedDirectChallenges.has(id)) {
                 const invite = extractDirectInvite(data);
@@ -960,6 +1037,7 @@ window.loadLobby = function(user) {
         }
 
         syncLobbyGamesFilterVisibility(nodes, gamesList, finishedGamesList);
+        updateGamesHubInviteIndicator(nodes, pendingInvitesCount);
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
         window.renderPlayersLobby(playersList, playersAggregate);
@@ -1171,6 +1249,10 @@ window.initGame = async function(roomId) {
     await window.addPlayerToGame(playersRef, uid, uName, requestedJoinColor);
     
     const p = (await get(playersRef)).val() || {};
+    const gameSnapshot = await get(gameRef);
+    if (isDirectInvitePendingForRoom(roomId, gameSnapshot.val(), uid)) {
+        markDirectInviteAsHandled(roomId);
+    }
     window.playerColor = resolveAssignedColor(p, uid);
     applyAssignedColorToBoard();
     subscribeToGameUpdates(gameRef);
