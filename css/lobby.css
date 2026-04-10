@@ -22,6 +22,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    margin-left: auto;
+    margin-right: auto;
     line-height: 0;
 }
 
@@ -69,10 +71,10 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 
 .guest-brand {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .guest-title {
