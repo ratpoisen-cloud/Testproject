@@ -1,13 +1,13 @@
 :root {
-    --top-bar-bg: transparent;
-    --input-bg: #1a1a1a;
-    --overlay-bg: rgba(0, 0, 0, 0.95);
-    --panel-muted-bg: rgba(0, 0, 0, 0.16);
-    --item-bg: #1a1a1a;
-    --item-hover-bg: #222;
-    --move-list-bg: #0a0a0a;
-    --toast-bg: rgba(22, 24, 22, 0.98);
-    --toast-info-bg: rgba(20, 28, 36, 0.98);
+    --top-bar-bg: rgba(17, 20, 17, 0.74);
+    --input-bg: #151815;
+    --overlay-bg: rgba(8, 10, 9, 0.8);
+    --panel-muted-bg: rgba(232, 232, 216, 0.035);
+    --item-bg: #151815;
+    --item-hover-bg: #1c211c;
+    --move-list-bg: #111410;
+    --toast-bg: rgba(18, 22, 19, 0.96);
+    --toast-info-bg: rgba(24, 29, 25, 0.96);
 }
 
 /* ====================== ОСНОВНАЯ ТЕМА (без изменений) ====================== */

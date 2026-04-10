@@ -1,30 +1,40 @@
 :root {
     --bg: #0f110f;
-    --card: #1c1f1c;
-    --surface: #242724;
+    --card: #171917;
+    --surface: #1d211d;
+    --surface-elevated: #242924;
+    --top-bar-bg: rgba(17, 20, 17, 0.74);
+    --panel-muted-bg: rgba(232, 232, 216, 0.035);
+    --overlay-bg: rgba(8, 10, 9, 0.78);
+    --modal-bg: #171c18;
+    --input-bg: #151916;
+    --input-bg-readonly: #1b201c;
+    --input-placeholder: #8d988d;
+    --item-bg: #151a16;
+    --item-hover-bg: #1c231d;
+    --move-list-bg: #111511;
+    --toast-bg: rgba(18, 22, 19, 0.96);
+    --toast-info-bg: rgba(22, 30, 25, 0.96);
+
     --accent: #a3c18f;
-    --accent-hover: #b8d0a8;
-    --accent-active: #8eb57a;
+    --accent-hover: #b1cb9f;
+    --accent-active: #8fb37a;
     --accent-contrast: #0f110f;
     --accent-soft: rgba(163, 193, 143, 0.14);
-    --accent-dark: #7e9a6b;
+    --accent-dark: #789868;
     --danger: #c15a5a;
-    --danger-hover: #9e4545;
+    --danger-hover: #aa4d4d;
     --success: #7eb87e;
     --text: #e8e8d8;
-    --text-secondary: #9ca39a;
-    --border: #333833;
-    --surface-elevated: #2b2f2b;
-    --modal-bg: #1c1f1c;
-    --input-bg-readonly: #1f2420;
-    --input-placeholder: #8d968c;
+    --text-secondary: #b4b4a4;
+    --border: rgba(232, 232, 216, 0.12);
     --draw-bg: #e8dcc8;
     --draw-text: #3a3a2a;
     --draw-border: #c9b896;
     --draw-hover: #f0e6d6;
     --draw-hover-shadow: rgba(200, 180, 140, 0.3);
-    --status-my-turn-bg: linear-gradient(135deg, rgba(163, 193, 143, 0.35), rgba(163, 193, 143, 0.15));
-    --status-my-turn-border: var(--accent);
+    --status-my-turn-bg: linear-gradient(135deg, rgba(126, 184, 126, 0.34), rgba(126, 184, 126, 0.14));
+    --status-my-turn-border: var(--success);
     --status-opponent-bg: rgba(255, 255, 255, 0.04);
     --status-opponent-border: var(--border);
     --status-passive-text: var(--text-secondary);
@@ -52,32 +62,34 @@
     --board-reaction-picker-border: rgba(255, 255, 255, 0.12);
     --board-reaction-option-bg: rgba(255, 255, 255, 0.05);
 
-    --highlight-my-turn: color-mix(in srgb, var(--accent) 35%, transparent);
-    --shadow-accent: color-mix(in srgb, var(--accent) 25%, transparent);
+    --highlight-my-turn: color-mix(in srgb, var(--success) 34%, transparent);
+    --shadow-accent: color-mix(in srgb, var(--accent) 20%, transparent);
 
     --space-4: 4px;
     --space-8: 8px;
     --space-12: 12px;
     --space-16: 16px;
+    --space-20: 20px;
     --space-24: 24px;
     --space-32: 32px;
 
     --radius-8: 8px;
     --radius-12: 12px;
     --radius-16: 16px;
+    --radius-20: 20px;
     --radius-24: 24px;
 
     --font-size-xs: 0.8rem;
     --font-size-sm: 0.9rem;
     --font-size-md: 1rem;
-    --font-size-lg: 1.1rem;
-    --font-size-xl: 1.8rem;
+    --font-size-lg: 1.12rem;
+    --font-size-xl: 2rem;
 
     --btn-height: 48px;
-    --btn-height-lg: 52px;
-    --btn-padding-x: 16px;
-    --btn-font-size: 0.95rem;
-    --btn-radius: 16px;
+    --btn-height-lg: 54px;
+    --btn-padding-x: 18px;
+    --btn-font-size: 0.96rem;
+    --btn-radius: 14px;
     --system-control-height: 44px;
     --system-control-radius: 14px;
     --system-control-padding-x: 12px;
@@ -85,11 +97,11 @@
     --system-control-bg: rgba(36, 39, 36, 0.96);
     --system-control-text: var(--text);
     --system-control-text-secondary: var(--text-secondary);
-    --system-control-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
+    --system-control-shadow: 0 16px 34px rgba(0, 0, 0, 0.38);
     --system-control-active-bg: rgba(163, 193, 143, 0.14);
     --system-control-mobile-gutter: 8px;
 
-    --game-layout-gap: 12px;
+    --game-layout-gap: 14px;
     --board-stack-gap: 12px;
     --board-min-size: 320px;
     --game-main-column-width: 760px;
@@ -104,6 +116,8 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.45;
+    letter-spacing: 0.005em;
     margin: 0;
     padding: 0;
     min-height: 100vh;
