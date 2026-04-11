@@ -59,24 +59,55 @@
 }
 
 
-@media (min-width: 901px) and (max-width: 1180px) and (orientation: landscape) {
+@media (min-width: 901px) and (max-width: 1366px) and (min-height: 600px) and (orientation: landscape) {
     :root {
-        --game-side-column-width: 320px;
+        --game-side-column-width: clamp(280px, 27vw, 320px);
+        --game-layout-gap: clamp(10px, 1.6vw, 14px);
+        --board-stack-gap: clamp(8px, 1.3vw, 12px);
+    }
+
+    .main-container {
+        padding-top: 12px;
+        padding-bottom: 24px;
+        gap: 10px;
+    }
+
+    .game-shell {
+        padding-top: 0;
     }
 
     .game-layout-2col {
-        grid-template-columns: minmax(0, 1fr) minmax(280px, var(--game-side-column-width));
+        grid-template-columns: minmax(0, 1fr) minmax(260px, var(--game-side-column-width));
+        align-items: start;
     }
-}
 
-@media (max-width: 1180px) and (min-width: 601px) and (orientation: landscape) {
     .game-main-column,
     .board-area {
-        width: min(100%, var(--game-main-column-width), calc(100dvh - 280px));
+        width: min(
+            100%,
+            var(--game-main-column-width),
+            calc(100dvh - 190px),
+            calc(100vw - var(--game-side-column-width) - (var(--game-layout-gap) * 2) - 48px)
+        );
+    }
+
+    .game-status-header {
+        margin-bottom: var(--space-12);
+    }
+
+    .controls.controls-split {
+        margin-top: var(--space-10);
     }
 
     .game-side-column {
+        width: min(100%, var(--game-side-column-width));
+        max-width: var(--game-side-column-width);
         height: auto;
+        min-height: clamp(var(--board-min-size), calc(100dvh - 190px), var(--game-main-column-width));
+    }
+
+    .game-bottom-panel {
+        min-height: clamp(320px, calc(100dvh - 240px), 560px);
     }
 
     #myBoard {
