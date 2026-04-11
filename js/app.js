@@ -136,9 +136,6 @@ window.addEventListener('DOMContentLoaded', () => {
     window.loadTheme();
     window.loadUITheme();
 
-    // Инициализируем авторизацию
-    window.setupAuth();
-
     // Инициализируем кнопки тем
     window.initThemeButtons();
 
@@ -153,16 +150,28 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }, 500);
 
-    // Проверяем, есть ли комната в URL
+    // Проверяем параметры режима игры в URL
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
+    const isBotMode = urlParams.get('bot') === '1';
 
     if (roomId) {
         window.setAppLoadingFlag('lobby', true);
         window.initGame(roomId);
+    } else if (isBotMode) {
+        window.setAppLoadingFlag('lobby', true);
+        window.initLobby();
+        window.initBotGame({
+            color: urlParams.get('color') || 'random',
+            level: urlParams.get('level') || 'medium'
+        });
     } else {
         window.initLobby();
     }
+
+    // Инициализируем авторизацию после первичного роутинга,
+    // чтобы не было гонки с локальным bot mode при гостевом состоянии.
+    window.setupAuth();
 
     window.setAppLoadingFlag('boot', false);
 });

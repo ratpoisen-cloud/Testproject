@@ -128,6 +128,10 @@
                         <span class="hub-tile-icon" aria-hidden="true">👥</span>
                         <span class="hub-tile-title">Игроки</span>
                     </button>
+                    <button id="hub-play-bot" class="hub-tile hub-tile-secondary" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">🤖</span>
+                        <span class="hub-tile-title">Играть с ботом</span>
+                    </button>
                 </div>
             </div>
 
@@ -171,6 +175,34 @@
                     <button class="btn btn-outline" type="button" data-create-color="b">Чёрные</button>
                     <button class="btn btn-primary" type="button" data-create-color="random">Случайно</button>
                     <button id="create-game-modal-cancel" class="btn btn-outline" type="button">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="bot-game-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="bot-game-modal-title">
+            <div class="modal-content create-game-modal-content">
+                <h3 id="bot-game-modal-title" class="modal-title-reset">Играть с ботом</h3>
+                <p class="modal-desc-secondary">Выберите цвет и сложность</p>
+                <div class="board-settings-group">
+                    <label for="bot-color-select">Цвет</label>
+                    <select id="bot-color-select" class="board-settings-select system-select">
+                        <option value="w">Белые</option>
+                        <option value="b">Чёрные</option>
+                        <option value="random" selected>Случайно</option>
+                    </select>
+                </div>
+                <div class="board-settings-group">
+                    <label for="bot-level-select">Сложность</label>
+                    <select id="bot-level-select" class="board-settings-select system-select">
+                        <option value="easy">Лёгкий</option>
+                        <option value="medium" selected>Средний</option>
+                        <option value="hard">Сильный</option>
+                    </select>
+                </div>
+                <div class="create-game-modal-actions">
+                    <button id="bot-game-start" class="btn btn-primary" type="button">Начать игру</button>
+                    <button id="bot-game-cancel" class="btn btn-outline" type="button">Отмена</button>
                 </div>
             </div>
         </div>
@@ -367,6 +399,7 @@
     <script src="js/firebase.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/board-ui.js"></script>
+    <script src="js/bot-engine.js"></script>
     <script src="js/controls.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/game-core.js"></script>

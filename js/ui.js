@@ -215,6 +215,7 @@ window.updateFinishedGameActions = function(data) {
     const shareBox = document.querySelector('.game-share-box');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
+    const isBotMode = Boolean(window.isBotMode);
 
     gameSection?.classList.toggle('finished-viewer-mode', isFinishedGame);
 
@@ -225,18 +226,19 @@ window.updateFinishedGameActions = function(data) {
         finishedActions.classList.toggle('hidden', !isFinishedGame);
     }
 
-    drawBtn?.classList.toggle('hidden', isFinishedGame);
+    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode);
+    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode);
     resignBtn?.classList.toggle('hidden', isFinishedGame);
     if (takebackBtn) {
-        takebackBtn.classList.toggle('hidden', isFinishedGame);
-        takebackBtn.disabled = isFinishedGame;
+        takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode);
+        takebackBtn.disabled = isFinishedGame || isBotMode;
     }
     if (isFinishedGame) {
         confirmMoveBox?.classList.add('hidden');
         takebackRequestBox?.classList.add('hidden');
         drawRequestBox?.classList.add('hidden');
     }
-    shareBox?.classList.toggle('hidden', isFinishedGame);
+    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode);
 };
 
 // Обновление модального окна окончания игры
@@ -251,8 +253,9 @@ window.updateGameModal = function(data) {
         !isFirstStateSync &&
         previousState === 'active' &&
         currentState === 'game_over';
+    const isLocalBotGameOver = Boolean(window.isBotMode && currentState === 'game_over');
 
-    if (isRealGameOverTransition && modal.classList.contains('hidden')) {
+    if ((isRealGameOverTransition || isLocalBotGameOver) && modal.classList.contains('hidden')) {
         const metadata = window.applyGameHeaders(window.game, data);
         modal.classList.remove('hidden');
         document.getElementById('modal-title').innerHTML = '🏆 Игра окончена';
