@@ -1,5 +1,5 @@
 :root {
-    --font-family-ui: 'Press Start 2P', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-family-ui: 'Press Start 2P', monospace;
     --bg: #050607;
     --card: #0d0f10;
     --surface: #121416;
@@ -82,16 +82,16 @@
     --radius-20: 20px;
     --radius-24: 24px;
 
-    --font-size-xs: 0.82rem;
-    --font-size-sm: 0.94rem;
-    --font-size-md: 1.02rem;
-    --font-size-lg: 1.16rem;
-    --font-size-xl: 2rem;
+    --font-size-xs: 0.72rem;
+    --font-size-sm: 0.82rem;
+    --font-size-md: 0.9rem;
+    --font-size-lg: 1.02rem;
+    --font-size-xl: 1.7rem;
 
-    --btn-height: 48px;
-    --btn-height-lg: 54px;
-    --btn-padding-x: 18px;
-    --btn-font-size: 0.92rem;
+    --btn-height: 44px;
+    --btn-height-lg: 50px;
+    --btn-padding-x: 14px;
+    --btn-font-size: 0.82rem;
     --btn-radius: 14px;
     --system-control-height: 44px;
     --system-control-radius: 14px;
@@ -123,12 +123,20 @@ body {
         var(--bg);
     color: var(--text);
     font-family: var(--font-family-ui);
-    line-height: 1.6;
+    line-height: 1.5;
     letter-spacing: 0.015em;
-    font-size: 14px;
+    font-size: 13px;
     margin: 0;
     padding: 0;
     min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select,
+option {
+    font-family: inherit;
 }
 
 .hidden {

@@ -182,9 +182,20 @@
 }
 
 @media (max-width: 600px) {
+    .btn:hover,
+    .hub-tile:hover,
+    .hub-tile:focus-visible {
+        transform: none;
+    }
+
+    .btn:active,
+    .hub-tile:active {
+        transform: scale(0.99);
+    }
+
     body {
-        font-size: 15px;
-        line-height: 1.72;
+        font-size: 13px;
+        line-height: 1.8;
         letter-spacing: 0.018em;
     }
 
@@ -194,7 +205,7 @@
         --btn-height: 44px;
         --btn-height-lg: 44px;
         --btn-padding-x: 12px;
-        --btn-font-size: 0.88rem;
+        --btn-font-size: 0.76rem;
         --btn-radius: 14px;
     }
 
@@ -375,7 +386,7 @@
         min-width: 0;
         padding: 0 10px;
         border-radius: var(--btn-radius);
-        font-size: 0.88rem;
+        font-size: 0.76rem;
         gap: 6px;
     }
 
@@ -448,7 +459,7 @@
 
     .review-control-btn {
         min-height: 34px;
-        font-size: 0.82rem;
+        font-size: 0.7rem;
     }
 
     .share-container {
@@ -469,6 +480,8 @@
 
     .ui-toast {
         max-width: 100%;
+        font-size: 0.7rem;
+        line-height: 1.55;
     }
 
     .ui-confirm-actions {

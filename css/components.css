@@ -4,9 +4,9 @@
     padding: 0 var(--btn-padding-x);
     border: 1px solid transparent;
     border-radius: var(--btn-radius);
-    font-weight: 650;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.22s ease, transform 0.16s ease, color 0.16s ease;
+    transition: background-color 0.14s steps(2, end), border-color 0.14s steps(2, end), box-shadow 0.2s ease, transform 0.14s steps(3, end), color 0.14s steps(2, end);
     font-size: var(--btn-font-size);
     letter-spacing: 0.012em;
     display: inline-flex;
@@ -14,14 +14,17 @@
     justify-content: center;
     line-height: 1.3;
     text-align: center;
+    box-shadow: 0 2px 0 color-mix(in srgb, #000 26%, transparent);
 }
 
 .btn:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 color-mix(in srgb, #000 32%, transparent), 0 8px 16px color-mix(in srgb, #000 16%, transparent);
 }
 
 .btn:active {
-    transform: translateY(0) scale(0.99);
+    transform: translateY(1px) scale(0.985);
+    box-shadow: 0 1px 0 color-mix(in srgb, #000 30%, transparent);
 }
 
 .btn:focus-visible {
@@ -34,7 +37,7 @@
     color: var(--accent-contrast);
     border-color: color-mix(in srgb, var(--accent-active) 56%, var(--border));
     box-shadow: 0 6px 14px var(--shadow-accent);
-    font-weight: 700;
+    font-weight: 650;
 }
 
 .btn-primary:hover {
@@ -94,13 +97,13 @@
 .btn-sm {
     min-height: 40px;
     padding: 0 14px;
-    font-size: 0.85rem;
+    font-size: 0.76rem;
 }
 
 .btn-large {
     min-height: var(--btn-height-lg);
     padding: 0 20px;
-    font-size: 1rem;
+    font-size: 0.88rem;
     width: 100%;
 }
 
@@ -117,11 +120,11 @@
 }
 
 .section-title {
-    font-size: clamp(1.55rem, 2.4vw, var(--font-size-xl));
+    font-size: clamp(1.32rem, 2.1vw, var(--font-size-xl));
     text-align: center;
     margin-bottom: 22px;
     color: var(--text);
-    font-weight: 720;
+    font-weight: 650;
     letter-spacing: 0.008em;
     line-height: 1.2;
 }
@@ -158,6 +161,7 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    animation: modalOverlayIn 0.18s ease-out;
 }
 
 .modal-content {
@@ -170,6 +174,10 @@
     border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(232, 232, 216, 0.04);
     box-sizing: border-box;
+    font-size: var(--font-size-sm);
+    line-height: 1.55;
+    animation: modalPixelIn 0.2s steps(4, end);
+    transform-origin: center;
 }
 
 .input-field {
@@ -181,8 +189,8 @@
     color: var(--text);
     border-radius: 12px;
     box-sizing: border-box;
-    font-size: 0.92rem;
-    line-height: 1.5;
+    font-size: 0.82rem;
+    line-height: 1.45;
     letter-spacing: 0.02em;
     transition: border-color 0.16s ease, background-color 0.22s ease, box-shadow 0.22s ease;
 }
@@ -227,7 +235,7 @@
     color: var(--danger);
     margin-top: 15px;
     font-size: var(--font-size-sm);
-    line-height: 1.45;
+    line-height: 1.4;
 }
 
 .modal-title-reset {
@@ -237,7 +245,7 @@
 .modal-desc-secondary {
     margin: 20px 0;
     color: var(--text-secondary);
-    line-height: 1.5;
+    line-height: 1.55;
 }
 
 .create-game-modal-content {
@@ -285,7 +293,7 @@
 
 .ui-toast {
     max-width: min(92vw, 360px);
-    padding: 10px 12px;
+    padding: 9px 11px;
     border-radius: 12px;
     border: 1px solid color-mix(in srgb, var(--border) 94%, transparent);
     background: var(--toast-bg);
@@ -294,12 +302,18 @@
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.18s ease, transform 0.18s ease;
-    line-height: 1.45;
+    line-height: 1.5;
+    font-size: 0.76rem;
+    font-weight: 500;
+    border-left-width: 3px;
+    filter: saturate(0.96);
 }
 
 .ui-toast.is-visible {
     opacity: 1;
     transform: translateY(0);
+    animation: toastRetroIn 0.2s steps(4, end);
+    filter: saturate(1);
 }
 
 .ui-toast-success { border-color: var(--success); }
@@ -319,4 +333,41 @@
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+@keyframes modalOverlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalPixelIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toastRetroIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn,
+    .modal,
+    .modal-content,
+    .ui-toast {
+        transition: none;
+        animation: none;
+    }
 }
