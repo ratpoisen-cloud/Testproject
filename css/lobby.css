@@ -98,7 +98,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .guest-subtitle {
     margin: 0;
     color: color-mix(in srgb, var(--text-secondary) 88%, var(--text));
-    font-size: 0.94rem;
+    font-size: 0.84rem;
+    line-height: 1.5;
     text-align: center;
 }
 
@@ -176,8 +177,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .lobby-subtitle {
     margin: 0;
-    font-size: 0.92rem;
-    line-height: 1.32;
+    font-size: 0.8rem;
+    line-height: 1.5;
     color: color-mix(in srgb, var(--text-secondary) 90%, var(--text));
 }
 
@@ -291,8 +292,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .hub-tile-title {
     font-weight: 740;
-    font-size: 1.05rem;
-    line-height: 1.2;
+    font-size: 0.88rem;
+    line-height: 1.4;
     letter-spacing: 0.008em;
     transition: transform 0.16s ease, color 0.16s ease;
 }
@@ -305,7 +306,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile-subtitle {
-    font-size: 0.74rem;
+    font-size: 0.64rem;
     font-weight: 600;
     line-height: 1.2;
     color: color-mix(in srgb, var(--accent) 78%, var(--text));

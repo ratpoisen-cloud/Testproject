@@ -48,6 +48,7 @@ window.setupAuth = function() {
     const cleanupGuestUiState = () => {
         closeUserMenu();
         hideModalById('email-modal');
+        document.body.classList.remove('email-modal-open');
         hideModalById('create-game-modal');
         hideModalById('game-modal');
         hideModalById('board-settings-menu');
@@ -284,6 +285,12 @@ window.setupAuth = function() {
     const openEmailModal = () => {
         emailError.classList.add('hidden');
         emailModal.classList.remove('hidden');
+        document.body.classList.add('email-modal-open');
+    };
+
+    const closeEmailModal = () => {
+        emailModal.classList.add('hidden');
+        document.body.classList.remove('email-modal-open');
     };
 
     document.getElementById('login-google').onclick = handleGoogleLogin;
@@ -292,7 +299,7 @@ window.setupAuth = function() {
     document.getElementById('login-email-trigger').onclick = openEmailModal;
     document.getElementById('guest-login-email').onclick = openEmailModal;
     
-    document.getElementById('close-email-modal').onclick = () => emailModal.classList.add('hidden');
+    document.getElementById('close-email-modal').onclick = closeEmailModal;
 
     // Вход по Email
     document.getElementById('login-email-btn').onclick = async () => {
@@ -302,7 +309,7 @@ window.setupAuth = function() {
 
         try {
             await signInWithEmailAndPassword(window.auth, email, pass);
-            emailModal.classList.add('hidden');
+            closeEmailModal();
             document.getElementById('email-input').value = '';
             document.getElementById('password-input').value = '';
         } catch (err) {
@@ -324,7 +331,7 @@ window.setupAuth = function() {
 
         try {
             const authResult = await createUserWithEmailAndPassword(window.auth, email, pass);
-            emailModal.classList.add('hidden');
+            closeEmailModal();
             document.getElementById('email-input').value = '';
             document.getElementById('password-input').value = '';
 

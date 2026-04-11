@@ -7,11 +7,38 @@ window.__appLoadingFlags = {
     lobby: false
 };
 
+window.__appLoadingOverlayState = {
+    firstOverlayShownAt: Date.now(),
+    minimumFirstOverlayMs: 1800,
+    firstOverlayGateActive: true,
+    gateTimerId: null
+};
+
 window.updateAppLoadingOverlay = function() {
     const overlay = document.getElementById('app-loading-overlay');
     if (!overlay) return;
 
-    const isLoading = Object.values(window.__appLoadingFlags).some(Boolean);
+    const overlayState = window.__appLoadingOverlayState;
+    const isLoadingByFlags = Object.values(window.__appLoadingFlags).some(Boolean);
+    const firstOverlayElapsed = Date.now() - overlayState.firstOverlayShownAt;
+    const hasReachedMinimumFirstOverlay = firstOverlayElapsed >= overlayState.minimumFirstOverlayMs;
+    const firstOverlayGateOpen = !overlayState.firstOverlayGateActive || hasReachedMinimumFirstOverlay;
+    const isLoading = isLoadingByFlags || !firstOverlayGateOpen;
+
+    if (hasReachedMinimumFirstOverlay) {
+        overlayState.firstOverlayGateActive = false;
+        if (overlayState.gateTimerId) {
+            clearTimeout(overlayState.gateTimerId);
+            overlayState.gateTimerId = null;
+        }
+    } else if (!overlayState.gateTimerId) {
+        const remainingMs = overlayState.minimumFirstOverlayMs - firstOverlayElapsed;
+        overlayState.gateTimerId = setTimeout(() => {
+            overlayState.gateTimerId = null;
+            window.updateAppLoadingOverlay();
+        }, remainingMs);
+    }
+
     overlay.classList.toggle('hidden', !isLoading);
     document.body.classList.toggle('app-loading', isLoading);
 };

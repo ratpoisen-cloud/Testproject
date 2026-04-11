@@ -86,11 +86,10 @@
 }
 
 
-/* ===== PIXEL ACCENTS (HEADINGS ONLY) ===== */
+/* ===== PIXEL UI TEXT ===== */
 .guest-title,
 #lobby-section .section-title,
 #lobby-section .hub-tile-title {
-    font-family: 'Press Start 2P', 'Segoe UI', system-ui, sans-serif;
     letter-spacing: 0.03em;
     text-transform: none;
 }
@@ -117,6 +116,12 @@ body[data-ui-theme="default"] .brand-wordmark-asset-dark {
 
 body[data-ui-theme="pixel"] .brand-wordmark-asset-light {
     display: inline-flex;
+}
+
+/* ===== EMAIL MODAL LAYERING FIX ===== */
+body.email-modal-open #auth-buttons,
+body.email-modal-open #guest-section .guest-actions {
+    visibility: hidden;
 }
 
 /* ===== STARTUP LOADING OVERLAY ===== */

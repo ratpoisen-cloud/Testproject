@@ -8,8 +8,6 @@ window.THEMES = [
     'theme-ocean',
     'theme-dark',
     'theme-marble',
-    'theme-chesscom',
-    'theme-lime',
     'theme-middle-earth'
 ];
 
