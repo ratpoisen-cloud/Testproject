@@ -2,12 +2,12 @@
 // Отвечает за: инициализацию доски, подсветку клеток, drag-and-drop для десктопа, клики для мобилы
 
 window.PIECE_SET_STORAGE_KEY = 'chess-piece-set';
-window.DEFAULT_PIECE_SET = 'alpha';
+window.DEFAULT_PIECE_SET = 'tatiana';
 window.LEGACY_PIECE_SET_MIGRATIONS = {
     cdn: 'alpha'
 };
 window.PIECE_SETS = {
-    alpha: { label: 'Стандартные', theme: 'assets/pieces/alpha/{piece}.svg' },
+    alpha: { label: 'alpha', theme: 'assets/pieces/alpha/{piece}.svg' },
     chessnut: { label: 'chessnut', theme: 'assets/pieces/chessnut/{piece}.svg' },
     pixel: { label: 'pixel', theme: 'assets/pieces/pixel/{piece}.svg' },
     tatiana: { label: 'tatiana', theme: 'assets/pieces/tatiana/{piece}.svg' }

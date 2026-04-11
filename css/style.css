@@ -110,11 +110,7 @@
 }
 
 /* ===== GUEST/TOP WORDMARK THEME SWITCH (ONLY SUPPORTED UI THEMES) ===== */
-body[data-ui-theme="default"] .brand-wordmark-asset-dark {
-    display: inline-flex;
-}
-
-body[data-ui-theme="pixel"] .brand-wordmark-asset-light {
+.brand-wordmark-asset-dark {
     display: inline-flex;
 }
 

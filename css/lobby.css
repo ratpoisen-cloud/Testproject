@@ -58,14 +58,7 @@
     opacity: 0.75;
 }
 
-body[data-ui-theme="light"] .brand-wordmark-asset-dark,
-body[data-ui-theme="default"] .brand-wordmark-asset-dark {
-    display: inline-flex;
-}
-
-body[data-ui-theme="dark"] .brand-wordmark-asset-light,
-body[data-ui-theme="amoled"] .brand-wordmark-asset-light,
-body[data-ui-theme="forest"] .brand-wordmark-asset-light {
+body[data-ui-theme] .brand-wordmark-asset-dark {
     display: inline-flex;
 }
 

@@ -44,8 +44,11 @@
     gap: 8px;
     padding: 0;
     position: relative;
+    overflow: visible;
     z-index: 1;
     min-height: 42px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 #user-info {
@@ -164,8 +167,11 @@
 .user-menu {
     position: absolute;
     top: calc(100% + 8px);
+    left: auto;
     right: 0;
-    min-width: 184px;
+    min-width: min(184px, calc(100vw - 16px));
+    width: max-content;
+    max-width: min(320px, calc(100vw - 16px));
     background: linear-gradient(
         165deg,
         color-mix(in srgb, var(--surface-elevated) 96%, #161a16),
@@ -180,6 +186,7 @@
     backdrop-filter: blur(10px) saturate(115%);
     -webkit-backdrop-filter: blur(10px) saturate(115%);
     overflow: hidden;
+    overflow-wrap: anywhere;
     z-index: 2;
     isolation: isolate;
 }
