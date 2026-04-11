@@ -5,6 +5,9 @@
     <title>Go Chess</title>
 
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" href="favicon.ico?v=3" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32x32.png?v=3">
@@ -27,6 +30,16 @@
     </script>
 </head>
 <body>
+    <div id="app-loading-overlay" class="app-loading-overlay" role="status" aria-live="polite" aria-label="Загрузка приложения">
+        <div class="app-loading-overlay__content">
+            <h1 class="app-loading-overlay__title">Go Chess</h1>
+            <p class="app-loading-overlay__subtitle">Го шахматы</p>
+            <p class="app-loading-overlay__text">Загрузка…</p>
+            <div class="app-loading-pixels" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
     <div class="main-container">
 
         <div class="top-bar">
@@ -47,10 +60,7 @@
                         <label for="user-ui-theme-select">Тема интерфейса</label>
                         <select id="user-ui-theme-select" class="board-settings-select system-select">
                             <option value="default">Default</option>
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                            <option value="amoled">AMOLED</option>
-                            <option value="forest">Forest</option>
+                            <option value="pixel">Pixel</option>
                         </select>
                     </div>
                     <button id="logout-btn" class="user-menu-item user-menu-item-danger" type="button" role="menuitem">Выйти</button>

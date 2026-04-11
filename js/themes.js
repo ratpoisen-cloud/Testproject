@@ -71,13 +71,13 @@ window.initThemeButtons = function() {
 // ==================== UI ТЕМЫ АККАУНТА ====================
 // Отвечает за: глобальную тему интерфейса (вне шахматной доски)
 
-window.UI_THEMES = ['default', 'dark', 'light', 'amoled', 'forest'];
+window.UI_THEMES = ['default', 'pixel'];
 
 window.updateGuestWordmark = function(themeName) {
     const guestWordmarkImg = document.getElementById('guest-wordmark-img');
     if (!guestWordmarkImg) return;
 
-    const useLightWordmark = ['dark', 'amoled', 'forest'].includes(themeName);
+    const useLightWordmark = themeName === 'pixel';
     const nextSrc = useLightWordmark
         ? 'assets/logo/gochess_wordmark_light.svg'
         : 'assets/logo/gochess_wordmark_dark.svg';
@@ -96,7 +96,9 @@ window.setUITheme = function(themeName) {
     window.updateGuestWordmark(themeName);
     localStorage.setItem('chess-ui-theme', themeName);
 
-    const uiThemeSelect = document.getElementById('ui-theme-select');
+    const uiThemeSelect =
+        document.getElementById('ui-theme-select') ||
+        document.getElementById('user-ui-theme-select');
     if (uiThemeSelect && uiThemeSelect.value !== themeName) {
         uiThemeSelect.value = themeName;
     }

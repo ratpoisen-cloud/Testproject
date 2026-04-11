@@ -239,21 +239,27 @@ window.setupAuth = function() {
     onAuthStateChanged(window.auth, (user) => {
         hasResolvedInitialAuthState = true;
         window.currentUser = user;
-        
+
+        window.setAppLoadingFlag?.('auth', false);
+
         if (user) {
             window.setAppAuthView(true);
-            
+
             const userName = window.getUserName(user);
             userNameEl.innerText = userName;
             applyUserAvatar(user);
             window.initClearFinishedButton?.(user.uid);
-            
+
             if (!new URLSearchParams(window.location.search).get('room')) {
+                window.setAppLoadingFlag?.('lobby', true);
                 if (window.loadLobby) window.loadLobby(user);
+            } else {
+                window.setAppLoadingFlag?.('lobby', true);
             }
         } else {
             cleanupGuestUiState();
             window.setAppAuthView(false);
+            window.setAppLoadingFlag?.('lobby', false);
         }
     });
 
@@ -349,5 +355,7 @@ window.setupAuth = function() {
 
     if (!hasResolvedInitialAuthState) {
         document.body.classList.remove('auth-state', 'guest-state');
+        window.setAppLoadingFlag?.('auth', true);
+        window.setAppLoadingFlag?.('lobby', false);
     }
 };
