@@ -1,6 +1,37 @@
 // ==================== ГЛАВНЫЙ ФАЙЛ ====================
 // Отвечает за: инициализацию приложения, последовательную загрузку модулей
 
+window.__appLoadingFlags = {
+    boot: true,
+    auth: true,
+    lobby: false
+};
+
+window.updateAppLoadingOverlay = function() {
+    const overlay = document.getElementById('app-loading-overlay');
+    if (!overlay) return;
+
+    const isLoading = Object.values(window.__appLoadingFlags).some(Boolean);
+    overlay.classList.toggle('hidden', !isLoading);
+    document.body.classList.toggle('app-loading', isLoading);
+};
+
+window.setAppLoadingFlag = function(flagName, value) {
+    if (!Object.prototype.hasOwnProperty.call(window.__appLoadingFlags, flagName)) {
+        return;
+    }
+    window.__appLoadingFlags[flagName] = Boolean(value);
+    window.updateAppLoadingOverlay();
+};
+
+window.markLobbyReady = function() {
+    window.setAppLoadingFlag('lobby', false);
+};
+
+window.markGameReady = function() {
+    window.setAppLoadingFlag('lobby', false);
+};
+
 window.initBoardSettingsControls = function() {
     if (window.__boardSettingsControlsInitialized) return;
 
@@ -43,8 +74,9 @@ window.initBoardSettingsControls = function() {
     }
 
     if (uiThemeSelect) {
-        const savedUITheme = localStorage.getItem('chess-ui-theme') || 'default';
-        uiThemeSelect.value = savedUITheme;
+        const savedUITheme = localStorage.getItem('chess-ui-theme');
+        const allowedTheme = window.UI_THEMES?.includes(savedUITheme) ? savedUITheme : 'default';
+        uiThemeSelect.value = allowedTheme;
 
         uiThemeSelect.addEventListener('change', (e) => {
             if (window.setUITheme) {
@@ -70,14 +102,15 @@ window.verifyDataAdapterLoaded = function() {
 
 // Инициализация приложения
 window.addEventListener('DOMContentLoaded', () => {
+    window.updateAppLoadingOverlay();
     window.verifyDataAdapterLoaded();
-
-    // Инициализируем авторизацию
-    window.setupAuth();
 
     // Загружаем тему
     window.loadTheme();
     window.loadUITheme();
+
+    // Инициализируем авторизацию
+    window.setupAuth();
 
     // Инициализируем кнопки тем
     window.initThemeButtons();
@@ -98,10 +131,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const roomId = urlParams.get('room');
 
     if (roomId) {
+        window.setAppLoadingFlag('lobby', true);
         window.initGame(roomId);
     } else {
         window.initLobby();
     }
+
+    window.setAppLoadingFlag('boot', false);
 });
 
 // Обработка изменения размера окна (адаптивность доски)

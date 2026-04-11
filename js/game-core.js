@@ -998,6 +998,7 @@ window.loadLobby = function(user) {
             if (finishedGamesList) finishedGamesList.innerHTML = empty.finishedGames;
             playersList.innerHTML = empty.players;
             updateGamesHubInviteIndicator(nodes, 0);
+            window.markLobbyReady?.();
             return;
         }
 
@@ -1049,6 +1050,9 @@ window.loadLobby = function(user) {
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
         window.renderPlayersLobby(playersList, playersAggregate);
+        if (!window.lobbyHasProcessedFirstSnapshot) {
+            window.markLobbyReady?.();
+        }
         window.lobbyHasProcessedFirstSnapshot = true;
         window.lobbyLastSnapshotByGame = nextSnapshotByGame;
     });
@@ -1236,38 +1240,45 @@ function subscribeToGameUpdates(gameRef) {
 }
 
 window.initGame = async function(roomId) {
-    const user = await window.requireAuthForGame();
-    if (!user) {
-        location.href = location.origin + location.pathname;
-        return;
-    }
+    try {
+        const user = await window.requireAuthForGame();
+        if (!user) {
+            location.href = location.origin + location.pathname;
+            return;
+        }
 
-    setGameSectionVisibility();
-    document.getElementById('room-link').value = window.location.href;
-    
-    const uid = window.getUserId(user);
-    const uName = window.getUserName(user);
-    const gameRef = window.getGameRef(roomId);
-    const playersRef = window.getPlayersRef(roomId);
-    const requestedJoinColor = window.getRequestedJoinColor();
-    const openMode = new URLSearchParams(window.location.search).get('view');
-    
-    initLocalGameState();
-    window.shouldAutoEnterFinishedReview = openMode === 'finished';
-    await ensureGameExists(gameRef, roomId);
-    await window.addPlayerToGame(playersRef, uid, uName, requestedJoinColor);
-    
-    const p = (await get(playersRef)).val() || {};
-    const gameSnapshot = await get(gameRef);
-    if (isDirectInvitePendingForRoom(roomId, gameSnapshot.val(), uid)) {
-        markDirectInviteAsHandled(roomId);
+        setGameSectionVisibility();
+        document.getElementById('room-link').value = window.location.href;
+        
+        const uid = window.getUserId(user);
+        const uName = window.getUserName(user);
+        const gameRef = window.getGameRef(roomId);
+        const playersRef = window.getPlayersRef(roomId);
+        const requestedJoinColor = window.getRequestedJoinColor();
+        const openMode = new URLSearchParams(window.location.search).get('view');
+        
+        initLocalGameState();
+        window.shouldAutoEnterFinishedReview = openMode === 'finished';
+        await ensureGameExists(gameRef, roomId);
+        await window.addPlayerToGame(playersRef, uid, uName, requestedJoinColor);
+        
+        const p = (await get(playersRef)).val() || {};
+        const gameSnapshot = await get(gameRef);
+        if (isDirectInvitePendingForRoom(roomId, gameSnapshot.val(), uid)) {
+            markDirectInviteAsHandled(roomId);
+        }
+        window.playerColor = resolveAssignedColor(p, uid);
+        applyAssignedColorToBoard();
+        subscribeToGameUpdates(gameRef);
+        
+        window.setupGameControls(gameRef, roomId);
+        window.currentRoomId = roomId;
+        window.markGameReady?.();
+    } catch (error) {
+        console.error('Ошибка инициализации партии:', error);
+        window.setAppLoadingFlag?.('lobby', false);
+        window.notify?.('Не удалось загрузить партию. Попробуйте обновить страницу.', 'error', 3600);
     }
-    window.playerColor = resolveAssignedColor(p, uid);
-    applyAssignedColorToBoard();
-    subscribeToGameUpdates(gameRef);
-    
-    window.setupGameControls(gameRef, roomId);
-    window.currentRoomId = roomId;
 };
 // Функция удаления одной игры
 function canDeleteGameByState(gameData, userId) {
