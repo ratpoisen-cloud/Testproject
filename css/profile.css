@@ -151,8 +151,8 @@
 }
 
 #user-name {
-    font-weight: 620;
-    font-size: 0.94rem;
+    font-weight: 560;
+    font-size: 0.82rem;
     letter-spacing: 0.012em;
 }
 
@@ -191,8 +191,8 @@
     background: transparent;
     color: var(--system-control-text);
     text-align: left;
-    font-size: 0.93rem;
-    font-weight: 500;
+    font-size: 0.8rem;
+    font-weight: 400;
     padding: 10px 14px;
     cursor: pointer;
     transition: background-color 0.16s ease, color 0.16s ease;
@@ -223,9 +223,9 @@
 }
 
 .user-menu-setting label {
-    font-size: 0.85rem;
+    font-size: 0.74rem;
     color: var(--system-control-text-secondary);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .auth-group {
@@ -266,8 +266,8 @@ body.auth-state #auth-buttons {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-size: 1.2rem;
+    font-weight: 600;
+    font-size: 1rem;
     color: var(--accent-contrast);
     border: 2px solid var(--accent);
 }

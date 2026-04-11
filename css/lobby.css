@@ -91,14 +91,14 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .guest-title {
     margin: 2px 0 0;
-    font-size: 1.3rem;
-    font-weight: 700;
+    font-size: 1.12rem;
+    font-weight: 650;
 }
 
 .guest-subtitle {
     margin: 0;
     color: color-mix(in srgb, var(--text-secondary) 88%, var(--text));
-    font-size: 0.84rem;
+    font-size: 0.74rem;
     line-height: 1.5;
     text-align: center;
 }
@@ -169,15 +169,15 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .lobby-heading .section-title {
     text-align: left;
     color: var(--text);
-    font-size: clamp(1.34rem, 2.7vw, 1.54rem);
-    font-weight: 730;
+    font-size: clamp(1.16rem, 2.2vw, 1.34rem);
+    font-weight: 650;
     letter-spacing: -0.015em;
     line-height: 1.15;
 }
 
 .lobby-subtitle {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     line-height: 1.5;
     color: color-mix(in srgb, var(--text-secondary) 90%, var(--text));
 }
@@ -213,16 +213,16 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     box-shadow: var(--tile-shadow), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 22%, transparent);
     isolation: isolate;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 0.16s ease, border-color 0.16s ease, background 0.22s ease, box-shadow 0.22s ease;
+    transition: transform 0.14s steps(3, end), border-color 0.14s steps(2, end), background 0.2s ease, box-shadow 0.2s ease;
     position: relative;
 }
 
 .hub-tile:hover,
 .hub-tile:focus-visible {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     border-color: color-mix(in srgb, var(--accent) 34%, var(--tile-border));
     background: var(--tile-bg-hover);
-    box-shadow: var(--tile-shadow-hover), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 30%, transparent);
+    box-shadow: 0 3px 0 color-mix(in srgb, #000 24%, transparent), var(--tile-shadow-hover), inset 0 1px 0 color-mix(in srgb, var(--surface-elevated) 30%, transparent);
 }
 
 .hub-tile:focus-visible {
@@ -230,8 +230,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile:active {
-    transform: translateY(-1px) scale(0.99);
-    box-shadow: 0 6px 14px color-mix(in srgb, #000 20%, transparent);
+    transform: translateY(0) scale(0.985);
+    box-shadow: 0 1px 0 color-mix(in srgb, #000 30%, transparent), 0 6px 14px color-mix(in srgb, #000 20%, transparent);
     border-color: color-mix(in srgb, var(--accent) 44%, var(--tile-border));
     background: color-mix(in srgb, var(--tile-bg-hover) 85%, var(--accent-soft) 15%);
 }
@@ -291,8 +291,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 
 .hub-tile-title {
-    font-weight: 740;
-    font-size: 0.88rem;
+    font-weight: 620;
+    font-size: 0.78rem;
     line-height: 1.4;
     letter-spacing: 0.008em;
     transition: transform 0.16s ease, color 0.16s ease;
@@ -306,8 +306,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .hub-tile-subtitle {
-    font-size: 0.64rem;
-    font-weight: 600;
+    font-size: 0.58rem;
+    font-weight: 500;
     line-height: 1.2;
     color: color-mix(in srgb, var(--accent) 78%, var(--text));
     background: color-mix(in srgb, var(--accent) 14%, var(--surface));
@@ -383,8 +383,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .lobby-utility-btn {
-    min-height: 32px;
-    font-size: 0.76rem;
+    min-height: 30px;
+    font-size: 0.68rem;
     border-width: 1px;
     color: var(--text-secondary);
     opacity: 0.66;
@@ -518,8 +518,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 
 .game-opponent {
     margin: 0;
-    font-size: 1.02rem;
-    font-weight: 700;
+    font-size: 0.88rem;
+    font-weight: 620;
     color: var(--text);
 }
 
@@ -532,8 +532,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    font-size: 0.78rem;
-    font-weight: 700;
+    font-size: 0.68rem;
+    font-weight: 600;
     color: var(--accent-contrast);
     background: color-mix(in srgb, var(--accent) 70%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
 }
@@ -549,8 +549,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .game-status-pill {
-    font-size: 0.74rem;
-    font-weight: 650;
+    font-size: 0.66rem;
+    font-weight: 520;
     border-radius: 999px;
     padding: 4px 10px;
     border: 1px solid transparent;
@@ -573,7 +573,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     color: color-mix(in srgb, var(--accent) 88%, var(--text));
     background: color-mix(in srgb, var(--accent) 15%, var(--surface));
     border-color: color-mix(in srgb, var(--accent) 38%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .game-invite-dot {
@@ -612,8 +612,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .game-meta {
     display: flex;
     gap: 8px;
-    font-size: 0.77rem;
-    line-height: 1.35;
+    font-size: 0.7rem;
+    line-height: 1.45;
     color: var(--text-secondary);
     margin: 0;
     flex-wrap: wrap;
@@ -621,8 +621,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .game-finish-note {
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-size: 0.64rem;
+    font-weight: 500;
     border-radius: 999px;
     padding: 3px 8px;
     color: color-mix(in srgb, var(--text) 90%, var(--text-secondary));
@@ -648,8 +648,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .game-turn-pill {
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.64rem;
+    font-weight: 600;
     border-radius: 999px;
     padding: 3px 9px;
     color: var(--accent-contrast);
@@ -730,7 +730,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .player-stat-pill {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     color: var(--text-secondary);
     background: color-mix(in srgb, var(--surface) 84%, transparent);
     border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--border) 80%, #ffffff 8%) 68%, transparent);
@@ -784,8 +784,8 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     min-height: 38px;
     padding: 0 15px;
     border-radius: 10px;
-    font-size: 0.82rem;
-    font-weight: 640;
+    font-size: 0.74rem;
+    font-weight: 600;
     line-height: 1;
     display: inline-flex;
     align-items: center;
@@ -797,7 +797,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     background: var(--accent);
     color: var(--accent-contrast);
     border: none;
-    font-weight: 650;
+    font-weight: 620;
 }
 
 .play-btn:hover {
@@ -815,7 +815,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
     background: transparent;
     color: color-mix(in srgb, var(--danger) 65%, var(--text-secondary));
     border: 1px solid color-mix(in srgb, var(--danger) 28%, color-mix(in srgb, var(--border) 80%, #ffffff 8%));
-    font-weight: 600;
+    font-weight: 520;
     opacity: 0.84;
 }
 
@@ -842,13 +842,13 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 .empty-lobby-title {
     margin: 0;
     color: var(--text);
-    font-size: 1rem;
-    font-weight: 650;
+    font-size: 0.88rem;
+    font-weight: 620;
 }
 
 .empty-lobby-text {
     margin: 8px 0 0;
-    font-size: 0.88rem;
+    font-size: 0.76rem;
 }
 
 .empty-lobby-cta {
@@ -857,7 +857,7 @@ body[data-ui-theme="forest"] .brand-wordmark-asset-light {
 }
 
 .empty-lobby small {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     opacity: 0.7;
 }
 
