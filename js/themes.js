@@ -75,10 +75,7 @@ window.updateGuestWordmark = function(themeName) {
     const guestWordmarkImg = document.getElementById('guest-wordmark-img');
     if (!guestWordmarkImg) return;
 
-    const useLightWordmark = themeName === 'pixel';
-    const nextSrc = useLightWordmark
-        ? 'assets/logo/gochess_wordmark_light.svg'
-        : 'assets/logo/gochess_wordmark_dark.svg';
+    const nextSrc = 'assets/logo/gochess_wordmark_dark.svg';
 
     if (guestWordmarkImg.getAttribute('src') !== nextSrc) {
         guestWordmarkImg.setAttribute('src', nextSrc);
