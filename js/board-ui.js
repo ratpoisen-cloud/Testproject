@@ -33,6 +33,7 @@ window.syncBoardSizeWithLayout = function() {
     }
 
     window.board.resize();
+    window.reapplyPersistentBoardHighlights?.();
     window.renderBoardReactions?.();
 
     if (window.boardReactionPickerSquare) {
@@ -170,7 +171,7 @@ window.rebuildBoardWithCurrentState = function() {
     window.board = Chessboard('myBoard', window.getBoardConfig());
     window.board.position(fen, false);
     window.board.orientation(orientation);
-    window.updateCheckHighlight(fen);
+    window.reapplyPersistentBoardHighlights?.(fen);
 
     if (window.isMobile && window.playerColor) {
         window.attachMobileClickHandler();
@@ -663,7 +664,43 @@ window.updateBoardPosition = function(fen, animate = true) {
         window.board.position(fen, animate);
     }
 
-    window.updateCheckHighlight(fen);
+    window.reapplyPersistentBoardHighlights?.(fen);
+};
+
+window.getDisplayedBoardContext = function() {
+    if (window.reviewMode && typeof window.buildReviewDisplayGame === 'function') {
+        const targetIndex = Number.isInteger(window.reviewPlyIndex)
+            ? window.reviewPlyIndex
+            : (window.reviewGame?.history?.().length ?? 0);
+        const { displayGame } = window.buildReviewDisplayGame(targetIndex);
+        return {
+            fen: displayGame.fen(),
+            history: displayGame.history({ verbose: true })
+        };
+    }
+
+    if (!window.game) {
+        return { fen: 'start', history: [] };
+    }
+
+    return {
+        fen: window.game.fen(),
+        history: window.game.history({ verbose: true })
+    };
+};
+
+window.reapplyPersistentBoardHighlights = function(forcedFen = null) {
+    const { fen, history } = window.getDisplayedBoardContext();
+    const effectiveFen = forcedFen || fen;
+
+    window.updateCheckHighlight(effectiveFen);
+
+    if (history.length > 0 && window.highlightLastMove) {
+        window.highlightLastMove(history[history.length - 1]);
+    } else {
+        document.querySelectorAll('.last-move')
+            .forEach(el => el.classList.remove('last-move'));
+    }
 };
 
 // Создание безопасного предпросмотра хода без изменения основной партии
