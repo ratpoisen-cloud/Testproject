@@ -7,6 +7,11 @@ window.playerColor = null;
 window.pendingMove = null;
 window.selectedSquare = null;
 window.currentRoomId = null;
+window.isBotMode = false;
+window.botColor = null;
+window.botLevel = 'medium';
+window.botEngine = null;
+window.isBotThinking = false;
 window.pendingTakeback = null;
 window.dragSourceSquare = null; // Добавляем переменную для drag-and-drop
 window.lobbyCurrentScreen = 'hub';
@@ -420,6 +425,7 @@ function getLobbyNodes() {
         hubCreateBtn: document.getElementById('hub-create-game'),
         hubOpenGamesBtn: document.getElementById('hub-open-games'),
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
+        hubPlayBotBtn: document.getElementById('hub-play-bot'),
         hubGamesInviteDot: document.getElementById('hub-games-invite-dot'),
         hubGamesInviteLabel: document.getElementById('hub-games-invite-label'),
         createGameBtn: document.getElementById('create-game-btn'),
@@ -427,6 +433,11 @@ function getLobbyNodes() {
         createGameModalTitle: document.getElementById('create-game-modal-title'),
         createGameModalDesc: document.getElementById('create-game-modal-desc'),
         createGameCancelBtn: document.getElementById('create-game-modal-cancel'),
+        botGameModal: document.getElementById('bot-game-modal'),
+        botGameStartBtn: document.getElementById('bot-game-start'),
+        botGameCancelBtn: document.getElementById('bot-game-cancel'),
+        botColorSelect: document.getElementById('bot-color-select'),
+        botLevelSelect: document.getElementById('bot-level-select'),
         colorButtons: document.querySelectorAll('[data-create-color]'),
         backButtons: document.querySelectorAll('[data-lobby-back]'),
         finishedGamesList: document.getElementById('finished-games-list'),
@@ -466,6 +477,11 @@ function closeCreateGameModal(modal) {
     if (nodes.createGameModalDesc) {
         nodes.createGameModalDesc.textContent = 'За кого хотите играть в новой партии?';
     }
+}
+
+
+function closeBotGameModal(modal) {
+    modal?.classList.add('hidden');
 }
 
 function syncLobbyGamesFilterVisibility(nodes, gamesList, finishedList) {
@@ -913,6 +929,13 @@ window.initLobby = function() {
     nodes.hubCreateBtn.onclick = () => openCreateGameModal(nodes);
     nodes.hubOpenGamesBtn.onclick = () => window.setLobbyScreen('games');
     nodes.hubOpenPlayersBtn.onclick = () => window.setLobbyScreen('players');
+    if (nodes.hubPlayBotBtn) {
+        nodes.hubPlayBotBtn.onclick = () => {
+            if (nodes.botColorSelect) nodes.botColorSelect.value = 'random';
+            if (nodes.botLevelSelect) nodes.botLevelSelect.value = 'medium';
+            nodes.botGameModal?.classList.remove('hidden');
+        };
+    }
     nodes.backButtons.forEach((button) => {
         button.onclick = () => window.setLobbyScreen('hub');
     });
@@ -948,9 +971,25 @@ window.initLobby = function() {
     });
 
     nodes.createGameCancelBtn.onclick = () => closeCreateGameModal(nodes.createGameModal);
+    if (nodes.botGameCancelBtn) {
+        nodes.botGameCancelBtn.onclick = () => closeBotGameModal(nodes.botGameModal);
+    }
+    if (nodes.botGameStartBtn) {
+        nodes.botGameStartBtn.onclick = () => {
+            const color = nodes.botColorSelect?.value || 'random';
+            const level = nodes.botLevelSelect?.value || 'medium';
+            closeBotGameModal(nodes.botGameModal);
+            window.initBotGame({ color, level });
+        };
+    }
     nodes.createGameModal.onclick = (event) => {
         if (event.target === nodes.createGameModal) closeCreateGameModal(nodes.createGameModal);
     };
+    if (nodes.botGameModal) {
+        nodes.botGameModal.onclick = (event) => {
+            if (event.target === nodes.botGameModal) closeBotGameModal(nodes.botGameModal);
+        };
+    }
     window.lobbyShowFinished = false;
     const gamesListNode = document.getElementById('games-list');
     syncLobbyGamesFilterVisibility(nodes, gamesListNode, nodes.finishedGamesList);
@@ -1185,15 +1224,21 @@ window.renderPlayersLobby = function(container, players) {
 };
 
 // Инициализация игры
-function setGameSectionVisibility() {
+window.setGameSectionVisibility = function() {
     document.getElementById('game-section').classList.remove('hidden');
     document.getElementById('lobby-section').classList.add('hidden');
     window.updateTopLobbyBrandVisibility?.();
-}
+};
 
 function initLocalGameState() {
+    window.stopBotGame?.();
     window.game = new Chess();
     window.currentRoomId = null;
+    window.isBotMode = false;
+    window.botColor = null;
+    window.botLevel = 'medium';
+    window.botEngine = null;
+    window.isBotThinking = false;
     window.pendingDraw = null;
     window.pendingTakeback = null;
     window.playerColor = null;
@@ -1239,6 +1284,78 @@ function subscribeToGameUpdates(gameRef) {
     });
 }
 
+
+window.stopBotGame = function() {
+    if (window.botEngine && typeof window.botEngine.destroy === 'function') {
+        window.botEngine.destroy();
+    }
+    window.botEngine = null;
+    window.isBotThinking = false;
+};
+
+window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
+    const normalizedColor = color === 'w' || color === 'b'
+        ? color
+        : (Math.random() < 0.5 ? 'w' : 'b');
+    const normalizedLevel = window.BOT_LEVELS?.[level] ? level : 'medium';
+
+    window.stopBotGame();
+    initLocalGameState();
+
+    window.isBotMode = true;
+    window.playerColor = normalizedColor;
+    window.botColor = normalizedColor === 'w' ? 'b' : 'w';
+    window.botLevel = normalizedLevel;
+
+    window.setGameSectionVisibility();
+    window.currentRoomId = null;
+
+    const roomLink = document.getElementById('room-link');
+    if (roomLink) {
+        roomLink.value = '';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('bot', '1');
+    params.set('color', normalizedColor);
+    params.set('level', normalizedLevel);
+    params.delete('room');
+    params.delete('view');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+    window.updatePlayerBadge();
+    window.initBoard(window.playerColor);
+    if (window.playerColor === 'b') {
+        window.board.orientation('black');
+    }
+
+    document.getElementById('game-modal')?.classList.add('hidden');
+    document.getElementById('takeback-request-box')?.classList.add('hidden');
+    document.getElementById('draw-request-box')?.classList.add('hidden');
+
+    window.setupGameControls(null, null);
+    window.syncReviewStateFromCurrentGame();
+    window.lastKnownGameState = 'active';
+    window.updateUI({ gameState: 'active', mode: 'bot' });
+
+    window.botEngine = window.createBotEngine ? window.createBotEngine(normalizedLevel) : null;
+
+    if (!window.botEngine) {
+        window.notify('Не удалось запустить движок. Проверьте файлы Stockfish.', 'error', 3600);
+    }
+
+    if (window.game.turn() === window.botColor) {
+        window.requestBotMove?.();
+    }
+
+    window.markGameReady?.();
+};
+
+
+window.addEventListener('beforeunload', () => {
+    window.stopBotGame?.();
+});
+
 window.initGame = async function(roomId) {
     try {
         const user = await window.requireAuthForGame();
@@ -1247,7 +1364,7 @@ window.initGame = async function(roomId) {
             return;
         }
 
-        setGameSectionVisibility();
+        window.setGameSectionVisibility();
         document.getElementById('room-link').value = window.location.href;
         
         const uid = window.getUserId(user);

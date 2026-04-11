@@ -20,6 +20,8 @@ window.setupAuth = function() {
     let isAvatarUploading = false;
     let hasResolvedInitialAuthState = false;
 
+    const isBotModeRequested = () => new URLSearchParams(window.location.search).get('bot') === '1';
+
     window.setAppAuthView = (isAuthorized) => {
         document.body.classList.toggle('auth-state', isAuthorized);
         document.body.classList.toggle('guest-state', !isAuthorized);
@@ -35,6 +37,14 @@ window.setupAuth = function() {
             return;
         }
 
+        if (isBotModeRequested()) {
+            guestSection?.classList.add('hidden');
+            gameSection?.classList.remove('hidden');
+            lobbySection?.classList.add('hidden');
+            window.updateTopLobbyBrandVisibility?.();
+            return;
+        }
+
         lobbySection?.classList.add('hidden');
         gameSection?.classList.add('hidden');
         guestSection?.classList.remove('hidden');
@@ -46,6 +56,16 @@ window.setupAuth = function() {
     };
 
     const cleanupGuestUiState = () => {
+        if (isBotModeRequested() && window.isBotMode) {
+            closeUserMenu();
+            hideModalById('email-modal');
+            document.body.classList.remove('email-modal-open');
+            hideModalById('create-game-modal');
+            hideModalById('bot-game-modal');
+            hideModalById('board-settings-menu');
+            document.getElementById('email-error')?.classList.add('hidden');
+            return;
+        }
         closeUserMenu();
         hideModalById('email-modal');
         document.body.classList.remove('email-modal-open');
@@ -260,7 +280,9 @@ window.setupAuth = function() {
         } else {
             cleanupGuestUiState();
             window.setAppAuthView(false);
-            window.setAppLoadingFlag?.('lobby', false);
+            if (!isBotModeRequested()) {
+                window.setAppLoadingFlag?.('lobby', false);
+            }
         }
     });
 

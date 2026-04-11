@@ -18,6 +18,10 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const runRematch = async () => {
         hideElement('game-modal');
+        if (window.isBotMode) {
+            window.initBotGame({ color: window.playerColor, level: window.botLevel || 'medium' });
+            return;
+        }
         const newId = await window.createRematchGameFromRoom(roomId);
         if (!newId) return;
         location.href = location.origin + location.pathname + `?room=${newId}`;
@@ -59,6 +63,64 @@ window.setupGameControls = function(gameRef, roomId) {
         return Boolean(window.game?.game_over?.() || window.lastKnownGameState === 'game_over');
     };
 
+    const isBotMode = () => Boolean(window.isBotMode);
+
+    window.requestBotMove = async function() {
+        if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
+        if (window.game.turn() !== window.botColor) return;
+        if (window.isBotThinking) return;
+
+        window.isBotThinking = true;
+        window.updateTurnIndicator(false);
+
+        try {
+            const bestMove = await window.botEngine.getBestMove(window.game.fen());
+            if (!bestMove || bestMove === '(none)' || !window.isBotMode) return;
+
+            const botMove = window.game.move({
+                from: bestMove.slice(0, 2),
+                to: bestMove.slice(2, 4),
+                promotion: bestMove.slice(4, 5) || 'q'
+            });
+
+            if (!botMove) return;
+
+            window.updateBoardPosition(window.game.fen(), true);
+            window.highlightLastMove?.(botMove);
+            window.syncReviewStateFromCurrentGame?.();
+            window.updateUI({ gameState: window.game.game_over() ? 'game_over' : 'active', mode: 'bot' });
+
+            if (window.game.game_over()) {
+                const metadata = window.applyGameHeaders(window.game, {
+                    gameState: 'game_over',
+                    message: window.getGameResultMessage(window.game)
+                });
+                window.updateGameModal({ gameState: 'game_over', message: metadata.message });
+            }
+        } catch (error) {
+            console.error('Ошибка хода бота:', error);
+            window.notify('Не удалось получить ход бота', 'error', 2600);
+        } finally {
+            window.isBotThinking = false;
+        }
+    };
+
+
+    const applyBotModeUiRestrictions = () => {
+        if (!isBotMode()) return;
+        document.querySelector('.game-share-box')?.classList.add('hidden');
+        document.getElementById('draw-btn')?.classList.add('hidden');
+        const drawBtn = document.getElementById('draw-btn');
+        if (drawBtn) drawBtn.disabled = true;
+        const takebackBtn = document.getElementById('takeback-btn');
+        if (takebackBtn) {
+            takebackBtn.classList.add('hidden');
+            takebackBtn.disabled = true;
+        }
+        document.getElementById('takeback-request-box')?.classList.add('hidden');
+        document.getElementById('draw-request-box')?.classList.add('hidden');
+    };
+
     const hasOpponentJoined = async () => {
         const players = (await get(window.getPlayersRef(roomId))).val() || {};
         return Boolean(players.white && players.black);
@@ -98,6 +160,24 @@ window.setupGameControls = function(gameRef, roomId) {
                 lastMove: now,
                 lastMoveTime: now // Добавляем время последнего хода для сортировки
             };
+
+            if (isBotMode()) {
+                window.syncReviewStateFromCurrentGame?.();
+                resetPendingMoveUI();
+                window.updateUI({ gameState: window.game.game_over() ? 'game_over' : 'active', mode: 'bot' });
+
+                if (window.game.game_over()) {
+                    const metadata = window.applyGameHeaders(window.game, {
+                        gameState: 'game_over',
+                        message: window.getGameResultMessage(window.game)
+                    });
+                    window.updateGameModal({ gameState: 'game_over', message: metadata.message });
+                    return;
+                }
+
+                await window.requestBotMove?.();
+                return;
+            }
 
             if (window.game.game_over()) {
                 const players = await resolvePlayersForHeaders();
@@ -152,13 +232,25 @@ window.setupGameControls = function(gameRef, roomId) {
             });
             if (shouldResign) {
                 const winner = window.playerColor === 'w' ? 'Черные' : 'Белые';
-                const players = await resolvePlayersForHeaders();
+                const players = isBotMode() ? null : await resolvePlayersForHeaders();
                 const metadata = window.applyGameHeaders(window.game, {
                     players,
                     gameState: 'game_over',
                     message: `${winner} победили (сдача)`,
                     resign: window.playerColor
                 });
+
+                if (isBotMode()) {
+                    window.updateGameModal({
+                        gameState: 'game_over',
+                        message: metadata.message,
+                        resign: window.playerColor
+                    });
+                    window.lastKnownGameState = 'game_over';
+                    window.updateUI({ gameState: 'game_over', message: metadata.message, mode: 'bot' });
+                    return;
+                }
+
                 window.updateGame(gameRef, {
                     gameState: 'game_over',
                     message: metadata.message,
@@ -195,6 +287,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Поделиться ссылкой
         setClickHandler('share-btn', async () => {
+            if (isBotMode()) return;
             const link = document.getElementById('room-link').value;
             if (navigator.share) {
                 try {
@@ -255,6 +348,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
     // ===== Takeback =====
     const bindTakebackControls = () => {
+        if (isBotMode()) return;
         // Запрос отмены хода
         setClickHandler('takeback-btn', () => {
             if (isFinishedGame()) {
@@ -335,6 +429,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
     // ===== Draw =====
     const bindDrawControls = () => {
+        if (isBotMode()) return;
         // Кнопка "Предложить ничью"
         setClickHandler('draw-btn', () => {
             if (isFinishedGame()) {
@@ -445,6 +540,8 @@ window.setupGameControls = function(gameRef, roomId) {
         bindPgnCopyButton('modal-copy-pgn');
         bindPgnCopyButton('inline-copy-pgn');
     };
+
+    applyBotModeUiRestrictions();
 
     bindPendingMoveControls();
     bindSessionControls();
