@@ -453,6 +453,14 @@
         gap: 6px;
     }
 
+    .turn-status-quick-phrase-banner {
+        gap: 6px;
+    }
+
+    .turn-status-quick-phrase-text {
+        font-size: 0.75rem;
+    }
+
     .game-opponent-zone {
         flex: 1 1 50%;
     }
@@ -572,6 +580,11 @@
     .game-opponent-zone,
     .turn-status {
         padding: 0 8px;
+        font-size: 0.72rem;
+    }
+
+    .turn-status-quick-phrase-text {
+        max-width: 100%;
         font-size: 0.72rem;
     }
 

@@ -52,6 +52,8 @@ window.updateUI = function(data) {
 window.updateTurnIndicator = function(isMyTurn) {
     const turnStatus = document.getElementById('turn-status');
     const turnText = document.getElementById('turn-text');
+    const gameStatusHeader = document.querySelector('.game-status-header');
+    const statusActions = document.querySelector('.status-actions');
     
     if (!turnStatus || !turnText) return;
 
@@ -68,6 +70,8 @@ window.updateTurnIndicator = function(isMyTurn) {
 
     const clearCenterQuickPhraseView = () => {
         turnStatus.classList.remove('turn-status--quick-phrase', 'turn-status--quick-phrase-out');
+        gameStatusHeader?.classList.remove('game-status-header--quick-phrase');
+        statusActions?.classList.remove('status-actions--hidden');
     };
 
     const normalizedQuickPhrase = window.normalizeQuickPhrase?.(window.activeQuickPhrase) || null;
@@ -95,8 +99,10 @@ window.updateTurnIndicator = function(isMyTurn) {
             };
         }
         turnStatus.className = 'turn-status opponent-turn turn-status--quick-phrase';
+        gameStatusHeader?.classList.add('game-status-header--quick-phrase');
+        statusActions?.classList.add('status-actions--hidden');
         turnText.innerHTML = `
-            <span class="turn-status-quick-phrase-bubble" role="status" aria-live="polite">
+            <span class="turn-status-quick-phrase-banner" role="status" aria-live="polite">
                 <span class="turn-status-quick-phrase-emoji">${normalizedQuickPhrase.emoji}</span>
                 <span class="turn-status-quick-phrase-text">${normalizedQuickPhrase.text}</span>
             </span>
