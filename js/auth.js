@@ -81,6 +81,11 @@ window.setupAuth = function() {
         window.pendingDraw = null;
         window.pendingTakeback = null;
         window.pendingMove = null;
+        if (typeof window.__gameWatchUnsubscribe === 'function') {
+            window.__gameWatchUnsubscribe();
+            window.__gameWatchUnsubscribe = null;
+        }
+        window.resetQuickPhraseUiState?.();
         window.currentRoomId = null;
         window.playerColor = null;
         window.watchFirebaseCleanup?.();
