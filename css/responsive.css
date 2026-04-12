@@ -245,6 +245,7 @@
     .user-menu {
         left: auto;
         right: 0;
+        min-width: min(180px, calc(100vw - 16px));
         width: min(260px, calc(100vw - 16px));
         max-width: calc(100vw - 16px);
     }
