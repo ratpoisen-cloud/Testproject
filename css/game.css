@@ -254,6 +254,65 @@
     z-index: 220;
 }
 
+.game-opponent-meta {
+    position: relative;
+}
+
+.game-opponent-quick-phrase {
+    position: absolute;
+    top: -6px;
+    left: 0;
+    transform: translateY(-100%);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: min(240px, 56vw);
+    padding: 5px 9px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.2;
+    background: color-mix(in srgb, var(--surface-2) 94%, black 6%);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.26);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    animation: opponentQuickPhraseIn 0.22s ease-out forwards;
+}
+
+.game-opponent-quick-phrase--out {
+    animation: opponentQuickPhraseOut 0.2s ease-in forwards;
+}
+
+.game-opponent-quick-phrase-emoji {
+    font-size: 14px;
+    line-height: 1;
+}
+
+@keyframes opponentQuickPhraseIn {
+    from {
+        opacity: 0;
+        transform: translateY(calc(-100% + 6px)) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-100%) scale(1);
+    }
+}
+
+@keyframes opponentQuickPhraseOut {
+    from {
+        opacity: 1;
+        transform: translateY(-100%) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(calc(-100% + 4px)) scale(0.98);
+    }
+}
+
 @keyframes turnPulse {
     0%, 100% {
         transform: scale(1);
