@@ -92,7 +92,8 @@
 .game-opponent-presence-wrap {
     position: relative;
     margin-top: 3px;
-    width: max-content;
+    width: 100%;
+    min-width: 0;
 }
 
 .status-indicator {
@@ -134,6 +135,47 @@
 .status-indicator-bot {
     background: color-mix(in srgb, var(--accent) 42%, var(--text-secondary));
     border-style: dashed;
+}
+
+.game-opponent-presence-indicator {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 20px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    background: color-mix(in srgb, var(--surface) 88%, var(--surface-elevated));
+    padding: 0 8px 0 6px;
+    gap: 6px;
+    color: var(--text-secondary);
+}
+
+.game-opponent-presence-indicator::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+    background: currentColor;
+    flex: 0 0 auto;
+}
+
+.game-opponent-presence-indicator.status-indicator-online::before { background: var(--success); }
+.game-opponent-presence-indicator.status-indicator-away::before { background: #f6a432; }
+.game-opponent-presence-indicator.status-indicator-dnd::before { background: var(--danger); }
+.game-opponent-presence-indicator.status-indicator-offline::before { background: color-mix(in srgb, var(--text-secondary) 70%, #80868f); }
+.game-opponent-presence-indicator.status-indicator-bot::before { background: color-mix(in srgb, var(--accent) 42%, var(--text-secondary)); }
+
+.game-opponent-presence-text {
+    display: inline-block;
+    min-width: 0;
+    max-width: min(220px, calc(100vw - 200px));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    line-height: 1.2;
 }
 
 .game-opponent-presence-popover {
@@ -193,12 +235,12 @@
 
 .status-actions {
     position: relative;
-    width: calc(var(--btn-height) * 2 + 8px);
-    min-width: calc(var(--btn-height) * 2 + 8px);
+    width: var(--btn-height);
+    min-width: var(--btn-height);
     height: var(--btn-height);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
     margin-left: auto;
 }
@@ -208,39 +250,8 @@
     top: calc(100% + 6px);
     right: 0;
     width: min(220px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
     z-index: 220;
-}
-
-#presence-status-trigger {
-    color: transparent;
-    font-size: 1rem;
-    position: relative;
-}
-
-#presence-status-trigger::after {
-    content: '';
-    width: 10px;
-    height: 10px;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-    background: color-mix(in srgb, var(--text-secondary) 76%, transparent);
-    display: block;
-}
-
-#presence-status-trigger.status-indicator-online::after {
-    background: var(--success);
-}
-
-#presence-status-trigger.status-indicator-away::after {
-    background: #f6a432;
-}
-
-#presence-status-trigger.status-indicator-dnd::after {
-    background: var(--danger);
-}
-
-#presence-status-trigger.status-indicator-offline::after {
-    background: color-mix(in srgb, var(--text-secondary) 70%, #80868f);
 }
 
 @keyframes turnPulse {

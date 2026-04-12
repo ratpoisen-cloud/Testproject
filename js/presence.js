@@ -309,18 +309,24 @@
 
     window.refreshPresenceUI = function refreshPresenceUI() {
         const trigger = document.getElementById('presence-status-trigger');
+        const summaryIndicator = document.getElementById('user-presence-indicator');
+        const summaryText = document.getElementById('user-presence-text');
         if (trigger) {
-            const isAvailable = Boolean(window.currentUser && !window.isBotMode && window.playerColor);
+            const isAvailable = Boolean(window.currentUser && !window.isBotMode);
             const effective = window.getEffectivePresence?.(activeUserId) || { text: 'не в сети', tone: 'offline' };
             const text = effective.text || window.getCurrentPresenceStatusText();
             const indicatorVariant = typeof window.resolvePresenceIndicatorVariant === 'function'
                 ? window.resolvePresenceIndicatorVariant(effective)
                 : 'offline';
             trigger.disabled = !isAvailable;
-            trigger.title = isAvailable ? `Мой статус: ${text}` : 'Статус недоступен';
-            trigger.setAttribute('aria-label', isAvailable ? `Мой статус: ${text}` : 'Статус недоступен');
+            trigger.title = isAvailable ? 'Изменить статус' : 'Статус недоступен';
+            trigger.setAttribute('aria-label', isAvailable ? `Изменить статус. Текущий статус: ${text}` : 'Статус недоступен');
             if (typeof window.applyStatusIndicatorClass === 'function') {
-                window.applyStatusIndicatorClass(trigger, isAvailable ? indicatorVariant : 'offline');
+                window.applyStatusIndicatorClass(summaryIndicator, isAvailable ? indicatorVariant : 'offline');
+            }
+            if (summaryText) {
+                summaryText.textContent = text;
+                summaryText.title = text;
             }
         }
 

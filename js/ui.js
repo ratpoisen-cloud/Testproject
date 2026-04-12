@@ -80,9 +80,10 @@ window.updateTurnIndicator = function(isMyTurn) {
 window.updateOpponentHeader = function(data) {
     const opponentNameEl = document.getElementById('game-opponent-name');
     const opponentPresenceEl = document.getElementById('game-opponent-presence');
+    const opponentPresenceTextEl = document.getElementById('game-opponent-presence-text');
     const opponentPresencePopoverEl = document.getElementById('game-opponent-presence-popover');
     const opponentAvatarEl = document.getElementById('game-opponent-avatar');
-    if (!opponentNameEl || !opponentPresenceEl || !opponentAvatarEl || !opponentPresencePopoverEl) return;
+    if (!opponentNameEl || !opponentPresenceEl || !opponentPresenceTextEl || !opponentAvatarEl || !opponentPresencePopoverEl) return;
 
     const players = data?.players || {};
     const isWhitePlayer = window.playerColor === 'w';
@@ -135,6 +136,7 @@ window.updateOpponentHeader = function(data) {
         isInteractivePresence = false;
     }
     window.applyStatusIndicatorClass(opponentPresenceEl, indicatorVariant);
+    opponentPresenceTextEl.textContent = presenceText;
     opponentPresenceEl.title = presenceText;
     opponentPresenceEl.setAttribute('aria-label', `Статус соперника: ${presenceText}`);
     opponentPresenceEl.disabled = !isInteractivePresence;

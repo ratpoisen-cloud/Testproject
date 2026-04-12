@@ -466,6 +466,36 @@ window.updateTopLobbyBrandVisibility = function() {
     topBrand.classList.remove('hidden');
 };
 
+window.bindTopBrandHomeAction = function bindTopBrandHomeAction() {
+    if (window.__topBrandHomeBound) return;
+    const topBrand = document.getElementById('top-lobby-brand');
+    if (!topBrand) return;
+
+    topBrand.addEventListener('click', () => {
+        const gameSection = document.getElementById('game-section');
+        const isGameVisible = Boolean(gameSection && !gameSection.classList.contains('hidden'));
+        const targetUrl = `${window.location.origin}${window.location.pathname}`;
+
+        if (isGameVisible) {
+            if (window.location.href !== targetUrl) {
+                window.location.href = targetUrl;
+            }
+            return;
+        }
+
+        if (typeof window.setLobbyScreen === 'function') {
+            window.setLobbyScreen('hub');
+            return;
+        }
+
+        if (window.location.href !== targetUrl) {
+            window.location.href = targetUrl;
+        }
+    });
+
+    window.__topBrandHomeBound = true;
+};
+
 window.setLobbyScreen = function(screen) {
     const nodes = getLobbyNodes();
     const safeScreen = ['hub', 'games', 'players', 'bot-games'].includes(screen) ? screen : 'hub';
@@ -505,6 +535,24 @@ function getBotLevelLabel(level) {
 
 function getUserColorLabel(color) {
     return color === 'b' ? 'Чёрные' : 'Белые';
+}
+
+function getLobbyPresenceSnapshot(opponentUid, { isWaitingForOpponent = false } = {}) {
+    if (!opponentUid) {
+        return {
+            text: isWaitingForOpponent ? 'ожидание соперника' : 'не в сети',
+            variant: 'offline'
+        };
+    }
+
+    const effectivePresence = window.getEffectivePresence?.(opponentUid) || { text: 'не в сети', tone: 'offline' };
+    const variant = typeof window.resolvePresenceIndicatorVariant === 'function'
+        ? window.resolvePresenceIndicatorVariant(effectivePresence)
+        : 'offline';
+    return {
+        text: effectivePresence.text || 'не в сети',
+        variant
+    };
 }
 
 function parseBotGamesHistory() {
@@ -999,6 +1047,7 @@ function buildLobbyGameCardData(id, data, userId) {
                 : ''));
     const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
     const resultComment = isOver ? window.getFinishedGameTerminationLabel(data) : '';
+    const presenceSnapshot = getLobbyPresenceSnapshot(opponentUid, { isWaitingForOpponent });
 
     return {
         id,
@@ -1010,7 +1059,8 @@ function buildLobbyGameCardData(id, data, userId) {
         opponentUid,
         opponent,
         opponentAvatar,
-        opponentPresenceText: opponentUid ? (window.getPresenceText?.(opponentUid) || 'не в сети') : (isWaitingForOpponent ? 'ожидание соперника' : 'не в сети'),
+        opponentPresenceText: presenceSnapshot.text,
+        opponentPresenceVariant: presenceSnapshot.variant,
         statusText,
         isInviteForMe,
         resultComment,
@@ -1070,7 +1120,10 @@ function createLobbyGameElement(cardData, userId) {
                 </div>
                 ${cardData.statusText ? `<span class="game-status-pill ${cardData.isInviteForMe ? 'invite' : cardData.stateClass} ${cardData.resultClass}">${cardData.statusText}</span>` : ''}
             </div>
-            <div class="game-opponent-presence-line">${cardData.opponentPresenceText}</div>
+            <div class="game-opponent-presence-line">
+                <span class="game-opponent-presence-dot status-indicator-${cardData.opponentPresenceVariant || 'offline'}" aria-hidden="true"></span>
+                <span class="game-opponent-presence-text" title="${cardData.opponentPresenceText}">${cardData.opponentPresenceText}</span>
+            </div>
             <div class="game-meta">
                 ${cardData.isInviteForMe ? '<span class="game-invite-dot" aria-hidden="true"></span><span class="game-turn-pill opponent-turn">Вас пригласили</span>' : ''}
                 ${cardData.isMyTurn ? '<span class="game-my-turn-dot" aria-hidden="true"></span>' : ''}
@@ -1131,6 +1184,7 @@ function bindLobbyEmptyStateActions(container, createGameBtn) {
 
 window.initLobby = function() {
     const nodes = getLobbyNodes();
+    window.bindTopBrandHomeAction?.();
     const isAuthorized = Boolean(window.currentUser);
     if (window.setAppAuthView) {
         window.setAppAuthView(isAuthorized);
@@ -1475,9 +1529,15 @@ window.renderPlayersLobby = function(container, players) {
 window.refreshLobbyPresenceLabels = function() {
     document.querySelectorAll('[data-opponent-uid]').forEach((node) => {
         const uid = node.dataset.opponentUid;
-        const presenceNode = node.querySelector('.game-opponent-presence-line');
-        if (!uid || !presenceNode) return;
-        presenceNode.textContent = window.getPresenceText?.(uid) || 'не в сети';
+        const presenceTextNode = node.querySelector('.game-opponent-presence-text');
+        const presenceDotNode = node.querySelector('.game-opponent-presence-dot');
+        if (!uid || !presenceTextNode || !presenceDotNode) return;
+        const presenceSnapshot = getLobbyPresenceSnapshot(uid);
+        presenceTextNode.textContent = presenceSnapshot.text;
+        presenceTextNode.title = presenceSnapshot.text;
+        if (typeof window.applyStatusIndicatorClass === 'function') {
+            window.applyStatusIndicatorClass(presenceDotNode, presenceSnapshot.variant || 'offline');
+        }
     });
 
     document.querySelectorAll('[data-player-uid]').forEach((node) => {
