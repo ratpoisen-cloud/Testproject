@@ -162,6 +162,14 @@ window.pushQuickPhrase = async function({ text, emoji }) {
         return true;
     } catch (error) {
         console.error('Ошибка отправки быстрой фразы:', error);
+        if (
+            window.quickPhraseRateLimitState?.cycleKey === window.getQuickPhraseCycleKey()
+            && window.quickPhraseRateLimitState.count > 0
+        ) {
+            window.quickPhraseRateLimitState.count -= 1;
+        }
+        window.activeQuickPhrase = null;
+        window.renderOpponentQuickPhrase?.(null);
         window.notify('Не удалось отправить фразу', 'error', 2200);
         return false;
     }
@@ -1642,6 +1650,10 @@ window.setGameSectionVisibility = function() {
 };
 
 function initLocalGameState() {
+    if (typeof window.__gameWatchUnsubscribe === 'function') {
+        window.__gameWatchUnsubscribe();
+        window.__gameWatchUnsubscribe = null;
+    }
     window.stopBotGame?.();
     window.game = new Chess();
     window.currentRoomId = null;
@@ -1662,6 +1674,7 @@ function initLocalGameState() {
     window.reactionRateLimitState = { cycleKey: window.getReactionCycleKey(), count: 0 };
     window.activeQuickPhrase = null;
     window.quickPhraseRateLimitState = { cycleKey: window.getQuickPhraseCycleKey(), count: 0 };
+    window.resetQuickPhraseUiState?.();
     window.shouldAutoEnterFinishedReview = false;
 }
 
@@ -1685,7 +1698,10 @@ function applyAssignedColorToBoard() {
 }
 
 function subscribeToGameUpdates(gameRef) {
-    window.watchGame(gameRef, (snap) => {
+    if (typeof window.__gameWatchUnsubscribe === 'function') {
+        window.__gameWatchUnsubscribe();
+    }
+    window.__gameWatchUnsubscribe = window.watchGame(gameRef, (snap) => {
         const data = snap.val();
         if (!data) return;
         window.setActiveReactionsFromState(data.reactions || []);

@@ -31,6 +31,28 @@ window.applyStatusIndicatorClass = function applyStatusIndicatorClass(node, vari
     node.classList.add(`status-indicator-${nextVariant}`);
 };
 
+window.resetQuickPhraseUiState = function resetQuickPhraseUiState() {
+    if (window.__centerQuickPhraseOutTimer) {
+        clearTimeout(window.__centerQuickPhraseOutTimer);
+        window.__centerQuickPhraseOutTimer = null;
+    }
+    if (window.__centerQuickPhraseClearTimer) {
+        clearTimeout(window.__centerQuickPhraseClearTimer);
+        window.__centerQuickPhraseClearTimer = null;
+    }
+
+    window.__centerQuickPhraseRenderState = null;
+    window.activeQuickPhrase = null;
+
+    const turnStatus = document.getElementById('turn-status');
+    const gameStatusHeader = document.querySelector('.game-status-header');
+    const statusActions = document.querySelector('.status-actions');
+
+    turnStatus?.classList.remove('turn-status--quick-phrase', 'turn-status--quick-phrase-out');
+    gameStatusHeader?.classList.remove('game-status-header--quick-phrase');
+    statusActions?.classList.remove('status-actions--hidden');
+};
+
 // Обновление UI
 window.updateUI = function(data) {
     if (!data) return;
