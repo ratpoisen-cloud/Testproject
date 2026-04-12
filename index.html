@@ -181,26 +181,28 @@
 
 
         <div id="bot-game-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="bot-game-modal-title">
-            <div class="modal-content create-game-modal-content">
+            <div class="modal-content create-game-modal-content bot-game-modal-content">
                 <h3 id="bot-game-modal-title" class="modal-title-reset">Играть с ботом</h3>
                 <p class="modal-desc-secondary">Выберите цвет и сложность</p>
-                <div class="board-settings-group">
-                    <label for="bot-color-select">Цвет</label>
-                    <select id="bot-color-select" class="board-settings-select system-select">
-                        <option value="w">Белые</option>
-                        <option value="b">Чёрные</option>
-                        <option value="random" selected>Случайно</option>
-                    </select>
+                <div class="bot-game-settings">
+                    <div class="board-settings-group">
+                        <label for="bot-color-select">Цвет</label>
+                        <select id="bot-color-select" class="board-settings-select system-select">
+                            <option value="w">Белые</option>
+                            <option value="b">Чёрные</option>
+                            <option value="random" selected>Случайно</option>
+                        </select>
+                    </div>
+                    <div class="board-settings-group">
+                        <label for="bot-level-select">Сложность</label>
+                        <select id="bot-level-select" class="board-settings-select system-select">
+                            <option value="easy">Лёгкий</option>
+                            <option value="medium" selected>Средний</option>
+                            <option value="hard">Сильный</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="board-settings-group">
-                    <label for="bot-level-select">Сложность</label>
-                    <select id="bot-level-select" class="board-settings-select system-select">
-                        <option value="easy">Лёгкий</option>
-                        <option value="medium" selected>Средний</option>
-                        <option value="hard">Сильный</option>
-                    </select>
-                </div>
-                <div class="create-game-modal-actions">
+                <div class="create-game-modal-actions bot-game-modal-actions">
                     <button id="bot-game-start" class="btn btn-primary" type="button">Начать игру</button>
                     <button id="bot-game-cancel" class="btn btn-outline" type="button">Отмена</button>
                 </div>

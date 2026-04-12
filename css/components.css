@@ -261,6 +261,75 @@
     width: 100%;
 }
 
+#bot-game-modal {
+    padding: 16px;
+}
+
+#bot-game-modal .bot-game-modal-content {
+    width: min(100%, 440px);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+#bot-game-modal .modal-title-reset,
+#bot-game-modal .modal-desc-secondary {
+    margin: 0;
+}
+
+#bot-game-modal .modal-desc-secondary {
+    color: var(--text-secondary);
+}
+
+#bot-game-modal .bot-game-settings {
+    display: grid;
+    gap: 14px;
+}
+
+#bot-game-modal .board-settings-group {
+    gap: 8px;
+    text-align: left;
+}
+
+#bot-game-modal .board-settings-group label {
+    font-size: 0.77rem;
+    font-weight: 600;
+    letter-spacing: 0.015em;
+    color: color-mix(in srgb, var(--system-control-text) 84%, var(--system-control-text-secondary));
+}
+
+#bot-game-modal #bot-color-select,
+#bot-game-modal #bot-level-select {
+    min-height: 44px;
+}
+
+#bot-game-modal .bot-game-modal-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 2px;
+}
+
+#bot-game-modal #bot-game-start {
+    font-weight: 600;
+}
+
+#bot-game-modal #bot-game-cancel {
+    opacity: 0.92;
+}
+
+@media (max-width: 560px) {
+    #bot-game-modal .bot-game-modal-content {
+        width: 100%;
+        padding: 24px 18px;
+        gap: 16px;
+    }
+
+    #bot-game-modal .bot-game-modal-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
 .pgn-actions-bar {
     display: flex;
     gap: var(--space-8);
