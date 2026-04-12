@@ -8,6 +8,7 @@ window.updateUI = function(data) {
     const isMyTurn = window.playerColor && (window.playerColor === window.game.turn());
     
     window.updateTurnIndicator(isMyTurn);
+    window.updateOpponentHeader(data);
     window.updateMoveHistory();
     window.updateFinishedGameActions(data);
     window.updateGameModal(data);
@@ -25,24 +26,67 @@ window.updateTurnIndicator = function(isMyTurn) {
     
     if (window.game.game_over()) {
         turnStatus.className = 'turn-status opponent-turn';
-        turnText.innerText = 'ИГРА ОКОНЧЕНА';
+        turnText.innerText = 'Игра окончена';
         return;
     }
     
     if (!window.playerColor) {
         turnStatus.className = 'turn-status opponent-turn';
-        turnText.innerHTML = 'НАБЛЮДАТЕЛЬ';
+        turnText.innerHTML = 'Просмотр партии';
         return;
     }
     
     if (isMyTurn) {
         turnStatus.className = 'turn-status my-turn';
-        turnText.innerHTML = 'ВАШ ХОД';
+        turnText.innerHTML = 'Ваш ход';
     } else {
         turnStatus.className = 'turn-status opponent-turn';
         turnText.innerHTML = 'Ход соперника';
     }
 
+};
+
+window.updateOpponentHeader = function(data) {
+    const opponentNameEl = document.getElementById('game-opponent-name');
+    const opponentPresenceEl = document.getElementById('game-opponent-presence');
+    const opponentAvatarEl = document.getElementById('game-opponent-avatar');
+    if (!opponentNameEl || !opponentPresenceEl || !opponentAvatarEl) return;
+
+    const players = data?.players || {};
+    const isWhitePlayer = window.playerColor === 'w';
+    const isBlackPlayer = window.playerColor === 'b';
+    const isViewer = !isWhitePlayer && !isBlackPlayer;
+    const isBotMode = Boolean(window.isBotMode || data?.mode === 'bot');
+
+    let opponentName = 'Соперник';
+    let opponentAvatar = '';
+
+    if (isBotMode) {
+        const levelMap = { easy: 'Лёгкий', medium: 'Средний', hard: 'Сильный' };
+        opponentName = `Бот (${levelMap[window.botLevel] || 'Средний'})`;
+    } else if (isWhitePlayer) {
+        opponentName = players.blackName || 'Ожидание соперника';
+        opponentAvatar = players.blackPhotoURL || players.blackAvatar || '';
+    } else if (isBlackPlayer) {
+        opponentName = players.whiteName || 'Ожидание соперника';
+        opponentAvatar = players.whitePhotoURL || players.whiteAvatar || '';
+    } else {
+        opponentName = `${players.whiteName || 'Белые'} vs ${players.blackName || 'Чёрные'}`;
+    }
+
+    opponentNameEl.textContent = opponentName;
+    opponentPresenceEl.textContent = isViewer ? 'режим наблюдения' : 'статус скоро';
+
+    if (opponentAvatar) {
+        const avatarImage = document.createElement('img');
+        avatarImage.src = opponentAvatar;
+        avatarImage.alt = '';
+        avatarImage.loading = 'lazy';
+        opponentAvatarEl.replaceChildren(avatarImage);
+    } else {
+        const letter = (opponentName || '?').trim().charAt(0).toUpperCase() || '?';
+        opponentAvatarEl.textContent = letter;
+    }
 };
 
 // Legacy no-op: отдельный #game-status-text удалён из текущей вёрстки.
@@ -273,19 +317,5 @@ window.updateGameModal = function(data) {
 
 // Обновление бейджа игрока
 window.updatePlayerBadge = function() {
-    const userColorEl = document.getElementById('user-color');
-    const playerBadge = document.querySelector('.player-badge');
-    
-    if (userColorEl) {
-        userColorEl.innerText = window.playerColor 
-            ? (window.playerColor === 'w' ? 'Белые' : 'Чёрные') 
-            : 'Наблюдатель';
-    }
-    
-    if (playerBadge) {
-        playerBadge.className = `player-badge ${
-            window.playerColor === 'w' ? 'white-piece' : 
-            window.playerColor === 'b' ? 'black-piece' : ''
-        }`;
-    }
+    return;
 };

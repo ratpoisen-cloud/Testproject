@@ -50,7 +50,6 @@
                         <div class="user-avatar-shell">
                             <img id="user-photo" src="" alt="avatar">
                         </div>
-                        <span id="user-name"></span>
                     </div>
                     <input id="avatar-file-input" type="file" accept="image/*" class="hidden" aria-hidden="true">
                 </div>
@@ -63,6 +62,22 @@
                             <option value="pixel">Pixel</option>
                         </select>
                     </div>
+                    <div class="user-menu-setting">
+                        <label for="theme-select">Тема доски</label>
+                        <select id="theme-select" class="board-settings-select system-select">
+                            <option value="theme-classic">Classic</option>
+                            <option value="theme-forest">Forest</option>
+                            <option value="theme-ocean">Ocean</option>
+                            <option value="theme-dark">Dark</option>
+                            <option value="theme-marble">Marble</option>
+                            <option value="theme-middle-earth">Middle-earth</option>
+                        </select>
+                    </div>
+                    <div class="user-menu-setting">
+                        <label for="piece-set-select">Фигурки</label>
+                        <select id="piece-set-select" class="board-settings-select system-select"></select>
+                    </div>
+                    <button id="user-menu-lobby-btn" class="user-menu-item" type="button" role="menuitem">В лобби</button>
                     <button id="logout-btn" class="user-menu-item user-menu-item-danger" type="button" role="menuitem">Выйти</button>
                 </div>
                 </div>
@@ -236,39 +251,26 @@
                         <div class="board-area">
 
                             <div class="game-status-header">
-    <div class="player-badge" id="player-badge">
-        <span class="player-icon"></span>
-        <span id="user-color" class="player-color-text">Белые</span>
-    </div>
-
-    <div class="turn-status" id="turn-status">
-        <span id="turn-text">Ваш ход</span>
-    </div>
-
-    <div class="status-actions">
-        <button id="board-settings-toggle" class="board-settings-icon-btn" type="button" aria-label="Настройки доски" title="Настройки доски">
-            ⚙
-        </button>
-    </div>
-</div>
-
-                            <div class="board-settings-bar">
-                                <div id="board-settings-menu" class="board-settings-menu system-menu hidden">
-                                    <div class="board-settings-group">
-                                        <label for="theme-select">Тема доски</label>
-                                        <select id="theme-select" class="board-settings-select system-select">
-                                            <option value="theme-classic">Classic</option>
-                                            <option value="theme-forest">Forest</option>
-                                            <option value="theme-ocean">Ocean</option>
-                                            <option value="theme-dark">Dark</option>
-                                            <option value="theme-marble">Marble</option>
-                                            <option value="theme-middle-earth">Middle-earth</option>
-                                        </select>
+                                <div class="game-opponent-zone" id="game-opponent-zone">
+                                    <div id="game-opponent-avatar" class="game-opponent-avatar" aria-hidden="true">?</div>
+                                    <div class="game-opponent-meta">
+                                        <p id="game-opponent-name" class="game-opponent-name">Соперник</p>
+                                        <p id="game-opponent-presence" class="game-opponent-presence">статус скоро</p>
                                     </div>
+                                </div>
 
-                                    <div class="board-settings-group">
-                                        <label for="piece-set-select">Фигурки</label>
-                                        <select id="piece-set-select" class="board-settings-select system-select"></select>
+                                <div class="turn-status" id="turn-status">
+                                    <span id="turn-text">Ваш ход</span>
+                                </div>
+
+                                <div class="status-actions">
+                                    <button id="quick-phrases-toggle" class="board-settings-icon-btn" type="button" aria-label="Быстрые фразы" title="Быстрые фразы">
+                                        ⚡
+                                    </button>
+                                    <div id="quick-phrases-menu" class="quick-phrases-menu system-menu hidden" role="menu" aria-label="Быстрые фразы">
+                                        <button class="user-menu-item quick-phrase-item" type="button" role="menuitem">Хороший ход!</button>
+                                        <button class="user-menu-item quick-phrase-item" type="button" role="menuitem">Удачи!</button>
+                                        <button class="user-menu-item quick-phrase-item" type="button" role="menuitem">Спасибо за партию</button>
                                     </div>
                                 </div>
                             </div>

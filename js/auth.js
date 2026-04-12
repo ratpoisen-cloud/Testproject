@@ -12,6 +12,7 @@ window.setupAuth = function() {
     const userPhoto = document.getElementById('user-photo');
     const userNameEl = document.getElementById('user-name');
     const userMenu = document.getElementById('user-menu');
+    const userMenuLobbyBtn = document.getElementById('user-menu-lobby-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const userAvatarBtn = document.getElementById('user-avatar-btn');
     const avatarFileInput = document.getElementById('avatar-file-input');
@@ -62,7 +63,6 @@ window.setupAuth = function() {
             document.body.classList.remove('email-modal-open');
             hideModalById('create-game-modal');
             hideModalById('bot-game-modal');
-            hideModalById('board-settings-menu');
             document.getElementById('email-error')?.classList.add('hidden');
             return;
         }
@@ -71,7 +71,7 @@ window.setupAuth = function() {
         document.body.classList.remove('email-modal-open');
         hideModalById('create-game-modal');
         hideModalById('game-modal');
-        hideModalById('board-settings-menu');
+        hideModalById('quick-phrases-menu');
         document.getElementById('email-error')?.classList.add('hidden');
         if (typeof window.__lobbyWatchUnsubscribe === 'function') {
             window.__lobbyWatchUnsubscribe();
@@ -198,10 +198,7 @@ window.setupAuth = function() {
 
     const toggleUserMenu = () => {
         if (!userMenu) return;
-        const willOpen = userMenu.classList.contains('hidden');
-        if (willOpen) {
-            document.getElementById('board-settings-menu')?.classList.add('hidden');
-        }
+        document.getElementById('quick-phrases-menu')?.classList.add('hidden');
         userMenu.classList.toggle('hidden');
         userMenuTrigger?.setAttribute('aria-expanded', String(!userMenu.classList.contains('hidden')));
     };
@@ -267,7 +264,9 @@ window.setupAuth = function() {
             window.setAppAuthView(true);
 
             const userName = window.getUserName(user);
-            userNameEl.innerText = userName;
+            if (userNameEl) {
+                userNameEl.innerText = userName;
+            }
             applyUserAvatar(user);
             window.initClearFinishedButton?.(user.uid);
 
@@ -381,6 +380,15 @@ window.setupAuth = function() {
                 window.notify('Ошибка выхода: ' + (err?.message || err), 'error', 3600);
             });
     };
+
+    userMenuLobbyBtn?.addEventListener('click', () => {
+        closeUserMenu();
+        if (!window.currentUser) return;
+        const targetUrl = `${window.location.origin}${window.location.pathname}`;
+        if (window.location.href !== targetUrl) {
+            window.location.href = targetUrl;
+        }
+    });
 
     if (!hasResolvedInitialAuthState) {
         document.body.classList.remove('auth-state', 'guest-state');
