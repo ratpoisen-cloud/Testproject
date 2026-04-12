@@ -54,6 +54,63 @@ window.updateTurnIndicator = function(isMyTurn) {
     const turnText = document.getElementById('turn-text');
     
     if (!turnStatus || !turnText) return;
+
+    const clearCenterQuickPhraseTimers = () => {
+        if (window.__centerQuickPhraseOutTimer) {
+            clearTimeout(window.__centerQuickPhraseOutTimer);
+            window.__centerQuickPhraseOutTimer = null;
+        }
+        if (window.__centerQuickPhraseClearTimer) {
+            clearTimeout(window.__centerQuickPhraseClearTimer);
+            window.__centerQuickPhraseClearTimer = null;
+        }
+    };
+
+    const clearCenterQuickPhraseView = () => {
+        turnStatus.classList.remove('turn-status--quick-phrase', 'turn-status--quick-phrase-out');
+    };
+
+    const normalizedQuickPhrase = window.normalizeQuickPhrase?.(window.activeQuickPhrase) || null;
+    const isOnlineHumanGame = Boolean(
+        window.currentRoomId
+        && !window.isBotMode
+        && (window.playerColor === 'w' || window.playerColor === 'b')
+    );
+    const shouldShowCenterQuickPhrase = Boolean(
+        isOnlineHumanGame
+        && normalizedQuickPhrase
+        && normalizedQuickPhrase.from !== window.playerColor
+    );
+
+    if (shouldShowCenterQuickPhrase) {
+        clearCenterQuickPhraseTimers();
+        turnStatus.className = 'turn-status opponent-turn turn-status--quick-phrase';
+        turnText.innerHTML = `
+            <span class="turn-status-quick-phrase-bubble" role="status" aria-live="polite">
+                <span class="turn-status-quick-phrase-emoji">${normalizedQuickPhrase.emoji}</span>
+                <span class="turn-status-quick-phrase-text">${normalizedQuickPhrase.text}</span>
+            </span>
+        `;
+
+        const ttlMs = window.QUICK_PHRASE_TTL_MS || 5000;
+        const remainingMs = Math.max(0, (normalizedQuickPhrase.createdAt + ttlMs) - Date.now());
+        const outDurationMs = 180;
+        const outDelay = Math.max(0, remainingMs - outDurationMs);
+
+        window.__centerQuickPhraseOutTimer = setTimeout(() => {
+            turnStatus.classList.add('turn-status--quick-phrase-out');
+        }, outDelay);
+
+        window.__centerQuickPhraseClearTimer = setTimeout(() => {
+            window.activeQuickPhrase = null;
+            turnStatus.classList.remove('turn-status--quick-phrase-out');
+            window.updateTurnIndicator(Boolean(window.playerColor && (window.playerColor === window.game?.turn?.())));
+        }, remainingMs);
+        return;
+    }
+
+    clearCenterQuickPhraseTimers();
+    clearCenterQuickPhraseView();
     
     if (window.game.game_over()) {
         turnStatus.className = 'turn-status opponent-turn';
@@ -189,45 +246,8 @@ window.updateOpponentHeader = function(data) {
 };
 
 window.renderOpponentQuickPhrase = function(quickPhraseState) {
-    const bubbleEl = document.getElementById('game-opponent-quick-phrase');
-    if (!bubbleEl) return;
-
-    if (window.__opponentQuickPhraseHideTimer) {
-        clearTimeout(window.__opponentQuickPhraseHideTimer);
-        window.__opponentQuickPhraseHideTimer = null;
-    }
-
-    const normalized = window.normalizeQuickPhrase?.(quickPhraseState) || null;
-    const isOnlineHumanGame = Boolean(
-        window.currentRoomId
-        && !window.isBotMode
-        && (window.playerColor === 'w' || window.playerColor === 'b')
-    );
-
-    if (!isOnlineHumanGame || !normalized || normalized.from === window.playerColor) {
-        bubbleEl.classList.add('hidden');
-        bubbleEl.classList.remove('game-opponent-quick-phrase--out');
-        bubbleEl.textContent = '';
-        return;
-    }
-
-    const emojiEl = document.createElement('span');
-    emojiEl.className = 'game-opponent-quick-phrase-emoji';
-    emojiEl.textContent = normalized.emoji;
-    const textEl = document.createElement('span');
-    textEl.textContent = normalized.text;
-    bubbleEl.replaceChildren(emojiEl, textEl);
-    bubbleEl.classList.remove('hidden', 'game-opponent-quick-phrase--out');
-
-    const remainingMs = Math.max(0, (normalized.createdAt + (window.QUICK_PHRASE_TTL_MS || 5000)) - Date.now());
-    window.__opponentQuickPhraseHideTimer = setTimeout(() => {
-        bubbleEl.classList.add('game-opponent-quick-phrase--out');
-        setTimeout(() => {
-            bubbleEl.classList.add('hidden');
-            bubbleEl.classList.remove('game-opponent-quick-phrase--out');
-            bubbleEl.textContent = '';
-        }, 180);
-    }, remainingMs);
+    window.activeQuickPhrase = window.normalizeQuickPhrase?.(quickPhraseState) || null;
+    window.updateTurnIndicator(Boolean(window.playerColor && (window.playerColor === window.game?.turn?.())));
 };
 
 // Legacy no-op: отдельный #game-status-text удалён из текущей вёрстки.
