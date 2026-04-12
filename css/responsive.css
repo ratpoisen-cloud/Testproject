@@ -232,7 +232,7 @@
     .top-bar-right {
         justify-content: flex-end;
         justify-self: end;
-        gap: 10px;
+        gap: 6px;
     }
 
     .user-menu-wrap {
@@ -240,6 +240,7 @@
         width: auto;
         min-width: 0;
         max-width: 100%;
+        gap: 6px;
     }
 
     .user-menu {
@@ -248,6 +249,17 @@
         min-width: min(180px, calc(100vw - 16px));
         width: min(260px, calc(100vw - 16px));
         max-width: calc(100vw - 16px);
+        border-radius: 14px;
+    }
+
+    .user-menu-item {
+        min-height: 40px;
+        padding: 11px 14px;
+    }
+
+    .user-menu-setting {
+        padding: 11px 14px;
+        gap: 7px;
     }
 
     #user-info,
@@ -255,6 +267,44 @@
         width: auto;
         min-width: 0;
         max-width: 100%;
+    }
+
+    .user-trigger-block {
+        min-width: 42px;
+        min-height: 42px;
+        border-radius: 11px;
+    }
+
+    .user-presence-wrap {
+        gap: 5px;
+        min-width: 0;
+        max-width: min(38vw, 132px);
+    }
+
+    .user-presence-summary {
+        min-height: 28px;
+        max-width: min(28vw, 108px);
+        padding: 0 7px 0 6px;
+        gap: 5px;
+    }
+
+    .user-presence-text {
+        max-width: 56px;
+        font-size: 0.68rem;
+    }
+
+    .user-presence-edit-btn {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        border-radius: 9px;
+    }
+
+    #presence-status-menu {
+        left: 0;
+        right: auto;
+        width: min(220px, calc(100vw - 20px));
+        max-width: calc(100vw - 20px);
     }
 
     .card {
@@ -319,7 +369,26 @@
     .top-lobby-brand {
         min-height: 32px;
         margin-left: auto;
-        padding-left: 4px;
+        padding-left: 2px;
+        flex: 0 1 auto;
+    }
+
+    .top-lobby-brand-btn {
+        padding: 2px 5px;
+        border-radius: 11px;
+        min-height: 34px;
+    }
+
+    .top-lobby-brand-btn:active {
+        transform: translateY(1px) scale(0.99);
+    }
+
+    .user-presence-summary {
+        max-width: 120px;
+    }
+
+    .user-presence-text {
+        max-width: 78px;
     }
 
     .brand-wordmark--top {
@@ -385,12 +454,12 @@
     }
 
     .game-opponent-zone {
-        flex: 1 1 auto;
+        flex: 1 1 50%;
     }
 
     .status-actions {
-        width: calc(var(--btn-height) * 2 + 8px);
-        min-width: calc(var(--btn-height) * 2 + 8px);
+        width: var(--btn-height);
+        min-width: var(--btn-height);
         height: var(--btn-height);
     }
 
@@ -436,6 +505,12 @@
         width: min(220px, calc(100vw - 16px));
     }
 
+    .game-opponent-presence-popover {
+        left: 0;
+        right: auto;
+        max-width: calc(100vw - 20px);
+    }
+
     .game-bottom-panel {
         padding: 14px;
     }
@@ -464,6 +539,44 @@
 
     .share-container .btn {
         width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    .top-bar {
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .brand-wordmark--top {
+        width: clamp(82px, 28vw, 112px);
+    }
+
+    .user-presence-wrap {
+        max-width: 108px;
+    }
+
+    .user-presence-summary {
+        max-width: 84px;
+        padding-right: 6px;
+    }
+
+    .user-presence-text {
+        max-width: 42px;
+    }
+
+    .game-status-header {
+        gap: 6px;
+    }
+
+    .game-opponent-zone,
+    .turn-status {
+        padding: 0 8px;
+        font-size: 0.72rem;
+    }
+
+    .game-opponent-presence-text {
+        max-width: min(160px, calc(100vw - 210px));
     }
 }
 

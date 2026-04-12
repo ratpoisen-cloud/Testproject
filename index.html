@@ -53,6 +53,22 @@
                     </div>
                     <input id="avatar-file-input" type="file" accept="image/*" class="hidden" aria-hidden="true">
                 </div>
+                <div class="user-presence-wrap">
+                    <div id="user-presence-summary" class="user-presence-summary" aria-live="polite">
+                        <span id="user-presence-indicator" class="status-indicator status-indicator-offline user-presence-indicator" aria-hidden="true"></span>
+                        <span id="user-presence-text" class="user-presence-text">не в сети</span>
+                    </div>
+                    <button id="presence-status-trigger" class="board-settings-icon-btn user-presence-edit-btn" type="button" aria-label="Изменить статус" title="Изменить статус">
+                        ✎
+                    </button>
+                    <div id="presence-status-menu" class="quick-phrases-menu system-menu hidden" role="menu" aria-label="Статус присутствия">
+                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="away_5">Отошёл на 5 минут</button>
+                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="back_10">Вернусь через 10 минут</button>
+                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="working">Работаю</button>
+                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="dnd">Не беспокоить</button>
+                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="reset">Сбросить статус</button>
+                    </div>
+                </div>
                 <div id="user-menu" class="user-menu system-menu hidden" role="menu" aria-label="Меню пользователя">
                     <button id="user-avatar-btn" class="user-menu-item" type="button" role="menuitem">Изменить аватар</button>
                     <div class="user-menu-setting">
@@ -83,12 +99,11 @@
                 </div>
             </div>
             <div class="top-bar-right">
-                <button id="back-to-lobby-btn" class="btn btn-outline back-to-lobby-btn" type="button" aria-label="В лобби" title="В лобби">←</button>
                 <div id="auth-buttons" class="auth-group">
                     <button id="login-google" class="btn btn-primary">Google</button>
                     <button id="login-email-trigger" class="btn btn-outline">Email</button>
                 </div>
-                <div id="top-lobby-brand" class="top-lobby-brand" role="img" aria-label="GO CHESS">
+                <button id="top-lobby-brand" class="top-lobby-brand top-lobby-brand-btn" type="button" aria-label="В лобби" title="В лобби">
                     <div class="brand-wordmark brand-wordmark--top">
                         <picture class="brand-wordmark-asset brand-wordmark-asset-light">
                             <source srcset="assets/logo/gochess_wordmark_light.svg" type="image/svg+xml">
@@ -99,7 +114,7 @@
                             <img class="brand-wordmark-img" src="assets/logo/gochess_wordmark_dark_1600.png" alt="GO CHESS">
                         </picture>
                     </div>
-                </div>
+                </button>
             </div>
         </div>
 
@@ -263,7 +278,9 @@
                                                 aria-label="Статус соперника"
                                                 aria-expanded="false"
                                                 title="Не в сети"
-                                            ></button>
+                                            >
+                                                <span class="game-opponent-presence-text" id="game-opponent-presence-text">Не в сети</span>
+                                            </button>
                                             <div id="game-opponent-presence-popover" class="game-opponent-presence-popover hidden" role="status" aria-live="polite">
                                                 Не в сети
                                             </div>
@@ -276,16 +293,6 @@
                                 </div>
 
                                 <div class="status-actions">
-                                    <button id="presence-status-trigger" class="board-settings-icon-btn" type="button" aria-label="Мой статус" title="Мой статус">
-                                        ●
-                                    </button>
-                                    <div id="presence-status-menu" class="quick-phrases-menu system-menu hidden" role="menu" aria-label="Статус присутствия">
-                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="away_5">Отошёл на 5 минут</button>
-                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="back_10">Вернусь через 10 минут</button>
-                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="working">Работаю</button>
-                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="dnd">Не беспокоить</button>
-                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="reset">Сбросить статус</button>
-                                    </div>
                                     <button id="quick-phrases-toggle" class="board-settings-icon-btn" type="button" aria-label="Быстрые фразы" title="Быстрые фразы">
                                         ⚡
                                     </button>

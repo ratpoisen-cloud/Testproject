@@ -529,6 +529,39 @@ body[data-ui-theme] .brand-wordmark-asset-dark {
     font-size: 0.7rem;
     color: var(--text-secondary);
     line-height: 1.25;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: min(100%, 280px);
+}
+
+.game-opponent-presence-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+    background: color-mix(in srgb, var(--text-secondary) 70%, #80868f);
+    flex: 0 0 auto;
+}
+
+.game-opponent-presence-dot.status-indicator-online {
+    background: var(--success);
+}
+
+.game-opponent-presence-dot.status-indicator-away {
+    background: #f6a432;
+}
+
+.game-opponent-presence-dot.status-indicator-dnd {
+    background: var(--danger);
+}
+
+.game-opponent-presence-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .avatar-shell {
