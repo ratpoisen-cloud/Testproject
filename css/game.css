@@ -133,11 +133,12 @@
 
 .status-actions {
     position: relative;
-    width: var(--btn-height);
-    min-width: var(--btn-height);
+    width: calc(var(--btn-height) * 2 + 8px);
+    min-width: calc(var(--btn-height) * 2 + 8px);
     height: var(--btn-height);
     display: flex;
     align-items: center;
+    gap: 8px;
     justify-content: center;
     margin-left: auto;
 }
@@ -148,6 +149,11 @@
     right: 0;
     width: min(220px, calc(100vw - 16px));
     z-index: 220;
+}
+
+#presence-status-trigger {
+    color: color-mix(in srgb, var(--success) 72%, var(--text));
+    font-size: 1rem;
 }
 
 @keyframes turnPulse {

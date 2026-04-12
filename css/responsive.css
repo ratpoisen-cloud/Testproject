@@ -389,8 +389,8 @@
     }
 
     .status-actions {
-        width: var(--btn-height);
-        min-width: var(--btn-height);
+        width: calc(var(--btn-height) * 2 + 8px);
+        min-width: calc(var(--btn-height) * 2 + 8px);
         height: var(--btn-height);
     }
 

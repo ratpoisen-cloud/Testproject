@@ -524,6 +524,13 @@ body[data-ui-theme] .brand-wordmark-asset-dark {
     color: var(--text);
 }
 
+.game-opponent-presence-line {
+    margin: -3px 0 6px 38px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    line-height: 1.25;
+}
+
 .avatar-shell {
     width: 30px;
     height: 30px;
@@ -721,6 +728,12 @@ body[data-ui-theme] .brand-wordmark-asset-dark {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.player-presence-line {
+    margin: -6px 0 10px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
 }
 
 .player-stats {

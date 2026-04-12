@@ -305,6 +305,7 @@ window.setupAuth = function() {
 
         if (user) {
             window.setAppAuthView(true);
+            window.startPresenceLayer?.(user);
 
             const userName = window.getUserName(user);
             if (userNameEl) {
@@ -320,6 +321,7 @@ window.setupAuth = function() {
                 window.setAppLoadingFlag?.('lobby', true);
             }
         } else {
+            window.stopPresenceLayer?.();
             cleanupGuestUiState();
             window.setAppAuthView(false);
             if (!isBotModeRequested()) {

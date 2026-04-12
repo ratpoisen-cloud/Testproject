@@ -113,6 +113,8 @@ window.initBoardSettingsControls = function() {
         window.initPieceSetControls(pieceSetSelect);
     }
 
+    window.initPresenceStatusControls?.();
+
     window.__boardSettingsControlsInitialized = true;
 };
 
