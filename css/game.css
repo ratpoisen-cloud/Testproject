@@ -260,13 +260,15 @@
 
 .turn-status--quick-phrase {
     overflow: hidden;
-    background: color-mix(in srgb, var(--draw-bg) 76%, var(--surface-elevated));
-    border-color: color-mix(in srgb, var(--draw-border) 58%, var(--border));
+    background: color-mix(in srgb, #f4efdf 86%, var(--accent) 14%);
+    border-color: color-mix(in srgb, #d8c8a3 62%, var(--accent) 38%);
     box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, #ffffff 32%, transparent),
-        0 8px 18px color-mix(in srgb, var(--draw-border) 24%, transparent);
+        inset 0 1px 0 color-mix(in srgb, #fff7eb 74%, transparent),
+        0 0 0 1px color-mix(in srgb, #f7ebd4 46%, transparent),
+        0 8px 20px color-mix(in srgb, var(--accent) 20%, transparent),
+        0 0 22px color-mix(in srgb, var(--accent) 14%, transparent);
     opacity: 1;
-    color: var(--draw-text);
+    color: color-mix(in srgb, #15140f 86%, var(--accent-dark) 14%);
 }
 
 .game-status-header--quick-phrase {
@@ -283,6 +285,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
+    padding: 0 8px;
     width: 100%;
     min-width: 0;
     line-height: 1.2;
@@ -307,8 +310,8 @@
     text-align: center;
     font-weight: 650;
     letter-spacing: 0.01em;
-    color: var(--draw-text);
-    text-shadow: 0 1px 0 color-mix(in srgb, #ffffff 35%, transparent);
+    color: color-mix(in srgb, #1c1a12 88%, var(--accent-dark) 12%);
+    text-shadow: 0 1px 0 color-mix(in srgb, #fff7ea 70%, transparent);
 }
 
 @keyframes centerQuickPhraseIn {
@@ -339,8 +342,8 @@
         text-shadow: 0 0 0 transparent;
     }
     50% {
-        filter: brightness(1.03);
-        text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 28%, transparent);
+        filter: brightness(1.02);
+        text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 32%, transparent);
     }
 }
 

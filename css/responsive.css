@@ -458,7 +458,7 @@
     }
 
     .turn-status-quick-phrase-text {
-        font-size: 0.75rem;
+        font-size: 0.78rem;
     }
 
     .game-opponent-zone {
@@ -585,7 +585,7 @@
 
     .turn-status-quick-phrase-text {
         max-width: 100%;
-        font-size: 0.72rem;
+        font-size: 0.75rem;
     }
 
     .game-opponent-presence-text {
