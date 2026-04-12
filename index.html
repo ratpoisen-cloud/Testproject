@@ -255,7 +255,19 @@
                                     <div id="game-opponent-avatar" class="game-opponent-avatar" aria-hidden="true">?</div>
                                     <div class="game-opponent-meta">
                                         <p id="game-opponent-name" class="game-opponent-name">Соперник</p>
-                                        <p id="game-opponent-presence" class="game-opponent-presence">статус скоро</p>
+                                        <div class="game-opponent-presence-wrap">
+                                            <button
+                                                id="game-opponent-presence"
+                                                class="game-opponent-presence-indicator status-indicator status-indicator-offline"
+                                                type="button"
+                                                aria-label="Статус соперника"
+                                                aria-expanded="false"
+                                                title="Не в сети"
+                                            ></button>
+                                            <div id="game-opponent-presence-popover" class="game-opponent-presence-popover hidden" role="status" aria-live="polite">
+                                                Не в сети
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

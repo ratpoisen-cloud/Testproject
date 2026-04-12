@@ -89,9 +89,69 @@
     line-height: 1.2;
 }
 
-.game-opponent-presence {
-    font-size: 0.68rem;
-    color: var(--text-secondary);
+.game-opponent-presence-wrap {
+    position: relative;
+    margin-top: 3px;
+    width: max-content;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+    background: color-mix(in srgb, var(--text-secondary) 76%, transparent);
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.status-indicator:focus-visible,
+.status-indicator:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 64%, transparent);
+}
+
+.status-indicator-online {
+    background: var(--success);
+}
+
+.status-indicator-away {
+    background: #f6a432;
+}
+
+.status-indicator-dnd {
+    background: var(--danger);
+}
+
+.status-indicator-offline {
+    background: color-mix(in srgb, var(--text-secondary) 70%, #80868f);
+}
+
+.status-indicator-bot {
+    background: color-mix(in srgb, var(--accent) 42%, var(--text-secondary));
+    border-style: dashed;
+}
+
+.game-opponent-presence-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 132px;
+    max-width: min(210px, calc(100vw - 32px));
+    z-index: 230;
+    padding: 6px 9px;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+    background: color-mix(in srgb, var(--surface-elevated) 96%, var(--surface));
+    color: var(--text);
+    font-size: 0.72rem;
+    line-height: 1.25;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+    pointer-events: none;
 }
 
 .turn-status {
@@ -152,8 +212,35 @@
 }
 
 #presence-status-trigger {
-    color: color-mix(in srgb, var(--success) 72%, var(--text));
+    color: transparent;
     font-size: 1rem;
+    position: relative;
+}
+
+#presence-status-trigger::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    background: color-mix(in srgb, var(--text-secondary) 76%, transparent);
+    display: block;
+}
+
+#presence-status-trigger.status-indicator-online::after {
+    background: var(--success);
+}
+
+#presence-status-trigger.status-indicator-away::after {
+    background: #f6a432;
+}
+
+#presence-status-trigger.status-indicator-dnd::after {
+    background: var(--danger);
+}
+
+#presence-status-trigger.status-indicator-offline::after {
+    background: color-mix(in srgb, var(--text-secondary) 70%, #80868f);
 }
 
 @keyframes turnPulse {

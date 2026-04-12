@@ -1,6 +1,36 @@
 // ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
 // Отвечает за: статус игры, индикатор хода, историю ходов, модальные окна
 
+window.resolvePresenceIndicatorVariant = function resolvePresenceIndicatorVariant(presence, options = {}) {
+    if (options.isBot) return 'bot';
+    const text = String(presence?.text || '').toLowerCase();
+    const tone = String(presence?.tone || '').toLowerCase();
+
+    if (tone === 'online' || text === 'в сети') return 'online';
+    if (tone === 'recently' || text === 'был недавно' || text === 'не в сети') return 'offline';
+    if (tone === 'offline') return 'offline';
+    if (text === 'не беспокоить') return 'dnd';
+    if (
+        text === 'отошёл на 5 минут'
+        || text === 'вернусь через 10 минут'
+        || text === 'работаю'
+    ) return 'away';
+    return 'offline';
+};
+
+window.applyStatusIndicatorClass = function applyStatusIndicatorClass(node, variant) {
+    if (!node) return;
+    const nextVariant = variant || 'offline';
+    node.classList.remove(
+        'status-indicator-online',
+        'status-indicator-away',
+        'status-indicator-dnd',
+        'status-indicator-offline',
+        'status-indicator-bot'
+    );
+    node.classList.add(`status-indicator-${nextVariant}`);
+};
+
 // Обновление UI
 window.updateUI = function(data) {
     if (!data) return;
@@ -50,8 +80,9 @@ window.updateTurnIndicator = function(isMyTurn) {
 window.updateOpponentHeader = function(data) {
     const opponentNameEl = document.getElementById('game-opponent-name');
     const opponentPresenceEl = document.getElementById('game-opponent-presence');
+    const opponentPresencePopoverEl = document.getElementById('game-opponent-presence-popover');
     const opponentAvatarEl = document.getElementById('game-opponent-avatar');
-    if (!opponentNameEl || !opponentPresenceEl || !opponentAvatarEl) return;
+    if (!opponentNameEl || !opponentPresenceEl || !opponentAvatarEl || !opponentPresencePopoverEl) return;
 
     const players = data?.players || {};
     const isWhitePlayer = window.playerColor === 'w';
@@ -80,16 +111,37 @@ window.updateOpponentHeader = function(data) {
     }
 
     opponentNameEl.textContent = opponentName;
+    let presenceText = 'не в сети';
+    let isInteractivePresence = true;
+    let indicatorVariant = 'offline';
     if (isViewer) {
-        opponentPresenceEl.textContent = 'режим наблюдения';
+        presenceText = 'Режим наблюдения';
+        indicatorVariant = 'offline';
+        isInteractivePresence = false;
     } else if (isBotGame) {
-        opponentPresenceEl.textContent = window.getPresenceText?.('', { isBot: true, botText: 'готов к игре' }) || 'готов к игре';
+        const botPresence = window.getEffectivePresence?.('', { isBot: true, botText: 'готов к игре' })
+            || { text: 'готов к игре', tone: 'neutral' };
+        presenceText = botPresence.text;
+        indicatorVariant = window.resolvePresenceIndicatorVariant(botPresence, { isBot: true });
+        isInteractivePresence = false;
     } else if (opponentUid) {
         window.ensurePresenceForUsers?.([opponentUid]);
-        opponentPresenceEl.textContent = window.getPresenceText?.(opponentUid) || 'не в сети';
+        const presence = window.getEffectivePresence?.(opponentUid) || { text: 'не в сети', tone: 'offline' };
+        presenceText = presence.text;
+        indicatorVariant = window.resolvePresenceIndicatorVariant(presence);
     } else {
-        opponentPresenceEl.textContent = 'ожидание соперника';
+        presenceText = 'Ожидание соперника';
+        indicatorVariant = 'offline';
+        isInteractivePresence = false;
     }
+    window.applyStatusIndicatorClass(opponentPresenceEl, indicatorVariant);
+    opponentPresenceEl.title = presenceText;
+    opponentPresenceEl.setAttribute('aria-label', `Статус соперника: ${presenceText}`);
+    opponentPresenceEl.disabled = !isInteractivePresence;
+    opponentPresenceEl.dataset.popoverEnabled = isInteractivePresence ? '1' : '0';
+    opponentPresencePopoverEl.textContent = presenceText;
+    opponentPresencePopoverEl.classList.add('hidden');
+    opponentPresenceEl.setAttribute('aria-expanded', 'false');
 
     if (opponentAvatar) {
         const avatarImage = document.createElement('img');
@@ -100,6 +152,35 @@ window.updateOpponentHeader = function(data) {
     } else {
         const letter = (opponentName || '?').trim().charAt(0).toUpperCase() || '?';
         opponentAvatarEl.textContent = letter;
+    }
+
+    if (!window.__opponentPresencePopoverBound) {
+        const closePopover = () => {
+            opponentPresencePopoverEl.classList.add('hidden');
+            opponentPresenceEl.setAttribute('aria-expanded', 'false');
+        };
+
+        const openPopover = () => {
+            if (opponentPresenceEl.dataset.popoverEnabled !== '1') return;
+            opponentPresencePopoverEl.classList.remove('hidden');
+            opponentPresenceEl.setAttribute('aria-expanded', 'true');
+        };
+
+        opponentPresenceEl.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (opponentPresenceEl.dataset.popoverEnabled !== '1') return;
+            const shouldOpen = opponentPresencePopoverEl.classList.contains('hidden');
+            if (shouldOpen) openPopover();
+            else closePopover();
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!opponentPresenceEl.contains(event.target) && !opponentPresencePopoverEl.contains(event.target)) {
+                closePopover();
+            }
+        });
+
+        window.__opponentPresencePopoverBound = true;
     }
 };
 
