@@ -76,6 +76,10 @@
     background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
 }
 
+.user-presence-summary--tap-edit {
+    cursor: pointer;
+}
+
 .user-presence-indicator {
     width: 8px;
     height: 8px;
