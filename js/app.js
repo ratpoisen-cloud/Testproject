@@ -76,6 +76,27 @@ window.initBoardSettingsControls = function() {
             quickPhrasesMenu.classList.toggle('hidden');
         });
 
+        quickPhrasesMenu.querySelectorAll('.quick-phrase-item').forEach((item) => {
+            item.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                const text = item.textContent || '';
+                const emoji = item.dataset.emoji || '⚡';
+                quickPhrasesMenu.classList.add('hidden');
+
+                if (window.isBotMode) {
+                    window.notify('Быстрые фразы доступны только в онлайн-партии', 'info', 2200);
+                    return;
+                }
+
+                if (!window.currentRoomId || (window.playerColor !== 'w' && window.playerColor !== 'b')) {
+                    window.notify('Быстрые фразы доступны только активным игрокам', 'info', 2200);
+                    return;
+                }
+
+                await window.pushQuickPhrase?.({ text, emoji });
+            });
+        });
+
         document.addEventListener('click', (e) => {
             const insideMenu = quickPhrasesMenu.contains(e.target);
             const insideButton = quickPhrasesToggle.contains(e.target);

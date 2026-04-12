@@ -25,6 +25,10 @@ window.lastRenderedMoveHistoryLength = 0;
 window.activeReactions = [];
 window.reactionRateLimitState = { cycleKey: null, count: 0 };
 window.BOARD_REACTION_MAX_PER_CYCLE = 5;
+window.activeQuickPhrase = null;
+window.quickPhraseRateLimitState = { cycleKey: null, count: 0 };
+window.QUICK_PHRASE_MAX_PER_CYCLE = 3;
+window.QUICK_PHRASE_TTL_MS = 5000;
 window.playersExpandedResultFilter = {};
 window.pendingDirectChallengeOpponent = null;
 window.lobbyNotifiedDirectChallenges = new Set();
@@ -47,6 +51,11 @@ window.isGameFinished = function(gameData = null) {
 };
 
 window.getReactionCycleKey = function() {
+    if (!window.game) return 'idle';
+    return `${window.game.turn()}_${window.game.history().length}`;
+};
+
+window.getQuickPhraseCycleKey = function() {
     if (!window.game) return 'idle';
     return `${window.game.turn()}_${window.game.history().length}`;
 };
@@ -89,6 +98,73 @@ window.canSendBoardReaction = function() {
 
     window.reactionRateLimitState.count += 1;
     return true;
+};
+
+window.canSendQuickPhrase = function() {
+    const cycleKey = window.getQuickPhraseCycleKey();
+    if (window.quickPhraseRateLimitState.cycleKey !== cycleKey) {
+        window.quickPhraseRateLimitState = { cycleKey, count: 0 };
+    }
+
+    if (window.quickPhraseRateLimitState.count >= window.QUICK_PHRASE_MAX_PER_CYCLE) {
+        return false;
+    }
+
+    window.quickPhraseRateLimitState.count += 1;
+    return true;
+};
+
+window.normalizeQuickPhrase = function(quickPhrase) {
+    if (!quickPhrase || typeof quickPhrase !== 'object') return null;
+    const createdAt = Number(quickPhrase.createdAt);
+    if (!Number.isFinite(createdAt)) return null;
+    if (Date.now() - createdAt >= (window.QUICK_PHRASE_TTL_MS || 5000)) return null;
+    if (typeof quickPhrase.from !== 'string' || typeof quickPhrase.text !== 'string' || typeof quickPhrase.emoji !== 'string') {
+        return null;
+    }
+    return {
+        from: quickPhrase.from,
+        text: quickPhrase.text,
+        emoji: quickPhrase.emoji,
+        createdAt
+    };
+};
+
+window.setActiveQuickPhraseFromState = function(quickPhrase) {
+    window.activeQuickPhrase = window.normalizeQuickPhrase(quickPhrase);
+    window.renderOpponentQuickPhrase?.(window.activeQuickPhrase);
+};
+
+window.pushQuickPhrase = async function({ text, emoji }) {
+    if (!window.currentRoomId || !window.playerColor || window.isBotMode) return false;
+    if (window.playerColor !== 'w' && window.playerColor !== 'b') return false;
+
+    const safeText = String(text || '').trim().slice(0, 64);
+    const safeEmoji = String(emoji || '⚡').trim().slice(0, 4);
+    if (!safeText) return false;
+
+    if (!window.canSendQuickPhrase()) {
+        window.notify('Лимит эмоций на этот ход исчерпан', 'warning', 2200);
+        return false;
+    }
+
+    const nextQuickPhrase = {
+        text: safeText,
+        emoji: safeEmoji || '⚡',
+        from: window.playerColor,
+        createdAt: Date.now()
+    };
+
+    window.setActiveQuickPhraseFromState(nextQuickPhrase);
+
+    try {
+        await window.updateGame(window.getGameRef(window.currentRoomId), { quickPhrase: nextQuickPhrase });
+        return true;
+    } catch (error) {
+        console.error('Ошибка отправки быстрой фразы:', error);
+        window.notify('Не удалось отправить фразу', 'error', 2200);
+        return false;
+    }
 };
 
 window.normalizeBoardReactions = function(reactions) {
@@ -1574,6 +1650,8 @@ function initLocalGameState() {
     window.syncReviewStateFromCurrentGame();
     window.activeReactions = [];
     window.reactionRateLimitState = { cycleKey: window.getReactionCycleKey(), count: 0 };
+    window.activeQuickPhrase = null;
+    window.quickPhraseRateLimitState = { cycleKey: window.getQuickPhraseCycleKey(), count: 0 };
     window.shouldAutoEnterFinishedReview = false;
 }
 
@@ -1601,6 +1679,7 @@ function subscribeToGameUpdates(gameRef) {
         const data = snap.val();
         if (!data) return;
         window.setActiveReactionsFromState(data.reactions || []);
+        window.setActiveQuickPhraseFromState(data.quickPhrase || null);
         window.applyRemotePgnUpdate(data.pgn);
         window.updateUI(data);
         if (window.shouldAutoEnterFinishedReview && data.gameState === 'game_over' && typeof window.enterReviewMode === 'function') {

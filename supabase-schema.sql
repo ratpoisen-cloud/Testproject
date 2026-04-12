@@ -18,11 +18,15 @@ create table if not exists public.games (
   last_move bigint,
   resign text,
   reactions jsonb not null default '[]'::jsonb,
+  quick_phrase jsonb,
   updated_at timestamptz not null default now()
 );
 
 alter table public.games
 add column if not exists reactions jsonb not null default '[]'::jsonb;
+
+alter table public.games
+add column if not exists quick_phrase jsonb;
 
 update public.games
 set reactions = '[]'::jsonb

@@ -184,6 +184,50 @@ window.updateOpponentHeader = function(data) {
 
         window.__opponentPresencePopoverBound = true;
     }
+
+    window.renderOpponentQuickPhrase?.(data?.quickPhrase || window.activeQuickPhrase);
+};
+
+window.renderOpponentQuickPhrase = function(quickPhraseState) {
+    const bubbleEl = document.getElementById('game-opponent-quick-phrase');
+    if (!bubbleEl) return;
+
+    if (window.__opponentQuickPhraseHideTimer) {
+        clearTimeout(window.__opponentQuickPhraseHideTimer);
+        window.__opponentQuickPhraseHideTimer = null;
+    }
+
+    const normalized = window.normalizeQuickPhrase?.(quickPhraseState) || null;
+    const isOnlineHumanGame = Boolean(
+        window.currentRoomId
+        && !window.isBotMode
+        && (window.playerColor === 'w' || window.playerColor === 'b')
+    );
+
+    if (!isOnlineHumanGame || !normalized || normalized.from === window.playerColor) {
+        bubbleEl.classList.add('hidden');
+        bubbleEl.classList.remove('game-opponent-quick-phrase--out');
+        bubbleEl.textContent = '';
+        return;
+    }
+
+    const emojiEl = document.createElement('span');
+    emojiEl.className = 'game-opponent-quick-phrase-emoji';
+    emojiEl.textContent = normalized.emoji;
+    const textEl = document.createElement('span');
+    textEl.textContent = normalized.text;
+    bubbleEl.replaceChildren(emojiEl, textEl);
+    bubbleEl.classList.remove('hidden', 'game-opponent-quick-phrase--out');
+
+    const remainingMs = Math.max(0, (normalized.createdAt + (window.QUICK_PHRASE_TTL_MS || 5000)) - Date.now());
+    window.__opponentQuickPhraseHideTimer = setTimeout(() => {
+        bubbleEl.classList.add('game-opponent-quick-phrase--out');
+        setTimeout(() => {
+            bubbleEl.classList.add('hidden');
+            bubbleEl.classList.remove('game-opponent-quick-phrase--out');
+            bubbleEl.textContent = '';
+        }, 180);
+    }, remainingMs);
 };
 
 // Legacy no-op: отдельный #game-status-text удалён из текущей вёрстки.
