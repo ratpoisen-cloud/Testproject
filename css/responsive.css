@@ -580,6 +580,22 @@
     }
 }
 
+@media (max-width: 600px) and (orientation: portrait) {
+    .user-presence-wrap {
+        max-width: min(45vw, 148px);
+    }
+
+    .user-presence-summary {
+        max-width: min(45vw, 148px);
+        min-height: 32px;
+        padding: 0 10px 0 8px;
+    }
+
+    .user-presence-edit-btn {
+        display: none;
+    }
+}
+
 @media (max-width: 768px) {
     .ui-toast-root {
         left: 12px;

@@ -71,6 +71,9 @@ window.updateTurnIndicator = function(isMyTurn) {
     };
 
     const normalizedQuickPhrase = window.normalizeQuickPhrase?.(window.activeQuickPhrase) || null;
+    const quickPhraseKey = normalizedQuickPhrase
+        ? `${normalizedQuickPhrase.from}|${normalizedQuickPhrase.createdAt}|${normalizedQuickPhrase.emoji}|${normalizedQuickPhrase.text}`
+        : null;
     const isOnlineHumanGame = Boolean(
         window.currentRoomId
         && !window.isBotMode
@@ -84,6 +87,13 @@ window.updateTurnIndicator = function(isMyTurn) {
 
     if (shouldShowCenterQuickPhrase) {
         clearCenterQuickPhraseTimers();
+        const now = Date.now();
+        if (!window.__centerQuickPhraseRenderState || window.__centerQuickPhraseRenderState.key !== quickPhraseKey) {
+            window.__centerQuickPhraseRenderState = {
+                key: quickPhraseKey,
+                shownAt: now
+            };
+        }
         turnStatus.className = 'turn-status opponent-turn turn-status--quick-phrase';
         turnText.innerHTML = `
             <span class="turn-status-quick-phrase-bubble" role="status" aria-live="polite">
@@ -93,7 +103,8 @@ window.updateTurnIndicator = function(isMyTurn) {
         `;
 
         const ttlMs = window.QUICK_PHRASE_TTL_MS || 5000;
-        const remainingMs = Math.max(0, (normalizedQuickPhrase.createdAt + ttlMs) - Date.now());
+        const shownAt = Number(window.__centerQuickPhraseRenderState?.shownAt) || now;
+        const remainingMs = Math.max(0, ttlMs - (now - shownAt));
         const outDurationMs = 180;
         const outDelay = Math.max(0, remainingMs - outDurationMs);
 
@@ -110,6 +121,7 @@ window.updateTurnIndicator = function(isMyTurn) {
     }
 
     clearCenterQuickPhraseTimers();
+    window.__centerQuickPhraseRenderState = null;
     clearCenterQuickPhraseView();
     
     if (window.game.game_over()) {

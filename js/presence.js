@@ -309,6 +309,7 @@
 
     window.refreshPresenceUI = function refreshPresenceUI() {
         const trigger = document.getElementById('presence-status-trigger');
+        const summary = document.getElementById('user-presence-summary');
         const summaryIndicator = document.getElementById('user-presence-indicator');
         const summaryText = document.getElementById('user-presence-text');
         if (trigger) {
@@ -328,6 +329,23 @@
                 summaryText.textContent = text;
                 summaryText.title = text;
             }
+            const isCompactMobileLayout = typeof window.isCompactMobilePresenceLayout === 'function'
+                ? window.isCompactMobilePresenceLayout()
+                : false;
+            if (summary) {
+                summary.classList.toggle('user-presence-summary--tap-edit', isAvailable && isCompactMobileLayout);
+                if (isAvailable && isCompactMobileLayout) {
+                    summary.setAttribute('role', 'button');
+                    summary.setAttribute('tabindex', '0');
+                    summary.setAttribute('aria-haspopup', 'menu');
+                    summary.setAttribute('aria-label', `Изменить статус. Текущий статус: ${text}`);
+                } else {
+                    summary.removeAttribute('role');
+                    summary.removeAttribute('tabindex');
+                    summary.removeAttribute('aria-haspopup');
+                    summary.removeAttribute('aria-label');
+                }
+            }
         }
 
         if (window.lastGameUiSnapshot) {
@@ -341,16 +359,35 @@
         if (window.__presenceControlsBound) return;
 
         const trigger = document.getElementById('presence-status-trigger');
+        const summary = document.getElementById('user-presence-summary');
         const menu = document.getElementById('presence-status-menu');
         const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
         const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
 
         if (!trigger || !menu) return;
 
-        trigger.addEventListener('click', (event) => {
+        const compactLayoutQuery = window.matchMedia?.('(max-width: 600px) and (orientation: portrait)') || null;
+        window.isCompactMobilePresenceLayout = function isCompactMobilePresenceLayout() {
+            return Boolean(compactLayoutQuery?.matches);
+        };
+
+        const toggleMenu = (event) => {
             event.stopPropagation();
             quickPhrasesMenu?.classList.add('hidden');
             menu.classList.toggle('hidden');
+            trigger.setAttribute('aria-expanded', menu.classList.contains('hidden') ? 'false' : 'true');
+        };
+
+        trigger.addEventListener('click', toggleMenu);
+        summary?.addEventListener('click', (event) => {
+            if (!window.isCompactMobilePresenceLayout?.() || trigger.disabled) return;
+            toggleMenu(event);
+        });
+        summary?.addEventListener('keydown', (event) => {
+            if (!window.isCompactMobilePresenceLayout?.() || trigger.disabled) return;
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            toggleMenu(event);
         });
 
         menu.querySelectorAll('.presence-status-item').forEach((item) => {
@@ -359,6 +396,7 @@
                 const status = item.dataset.presenceStatus;
                 await window.setManualPresenceStatus(status);
                 menu.classList.add('hidden');
+                trigger.setAttribute('aria-expanded', 'false');
             });
         });
 
@@ -369,8 +407,15 @@
         document.addEventListener('click', (event) => {
             if (!menu.contains(event.target) && !trigger.contains(event.target)) {
                 menu.classList.add('hidden');
+                trigger.setAttribute('aria-expanded', 'false');
             }
         });
+
+        if (compactLayoutQuery?.addEventListener) {
+            compactLayoutQuery.addEventListener('change', () => window.refreshPresenceUI());
+        } else if (compactLayoutQuery?.addListener) {
+            compactLayoutQuery.addListener(() => window.refreshPresenceUI());
+        }
 
         window.watchPresenceLayer(() => window.refreshPresenceUI());
 
