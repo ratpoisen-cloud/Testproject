@@ -66,9 +66,10 @@
 .user-trigger-block {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
     min-height: 44px;
-    padding: 0 6px;
+    min-width: 44px;
+    padding: 0;
     border: 1px solid transparent;
     border-radius: 12px;
     background: transparent;
@@ -153,12 +154,6 @@
     object-fit: cover;
 }
 
-#user-name {
-    font-weight: 560;
-    font-size: 0.82rem;
-    letter-spacing: 0.012em;
-}
-
 .user-menu-trigger,
 #user-info .letter-avatar {
     cursor: pointer;
@@ -169,7 +164,7 @@
     top: calc(100% + 8px);
     left: auto;
     right: 0;
-    min-width: min(184px, calc(100vw - 16px));
+    min-width: min(224px, calc(100vw - 16px));
     width: max-content;
     max-width: min(320px, calc(100vw - 16px));
     background: linear-gradient(

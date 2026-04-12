@@ -61,12 +61,6 @@
     margin: 0 0 var(--space-20) 0;
 }
 
-.board-settings-bar {
-    width: 100%;
-    max-width: 100%;
-    margin: 0 0 var(--space-10);
-}
-
 .board-wrapper {
     width: 100%;
     max-width: 100%;

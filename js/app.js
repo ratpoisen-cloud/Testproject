@@ -62,29 +62,26 @@ window.markGameReady = function() {
 window.initBoardSettingsControls = function() {
     if (window.__boardSettingsControlsInitialized) return;
 
-    const toggleBtn = document.getElementById('board-settings-toggle');
-    const menu = document.getElementById('board-settings-menu');
     const themeSelect = document.getElementById('theme-select');
     const uiThemeSelect =
         document.getElementById('ui-theme-select') ||
         document.getElementById('user-ui-theme-select');
     const pieceSetSelect = document.getElementById('piece-set-select');
+    const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
+    const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
 
-    if (toggleBtn && menu) {
-        toggleBtn.addEventListener('click', () => {
-            const willOpen = menu.classList.contains('hidden');
-            if (willOpen) {
-                window.closeUserMenu?.();
-            }
-            menu.classList.toggle('hidden');
+    if (quickPhrasesToggle && quickPhrasesMenu) {
+        quickPhrasesToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            quickPhrasesMenu.classList.toggle('hidden');
         });
 
         document.addEventListener('click', (e) => {
-            const insideMenu = menu.contains(e.target);
-            const insideButton = toggleBtn.contains(e.target);
+            const insideMenu = quickPhrasesMenu.contains(e.target);
+            const insideButton = quickPhrasesToggle.contains(e.target);
 
             if (!insideMenu && !insideButton) {
-                menu.classList.add('hidden');
+                quickPhrasesMenu.classList.add('hidden');
             }
         });
     }

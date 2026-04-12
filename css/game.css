@@ -29,61 +29,74 @@
 }
 
 .game-status-header {
+    position: relative;
     padding: 0;
     display: flex;
     align-items: center;
     gap: var(--space-12);
 }
 
-.player-badge {
-    min-height: var(--btn-height);
+.game-opponent-zone {
+    flex: 1 1 34%;
     min-width: 0;
+    min-height: var(--btn-height);
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 9px;
-    padding: 0 13px;
+    gap: 8px;
     border-radius: var(--btn-radius);
+    padding: 4px 10px;
+    border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
+    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+}
+
+.game-opponent-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--accent) 46%, var(--border));
+    background: color-mix(in srgb, var(--surface) 86%, var(--accent-soft));
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
     font-weight: 600;
-    transition: all 0.3s ease;
-    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.player-badge.white-piece {
-    background: var(--badge-white-bg);
-    color: var(--badge-white-text);
-    box-shadow: 0 3px 12px var(--shadow-accent);
-}
-
-.player-badge.black-piece {
-    background: var(--badge-black-bg);
-    color: var(--badge-black-text);
-    border: 1px solid var(--border);
-}
-
-.player-icon {
-    font-size: 0.96rem;
     flex: 0 0 auto;
-    line-height: 1;
 }
 
-.player-icon:empty {
-    display: none;
+.game-opponent-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
-.player-color-text {
-    font-weight: 600;
-    font-size: 0.82rem;
-    letter-spacing: 0.01em;
+.game-opponent-meta {
+    min-width: 0;
+}
+
+.game-opponent-name,
+.game-opponent-presence {
+    margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.game-opponent-name {
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+.game-opponent-presence {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
 }
 
 .turn-status {
     min-height: var(--btn-height);
-    flex: 1 1 auto;
+    flex: 1 1 42%;
     min-width: 0;
     display: flex;
     align-items: center;
@@ -119,13 +132,22 @@
 }
 
 .status-actions {
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
+    position: relative;
+    width: var(--btn-height);
+    min-width: var(--btn-height);
+    height: var(--btn-height);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-left: auto;
+}
+
+.quick-phrases-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    width: min(220px, calc(100vw - 16px));
+    z-index: 220;
 }
 
 @keyframes turnPulse {
@@ -335,29 +357,6 @@
 
 .btn-round:active {
     transform: scale(0.98);
-}
-
-.board-settings-bar {
-    position: relative;
-    z-index: 180;
-    min-height: 0;
-    height: 0;
-}
-
-.board-settings-menu {
-    position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 1;
-    width: min(280px, calc(100vw - (var(--system-control-mobile-gutter) * 2)));
-    background: var(--system-control-bg);
-    border: var(--system-control-border);
-    border-radius: var(--system-control-radius);
-    padding: 14px;
-    box-shadow: var(--system-control-shadow);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
 }
 
 .board-settings-group {

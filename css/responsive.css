@@ -256,13 +256,6 @@
         max-width: 100%;
     }
 
-    #user-name {
-        max-width: min(42vw, 170px);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
     .card {
         padding: 20px;
     }
@@ -380,7 +373,7 @@
         gap: var(--space-8);
     }
 
-    .player-badge,
+    .game-opponent-zone,
     .turn-status {
         min-height: var(--btn-height);
         min-width: 0;
@@ -388,6 +381,10 @@
         border-radius: var(--btn-radius);
         font-size: 0.76rem;
         gap: 6px;
+    }
+
+    .game-opponent-zone {
+        flex: 1 1 auto;
     }
 
     .status-actions {
@@ -433,11 +430,9 @@
         gap: var(--board-stack-gap);
     }
 
-    .board-settings-menu {
-        left: var(--system-control-mobile-gutter);
-        right: var(--system-control-mobile-gutter);
-        width: calc(100% - (var(--system-control-mobile-gutter) * 2));
-        max-width: none;
+    .quick-phrases-menu {
+        right: 0;
+        width: min(220px, calc(100vw - 16px));
     }
 
     .game-bottom-panel {
