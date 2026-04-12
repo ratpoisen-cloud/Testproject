@@ -30,8 +30,13 @@ window.pendingDirectChallengeOpponent = null;
 window.lobbyNotifiedDirectChallenges = new Set();
 window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
 window.DIRECT_INVITE_HANDLED_STORAGE_KEY = 'chess_direct_invite_handled_v1';
+window.BOT_GAMES_HISTORY_STORAGE_KEY = 'chess_bot_games_history_v1';
 window.lobbyLastSnapshotByGame = new Map();
 window.lobbyHasProcessedFirstSnapshot = false;
+window.botGamesLevelFilter = 'all';
+window.lastSavedBotGameSignature = '';
+window.isBotHistoryViewer = false;
+window.currentBotSessionId = null;
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -422,10 +427,11 @@ function getLobbyNodes() {
         hubView: document.getElementById('lobby-view-hub'),
         gamesView: document.getElementById('lobby-view-games'),
         playersView: document.getElementById('lobby-view-players'),
+        botGamesView: document.getElementById('lobby-view-bot-games'),
         hubCreateBtn: document.getElementById('hub-create-game'),
         hubOpenGamesBtn: document.getElementById('hub-open-games'),
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
-        hubPlayBotBtn: document.getElementById('hub-play-bot'),
+        hubOpenBotGamesBtn: document.getElementById('hub-open-bot-games'),
         hubGamesInviteDot: document.getElementById('hub-games-invite-dot'),
         hubGamesInviteLabel: document.getElementById('hub-games-invite-label'),
         createGameBtn: document.getElementById('create-game-btn'),
@@ -443,7 +449,13 @@ function getLobbyNodes() {
         finishedGamesList: document.getElementById('finished-games-list'),
         showActiveGamesBtn: document.getElementById('show-active-games-btn'),
         showFinishedGamesBtn: document.getElementById('show-finished-games-btn'),
-        clearFinishedBtn: document.getElementById('clear-finished-btn')
+        clearFinishedBtn: document.getElementById('clear-finished-btn'),
+        botGamesList: document.getElementById('bot-games-list'),
+        botGamesNewBtn: document.getElementById('bot-games-new-btn'),
+        botGamesFilterAllBtn: document.getElementById('bot-games-filter-all'),
+        botGamesFilterEasyBtn: document.getElementById('bot-games-filter-easy'),
+        botGamesFilterMediumBtn: document.getElementById('bot-games-filter-medium'),
+        botGamesFilterHardBtn: document.getElementById('bot-games-filter-hard')
     };
 }
 
@@ -456,12 +468,13 @@ window.updateTopLobbyBrandVisibility = function() {
 
 window.setLobbyScreen = function(screen) {
     const nodes = getLobbyNodes();
-    const safeScreen = ['hub', 'games', 'players'].includes(screen) ? screen : 'hub';
+    const safeScreen = ['hub', 'games', 'players', 'bot-games'].includes(screen) ? screen : 'hub';
     window.lobbyCurrentScreen = safeScreen;
 
     nodes.hubView?.classList.toggle('hidden', safeScreen !== 'hub');
     nodes.gamesView?.classList.toggle('hidden', safeScreen !== 'games');
     nodes.playersView?.classList.toggle('hidden', safeScreen !== 'players');
+    nodes.botGamesView?.classList.toggle('hidden', safeScreen !== 'bot-games');
     window.updateTopLobbyBrandVisibility?.();
 
     return safeScreen;
@@ -483,6 +496,200 @@ function closeCreateGameModal(modal) {
 function closeBotGameModal(modal) {
     modal?.classList.add('hidden');
 }
+
+function getBotLevelLabel(level) {
+    if (level === 'easy') return 'Лёгкий';
+    if (level === 'hard') return 'Сильный';
+    return 'Средний';
+}
+
+function getUserColorLabel(color) {
+    return color === 'b' ? 'Чёрные' : 'Белые';
+}
+
+function parseBotGamesHistory() {
+    try {
+        const raw = localStorage.getItem(window.BOT_GAMES_HISTORY_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.warn('Не удалось прочитать историю bot games:', error);
+        return [];
+    }
+}
+
+function persistBotGamesHistory(list) {
+    try {
+        localStorage.setItem(window.BOT_GAMES_HISTORY_STORAGE_KEY, JSON.stringify(list.slice(0, 300)));
+    } catch (error) {
+        console.warn('Не удалось сохранить историю bot games:', error);
+    }
+}
+
+function getResultTextForBotHistory(resultCode, message) {
+    if (message) return message;
+    if (resultCode === '1-0') return 'Победа белых';
+    if (resultCode === '0-1') return 'Победа чёрных';
+    if (resultCode === '1/2-1/2') return 'Ничья';
+    return 'Игра окончена';
+}
+
+window.persistFinishedBotGame = function(data = {}) {
+    if (!window.isBotMode || !window.game || window.isBotHistoryViewer) return;
+    if (data?.gameState !== 'game_over' && !window.game.game_over?.()) return;
+
+    const pgn = window.game.pgn?.() || '';
+    if (!pgn.trim()) return;
+
+    const metadata = window.applyGameHeaders(window.game, {
+        gameState: 'game_over',
+        message: data?.message || window.getGameResultMessage(window.game),
+        resign: data?.resign
+    });
+    const timestamp = Date.now();
+    const terminationReason = window.game.header?.('Termination') || data?.message || '';
+    const historyPlyCount = window.game.history?.().length || 0;
+    const signature = `${pgn}|${metadata.result}|${window.botLevel}|${window.playerColor}|${terminationReason}`;
+    if (window.lastSavedBotGameSignature === signature) return;
+
+    const existing = parseBotGamesHistory();
+    if (window.currentBotSessionId && existing.some((entry) => entry?.sourceSessionId === window.currentBotSessionId)) {
+        return;
+    }
+    if (existing.some((entry) => entry?.signature === signature)) {
+        window.lastSavedBotGameSignature = signature;
+        return;
+    }
+
+    const entry = {
+        id: `bot_${timestamp}_${Math.random().toString(36).slice(2, 8)}`,
+        completedAt: timestamp,
+        botLevel: window.botLevel || 'medium',
+        userColor: window.playerColor || 'w',
+        result: metadata.result || '*',
+        resultText: getResultTextForBotHistory(metadata.result, metadata.message),
+        reason: terminationReason,
+        pgn,
+        plyCount: historyPlyCount,
+        updatedAt: timestamp,
+        sourceSessionId: window.currentBotSessionId,
+        signature
+    };
+
+    persistBotGamesHistory([entry, ...existing]);
+    window.lastSavedBotGameSignature = signature;
+};
+
+window.openBotHistoryViewer = function(gameId) {
+    const entry = parseBotGamesHistory().find((item) => item?.id === gameId);
+    if (!entry?.pgn) {
+        window.notify('Не удалось открыть партию из истории', 'error', 2600);
+        return;
+    }
+
+    initLocalGameState();
+    window.isBotHistoryViewer = true;
+    window.isBotMode = true;
+    window.playerColor = entry.userColor === 'b' ? 'b' : 'w';
+    window.botColor = window.playerColor === 'w' ? 'b' : 'w';
+    window.botLevel = window.BOT_LEVELS?.[entry.botLevel] ? entry.botLevel : 'medium';
+    window.game = new Chess();
+    const loaded = window.game.load_pgn(entry.pgn);
+    if (!loaded) {
+        window.notify('PGN партии повреждён', 'error', 2600);
+        return;
+    }
+    window.lastKnownGameState = 'game_over';
+
+    window.setGameSectionVisibility();
+    window.updatePlayerBadge();
+    window.initBoard(window.playerColor);
+    if (window.playerColor === 'b') {
+        window.board.orientation('black');
+    }
+
+    window.setupGameControls(null, null);
+    window.syncReviewStateFromCurrentGame();
+    const maxPly = window.game.history().length;
+    window.enterReviewMode(maxPly);
+    window.updateUI({ gameState: 'game_over', message: entry.resultText, mode: 'bot' });
+    window.markGameReady?.();
+};
+
+window.renderBotGamesLobby = function() {
+    const nodes = getLobbyNodes();
+    const container = nodes.botGamesList;
+    if (!container) return;
+
+    const activeFilter = window.botGamesLevelFilter || 'all';
+    const allGames = parseBotGamesHistory();
+    const filtered = allGames.filter((entry) => activeFilter === 'all' || entry?.botLevel === activeFilter);
+
+    const filters = [
+        ['all', nodes.botGamesFilterAllBtn],
+        ['easy', nodes.botGamesFilterEasyBtn],
+        ['medium', nodes.botGamesFilterMediumBtn],
+        ['hard', nodes.botGamesFilterHardBtn]
+    ];
+    filters.forEach(([value, button]) => {
+        button?.classList.toggle('is-active', activeFilter === value);
+    });
+
+    container.innerHTML = '';
+    if (!filtered.length) {
+        container.innerHTML = '<div class="empty-lobby">История игр с ботом пока пуста</div>';
+        return;
+    }
+
+    filtered.forEach((entry) => {
+        const item = document.createElement('div');
+        item.className = 'game-item finished';
+        const dateText = entry.completedAt ? new Date(entry.completedAt).toLocaleString('ru-RU') : 'Неизвестно';
+        item.innerHTML = `
+            <div class="game-accent" aria-hidden="true"></div>
+            <div class="game-info">
+                <div class="game-title-row">
+                    <div class="game-opponent-wrap">
+                        <span class="avatar-shell avatar-fallback">🤖</span>
+                        <p class="game-opponent">Бот (${getBotLevelLabel(entry.botLevel)})</p>
+                    </div>
+                    <span class="game-status-pill finished">${entry.resultText || 'Игра окончена'}</span>
+                </div>
+                <div class="game-meta">
+                    <span class="game-turn-pill opponent-turn">Вы: ${getUserColorLabel(entry.userColor)}</span>
+                    <span class="game-finish-note">${entry.reason || 'Завершена штатно'}</span>
+                    <span class="game-dot" aria-hidden="true">•</span>
+                    <span class="game-time">${dateText}</span>
+                </div>
+            </div>
+            <div class="game-actions">
+                <button class="btn btn-sm bot-history-view-btn" type="button">Смотреть</button>
+                <button class="btn btn-sm bot-history-copy-btn" type="button">Скопировать PGN</button>
+                <button class="btn btn-primary btn-sm bot-history-replay-btn" type="button">Сыграть снова</button>
+            </div>
+        `;
+
+        item.querySelector('.bot-history-view-btn')?.addEventListener('click', () => {
+            window.openBotHistoryViewer(entry.id);
+        });
+        item.querySelector('.bot-history-copy-btn')?.addEventListener('click', async () => {
+            if (!entry.pgn) return;
+            try {
+                await navigator.clipboard.writeText(entry.pgn);
+                window.notify('PGN скопирован', 'success', 1800);
+            } catch (error) {
+                console.error('Ошибка копирования PGN bot history:', error);
+                window.notify('Не удалось скопировать PGN', 'error', 2200);
+            }
+        });
+        item.querySelector('.bot-history-replay-btn')?.addEventListener('click', () => {
+            window.initBotGame({ color: entry.userColor || 'random', level: entry.botLevel || 'medium' });
+        });
+
+        container.appendChild(item);
+    });
+};
 
 function syncLobbyGamesFilterVisibility(nodes, gamesList, finishedList) {
     if (!nodes || !gamesList || !finishedList) return;
@@ -929,11 +1136,10 @@ window.initLobby = function() {
     nodes.hubCreateBtn.onclick = () => openCreateGameModal(nodes);
     nodes.hubOpenGamesBtn.onclick = () => window.setLobbyScreen('games');
     nodes.hubOpenPlayersBtn.onclick = () => window.setLobbyScreen('players');
-    if (nodes.hubPlayBotBtn) {
-        nodes.hubPlayBotBtn.onclick = () => {
-            if (nodes.botColorSelect) nodes.botColorSelect.value = 'random';
-            if (nodes.botLevelSelect) nodes.botLevelSelect.value = 'medium';
-            nodes.botGameModal?.classList.remove('hidden');
+    if (nodes.hubOpenBotGamesBtn) {
+        nodes.hubOpenBotGamesBtn.onclick = () => {
+            window.setLobbyScreen('bot-games');
+            window.renderBotGamesLobby?.();
         };
     }
     nodes.backButtons.forEach((button) => {
@@ -1007,12 +1213,34 @@ window.initLobby = function() {
         };
     }
 
+    if (nodes.botGamesNewBtn) {
+        nodes.botGamesNewBtn.onclick = () => {
+            if (nodes.botColorSelect) nodes.botColorSelect.value = 'random';
+            if (nodes.botLevelSelect) nodes.botLevelSelect.value = 'medium';
+            nodes.botGameModal?.classList.remove('hidden');
+        };
+    }
+
+    const bindBotFilter = (btn, value) => {
+        if (!btn) return;
+        btn.onclick = () => {
+            window.botGamesLevelFilter = value;
+            window.renderBotGamesLobby?.();
+        };
+    };
+    bindBotFilter(nodes.botGamesFilterAllBtn, 'all');
+    bindBotFilter(nodes.botGamesFilterEasyBtn, 'easy');
+    bindBotFilter(nodes.botGamesFilterMediumBtn, 'medium');
+    bindBotFilter(nodes.botGamesFilterHardBtn, 'hard');
+
     window.setLobbyScreen('hub');
+    window.renderBotGamesLobby?.();
 };
 
 // Загрузка игр в лобби
 window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
+    window.renderBotGamesLobby?.();
     window.lobbyNotifiedDirectChallenges = getSeenDirectChallengeIds();
     window.lobbyHandledDirectInvites = getHandledDirectInviteIds();
     window.lobbyLastSnapshotByGame = new Map();
@@ -1239,6 +1467,8 @@ function initLocalGameState() {
     window.botLevel = 'medium';
     window.botEngine = null;
     window.isBotThinking = false;
+    window.isBotHistoryViewer = false;
+    window.currentBotSessionId = null;
     window.pendingDraw = null;
     window.pendingTakeback = null;
     window.playerColor = null;
@@ -1303,6 +1533,7 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     initLocalGameState();
 
     window.isBotMode = true;
+    window.currentBotSessionId = `bot_session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     window.playerColor = normalizedColor;
     window.botColor = normalizedColor === 'w' ? 'b' : 'w';
     window.botLevel = normalizedLevel;
