@@ -550,16 +550,26 @@ window.bindTopBrandHomeAction = function bindTopBrandHomeAction() {
     topBrand.addEventListener('click', () => {
         const gameSection = document.getElementById('game-section');
         const isGameVisible = Boolean(gameSection && !gameSection.classList.contains('hidden'));
+        const lobbySection = document.getElementById('lobby-section');
+        const targetLobbyVisible = Boolean(lobbySection && !lobbySection.classList.contains('hidden'));
         const targetUrl = `${window.location.origin}${window.location.pathname}`;
 
         if (isGameVisible) {
             if (window.location.href !== targetUrl) {
                 window.location.href = targetUrl;
+                return;
+            }
+            if (typeof window.initLobby === 'function') {
+                window.initLobby();
+                return;
+            }
+            if (typeof window.setLobbyScreen === 'function') {
+                window.setLobbyScreen('hub');
             }
             return;
         }
 
-        if (typeof window.setLobbyScreen === 'function') {
+        if (targetLobbyVisible && typeof window.setLobbyScreen === 'function') {
             window.setLobbyScreen('hub');
             return;
         }

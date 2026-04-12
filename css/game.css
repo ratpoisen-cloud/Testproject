@@ -254,62 +254,75 @@
     z-index: 220;
 }
 
-.game-opponent-meta {
-    position: relative;
+.turn-status--quick-phrase {
+    opacity: 1;
+    overflow: visible;
 }
 
-.game-opponent-quick-phrase {
-    position: absolute;
-    top: -6px;
-    left: 0;
-    transform: translateY(-100%);
+.turn-status-quick-phrase-bubble {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    max-width: min(240px, 56vw);
-    padding: 5px 9px;
-    border-radius: 12px;
-    font-size: 12px;
+    gap: 7px;
+    max-width: min(300px, calc(100vw - 72px));
+    padding: 6px 10px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    background: color-mix(in srgb, var(--surface-2) 95%, black 5%);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
     line-height: 1.2;
-    background: color-mix(in srgb, var(--surface-2) 94%, black 6%);
-    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.26);
-    white-space: nowrap;
+    animation: centerQuickPhraseIn 0.2s ease-out forwards;
+}
+
+.turn-status--quick-phrase-out .turn-status-quick-phrase-bubble {
+    animation: centerQuickPhraseOut 0.18s ease-in forwards;
+}
+
+.turn-status-quick-phrase-bubble::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    background: color-mix(in srgb, var(--surface-2) 95%, black 5%);
+    transform: translateY(-52%) rotate(45deg);
+}
+
+.turn-status-quick-phrase-emoji {
+    font-size: 15px;
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.turn-status-quick-phrase-text {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    pointer-events: none;
-    opacity: 0;
-    animation: opponentQuickPhraseIn 0.22s ease-out forwards;
+    white-space: nowrap;
 }
 
-.game-opponent-quick-phrase--out {
-    animation: opponentQuickPhraseOut 0.2s ease-in forwards;
-}
-
-.game-opponent-quick-phrase-emoji {
-    font-size: 14px;
-    line-height: 1;
-}
-
-@keyframes opponentQuickPhraseIn {
+@keyframes centerQuickPhraseIn {
     from {
         opacity: 0;
-        transform: translateY(calc(-100% + 6px)) scale(0.96);
+        transform: translateY(4px) scale(0.98);
     }
     to {
         opacity: 1;
-        transform: translateY(-100%) scale(1);
+        transform: translateY(0) scale(1);
     }
 }
 
-@keyframes opponentQuickPhraseOut {
+@keyframes centerQuickPhraseOut {
     from {
         opacity: 1;
-        transform: translateY(-100%) scale(1);
+        transform: translateY(0) scale(1);
     }
     to {
         opacity: 0;
-        transform: translateY(calc(-100% + 4px)) scale(0.98);
+        transform: translateY(-2px) scale(0.99);
     }
 }
 

@@ -161,6 +161,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Инициализируем UI настроек доски (один раз)
     window.initBoardSettingsControls();
+    window.bindTopBrandHomeAction?.();
 
     // Ждем авторизации для инициализации кнопки очистки
     const checkUser = setInterval(() => {
