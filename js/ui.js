@@ -4,6 +4,7 @@
 // Обновление UI
 window.updateUI = function(data) {
     if (!data) return;
+    window.lastGameUiSnapshot = data;
     
     const isMyTurn = window.playerColor && (window.playerColor === window.game.turn());
     
@@ -60,6 +61,8 @@ window.updateOpponentHeader = function(data) {
 
     let opponentName = 'Соперник';
     let opponentAvatar = '';
+    let opponentUid = null;
+    const isBotGame = isBotMode;
 
     if (isBotMode) {
         const levelMap = { easy: 'Лёгкий', medium: 'Средний', hard: 'Сильный' };
@@ -67,15 +70,26 @@ window.updateOpponentHeader = function(data) {
     } else if (isWhitePlayer) {
         opponentName = players.blackName || 'Ожидание соперника';
         opponentAvatar = players.blackPhotoURL || players.blackAvatar || '';
+        opponentUid = players.black || null;
     } else if (isBlackPlayer) {
         opponentName = players.whiteName || 'Ожидание соперника';
         opponentAvatar = players.whitePhotoURL || players.whiteAvatar || '';
+        opponentUid = players.white || null;
     } else {
         opponentName = `${players.whiteName || 'Белые'} vs ${players.blackName || 'Чёрные'}`;
     }
 
     opponentNameEl.textContent = opponentName;
-    opponentPresenceEl.textContent = isViewer ? 'режим наблюдения' : 'статус скоро';
+    if (isViewer) {
+        opponentPresenceEl.textContent = 'режим наблюдения';
+    } else if (isBotGame) {
+        opponentPresenceEl.textContent = window.getPresenceText?.('', { isBot: true, botText: 'готов к игре' }) || 'готов к игре';
+    } else if (opponentUid) {
+        window.ensurePresenceForUsers?.([opponentUid]);
+        opponentPresenceEl.textContent = window.getPresenceText?.(opponentUid) || 'не в сети';
+    } else {
+        opponentPresenceEl.textContent = 'ожидание соперника';
+    }
 
     if (opponentAvatar) {
         const avatarImage = document.createElement('img');

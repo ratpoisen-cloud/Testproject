@@ -1007,8 +1007,10 @@ function buildLobbyGameCardData(id, data, userId) {
         isMyTurn,
         stateClass,
         myColor,
+        opponentUid,
         opponent,
         opponentAvatar,
+        opponentPresenceText: opponentUid ? (window.getPresenceText?.(opponentUid) || 'не в сети') : (isWaitingForOpponent ? 'ожидание соперника' : 'не в сети'),
         statusText,
         isInviteForMe,
         resultComment,
@@ -1055,6 +1057,9 @@ function bindAvatarFallbackHandlers(rootNode) {
 function createLobbyGameElement(cardData, userId) {
     const item = document.createElement('div');
     item.className = `game-item ${cardData.stateClass} ${cardData.isMyTurn ? 'my-turn-focus' : ''} ${cardData.isInviteForMe ? 'invite-focus' : ''} ${cardData.resultClass || ''}`.trim();
+    if (cardData.opponentUid) {
+        item.dataset.opponentUid = cardData.opponentUid;
+    }
     item.innerHTML = `
         <div class="game-accent" aria-hidden="true"></div>
         <div class="game-info">
@@ -1065,6 +1070,7 @@ function createLobbyGameElement(cardData, userId) {
                 </div>
                 ${cardData.statusText ? `<span class="game-status-pill ${cardData.isInviteForMe ? 'invite' : cardData.stateClass} ${cardData.resultClass}">${cardData.statusText}</span>` : ''}
             </div>
+            <div class="game-opponent-presence-line">${cardData.opponentPresenceText}</div>
             <div class="game-meta">
                 ${cardData.isInviteForMe ? '<span class="game-invite-dot" aria-hidden="true"></span><span class="game-turn-pill opponent-turn">Вас пригласили</span>' : ''}
                 ${cardData.isMyTurn ? '<span class="game-my-turn-dot" aria-hidden="true"></span>' : ''}
@@ -1235,6 +1241,10 @@ window.initLobby = function() {
 
     window.setLobbyScreen('hub');
     window.renderBotGamesLobby?.();
+    if (!window.__lobbyPresenceWatcherBound) {
+        window.watchPresenceLayer?.(() => window.refreshLobbyPresenceLabels?.());
+        window.__lobbyPresenceWatcherBound = true;
+    }
 };
 
 // Загрузка игр в лобби
@@ -1270,6 +1280,13 @@ window.loadLobby = function(user) {
         }
 
         const sortedGames = sortLobbyGames(games);
+        const presenceUids = [];
+        sortedGames.forEach(([, data]) => {
+            const players = data?.players || {};
+            if (players.white) presenceUids.push(players.white);
+            if (players.black) presenceUids.push(players.black);
+        });
+        window.ensurePresenceForUsers?.(presenceUids);
         const wasFirstSnapshot = !window.lobbyHasProcessedFirstSnapshot;
         let hasActiveGames = false;
         let hasFinishedGames = false;
@@ -1317,6 +1334,7 @@ window.loadLobby = function(user) {
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
         window.renderPlayersLobby(playersList, playersAggregate);
+        window.refreshLobbyPresenceLabels?.();
         if (!window.lobbyHasProcessedFirstSnapshot) {
             window.markLobbyReady?.();
         }
@@ -1393,10 +1411,13 @@ window.renderPlayersLobby = function(container, players) {
         const selectedGames = selectedFilter ? (player.finishedGames?.[selectedFilter] || []) : [];
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
+        playerItem.dataset.playerUid = player.uid;
+        const presenceText = window.getPresenceText?.(player.uid) || 'не в сети';
         playerItem.innerHTML = `
             <div class="player-item-header">
                 <div class="player-info">
                     <div class="player-name-row">${getAvatarMarkup(player.name, player.avatarUrl)} <b>${player.name}</b></div>
+                    <div class="player-presence-line">${presenceText}</div>
                     <div class="player-stats">
                         <button class="player-stat-pill player-stat-pill-win ${selectedFilter === 'wins' ? 'is-active' : ''}" type="button" data-result-filter="wins">Выиграно: ${player.wins}</button>
                         <button class="player-stat-pill player-stat-pill-loss ${selectedFilter === 'losses' ? 'is-active' : ''}" type="button" data-result-filter="losses">Проиграно: ${player.losses}</button>
@@ -1448,6 +1469,22 @@ window.renderPlayersLobby = function(container, players) {
 
         bindAvatarFallbackHandlers(playerItem);
         container.appendChild(playerItem);
+    });
+};
+
+window.refreshLobbyPresenceLabels = function() {
+    document.querySelectorAll('[data-opponent-uid]').forEach((node) => {
+        const uid = node.dataset.opponentUid;
+        const presenceNode = node.querySelector('.game-opponent-presence-line');
+        if (!uid || !presenceNode) return;
+        presenceNode.textContent = window.getPresenceText?.(uid) || 'не в сети';
+    });
+
+    document.querySelectorAll('[data-player-uid]').forEach((node) => {
+        const uid = node.dataset.playerUid;
+        const presenceNode = node.querySelector('.player-presence-line');
+        if (!uid || !presenceNode) return;
+        presenceNode.textContent = window.getPresenceText?.(uid) || 'не в сети';
     });
 };
 
@@ -1568,6 +1605,7 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     window.syncReviewStateFromCurrentGame();
     window.lastKnownGameState = 'active';
     window.updateUI({ gameState: 'active', mode: 'bot' });
+    window.refreshPresenceUI?.();
 
     window.botEngine = window.createBotEngine ? window.createBotEngine(normalizedLevel) : null;
 
@@ -1621,6 +1659,7 @@ window.initGame = async function(roomId) {
         
         window.setupGameControls(gameRef, roomId);
         window.currentRoomId = roomId;
+        window.refreshPresenceUI?.();
         window.markGameReady?.();
     } catch (error) {
         console.error('Ошибка инициализации партии:', error);

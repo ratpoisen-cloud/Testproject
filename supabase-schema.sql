@@ -33,6 +33,50 @@ create index if not exists games_last_move_time_idx on public.games (last_move_t
 create index if not exists games_created_at_idx on public.games (created_at desc);
 create index if not exists games_players_gin_idx on public.games using gin (players);
 
+create table if not exists public.user_presence (
+  uid text primary key,
+  is_online boolean not null default false,
+  last_seen_at bigint not null default 0,
+  manual_status text,
+  manual_status_text text,
+  manual_status_expires_at bigint,
+  updated_at_ms bigint not null default 0
+);
+
+create index if not exists user_presence_last_seen_idx on public.user_presence (last_seen_at desc);
+create index if not exists user_presence_updated_idx on public.user_presence (updated_at_ms desc);
+
+alter table public.user_presence enable row level security;
+
+drop policy if exists "presence_select_for_authenticated" on public.user_presence;
+create policy "presence_select_for_authenticated"
+on public.user_presence
+for select
+to authenticated
+using (true);
+
+drop policy if exists "presence_insert_own" on public.user_presence;
+create policy "presence_insert_own"
+on public.user_presence
+for insert
+to authenticated
+with check (uid = auth.uid()::text);
+
+drop policy if exists "presence_update_own" on public.user_presence;
+create policy "presence_update_own"
+on public.user_presence
+for update
+to authenticated
+using (uid = auth.uid()::text)
+with check (uid = auth.uid()::text);
+
+drop policy if exists "presence_delete_own" on public.user_presence;
+create policy "presence_delete_own"
+on public.user_presence
+for delete
+to authenticated
+using (uid = auth.uid()::text);
+
 create or replace function public.set_games_updated_at()
 returns trigger
 language plpgsql
@@ -113,6 +157,19 @@ begin
       and tablename = 'games'
   ) then
     alter publication supabase_realtime add table public.games;
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'user_presence'
+  ) then
+    alter publication supabase_realtime add table public.user_presence;
   end if;
 end $$;
 

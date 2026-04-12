@@ -264,6 +264,16 @@
                                 </div>
 
                                 <div class="status-actions">
+                                    <button id="presence-status-trigger" class="board-settings-icon-btn" type="button" aria-label="Мой статус" title="Мой статус">
+                                        ●
+                                    </button>
+                                    <div id="presence-status-menu" class="quick-phrases-menu system-menu hidden" role="menu" aria-label="Статус присутствия">
+                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="away_5">Отошёл на 5 минут</button>
+                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="back_10">Вернусь через 10 минут</button>
+                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="working">Работаю</button>
+                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="dnd">Не беспокоить</button>
+                                        <button class="user-menu-item presence-status-item" type="button" role="menuitem" data-presence-status="reset">Сбросить статус</button>
+                                    </div>
                                     <button id="quick-phrases-toggle" class="board-settings-icon-btn" type="button" aria-label="Быстрые фразы" title="Быстрые фразы">
                                         ⚡
                                     </button>
@@ -419,6 +429,7 @@
     <script src="js/utils.js"></script>
     <script src="js/themes.js"></script>
     <script src="js/firebase.js"></script>
+    <script src="js/presence.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/board-ui.js"></script>
     <script src="js/bot-engine.js"></script>
