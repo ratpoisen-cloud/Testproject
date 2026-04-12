@@ -311,10 +311,17 @@
         const trigger = document.getElementById('presence-status-trigger');
         if (trigger) {
             const isAvailable = Boolean(window.currentUser && !window.isBotMode && window.playerColor);
-            const text = window.getCurrentPresenceStatusText();
+            const effective = window.getEffectivePresence?.(activeUserId) || { text: 'не в сети', tone: 'offline' };
+            const text = effective.text || window.getCurrentPresenceStatusText();
+            const indicatorVariant = typeof window.resolvePresenceIndicatorVariant === 'function'
+                ? window.resolvePresenceIndicatorVariant(effective)
+                : 'offline';
             trigger.disabled = !isAvailable;
             trigger.title = isAvailable ? `Мой статус: ${text}` : 'Статус недоступен';
             trigger.setAttribute('aria-label', isAvailable ? `Мой статус: ${text}` : 'Статус недоступен');
+            if (typeof window.applyStatusIndicatorClass === 'function') {
+                window.applyStatusIndicatorClass(trigger, isAvailable ? indicatorVariant : 'offline');
+            }
         }
 
         if (window.lastGameUiSnapshot) {
