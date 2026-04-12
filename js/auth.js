@@ -18,6 +18,7 @@ window.setupAuth = function() {
     const avatarFileInput = document.getElementById('avatar-file-input');
     const AVATAR_BUCKET = 'avatars';
     const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024;
+    const USER_MENU_VIEWPORT_PADDING = 8;
     let isAvatarUploading = false;
     let hasResolvedInitialAuthState = false;
 
@@ -192,14 +193,54 @@ window.setupAuth = function() {
 
     const closeUserMenu = () => {
         userMenu?.classList.add('hidden');
+        if (userMenu) {
+            userMenu.style.transform = '';
+            userMenu.style.width = '';
+            userMenu.style.maxWidth = '';
+        }
         userMenuTrigger?.setAttribute('aria-expanded', 'false');
     };
     window.closeUserMenu = closeUserMenu;
+
+    const positionUserMenu = () => {
+        if (!userMenu || userMenu.classList.contains('hidden')) return;
+
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        const maxMenuWidth = Math.max(0, viewportWidth - USER_MENU_VIEWPORT_PADDING * 2);
+
+        userMenu.style.transform = '';
+        userMenu.style.width = '';
+        userMenu.style.maxWidth = `${maxMenuWidth}px`;
+
+        const naturalRect = userMenu.getBoundingClientRect();
+        if (naturalRect.width > maxMenuWidth) {
+            userMenu.style.width = `${maxMenuWidth}px`;
+        }
+
+        const rect = userMenu.getBoundingClientRect();
+        let shiftX = 0;
+        const minLeft = USER_MENU_VIEWPORT_PADDING;
+        const maxRight = viewportWidth - USER_MENU_VIEWPORT_PADDING;
+
+        if (rect.left < minLeft) {
+            shiftX += minLeft - rect.left;
+        }
+        if (rect.right > maxRight) {
+            shiftX -= rect.right - maxRight;
+        }
+
+        if (shiftX !== 0) {
+            userMenu.style.transform = `translateX(${Math.round(shiftX)}px)`;
+        }
+    };
 
     const toggleUserMenu = () => {
         if (!userMenu) return;
         document.getElementById('quick-phrases-menu')?.classList.add('hidden');
         userMenu.classList.toggle('hidden');
+        if (!userMenu.classList.contains('hidden')) {
+            positionUserMenu();
+        }
         userMenuTrigger?.setAttribute('aria-expanded', String(!userMenu.classList.contains('hidden')));
     };
 
@@ -227,6 +268,8 @@ window.setupAuth = function() {
             closeUserMenu();
         }
     });
+
+    window.addEventListener('resize', positionUserMenu);
 
     userAvatarBtn?.addEventListener('click', () => {
         if (isAvatarUploading) return;
