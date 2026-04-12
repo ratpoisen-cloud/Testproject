@@ -361,6 +361,14 @@ body[data-ui-theme] .brand-wordmark-asset-dark {
     margin-top: 2px;
 }
 
+.bot-games-toolbar .btn {
+    white-space: nowrap;
+}
+
+#bot-games-new-btn {
+    margin-right: 4px;
+}
+
 #finished-games-list {
     margin-top: 4px;
 }

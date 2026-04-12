@@ -11,6 +11,9 @@ window.updateUI = function(data) {
     window.updateMoveHistory();
     window.updateFinishedGameActions(data);
     window.updateGameModal(data);
+    if (window.isBotMode && data.gameState === 'game_over') {
+        window.persistFinishedBotGame?.(data);
+    }
 };
 
 // Обновление индикатора хода

@@ -128,9 +128,9 @@
                         <span class="hub-tile-icon" aria-hidden="true">👥</span>
                         <span class="hub-tile-title">Игроки</span>
                     </button>
-                    <button id="hub-play-bot" class="hub-tile hub-tile-secondary" type="button">
+                    <button id="hub-open-bot-games" class="hub-tile hub-tile-secondary" type="button">
                         <span class="hub-tile-icon" aria-hidden="true">🤖</span>
-                        <span class="hub-tile-title">Играть с ботом</span>
+                        <span class="hub-tile-title">Игры с ботом</span>
                     </button>
                 </div>
             </div>
@@ -161,6 +161,24 @@
                     </div>
                 </div>
                 <div id="players-list" class="games-grid">Загрузка игроков...</div>
+            </div>
+
+            <div id="lobby-view-bot-games" class="lobby-view hidden">
+                <div class="lobby-header">
+                    <button class="btn btn-outline btn-sm lobby-back-btn" type="button" data-lobby-back>← В лобби</button>
+                    <div class="lobby-heading">
+                        <h2 class="section-title section-title-tight">Игры с ботом</h2>
+                        <p class="lobby-subtitle">Локальная история завершённых партий</p>
+                    </div>
+                </div>
+                <div class="finished-games-block bot-games-toolbar">
+                    <button id="bot-games-new-btn" class="btn btn-primary btn-sm lobby-utility-btn" type="button">Новая игра с ботом</button>
+                    <button id="bot-games-filter-all" class="btn btn-outline btn-sm lobby-utility-btn lobby-games-toggle-btn is-active" type="button">Все</button>
+                    <button id="bot-games-filter-easy" class="btn btn-outline btn-sm lobby-utility-btn lobby-games-toggle-btn" type="button">Лёгкий</button>
+                    <button id="bot-games-filter-medium" class="btn btn-outline btn-sm lobby-utility-btn lobby-games-toggle-btn" type="button">Средний</button>
+                    <button id="bot-games-filter-hard" class="btn btn-outline btn-sm lobby-utility-btn lobby-games-toggle-btn" type="button">Сильный</button>
+                </div>
+                <div id="bot-games-list" class="games-grid">Загрузка истории...</div>
             </div>
 
             <button id="create-game-btn" class="hidden" type="button" aria-hidden="true" tabindex="-1">Создать игру</button>
