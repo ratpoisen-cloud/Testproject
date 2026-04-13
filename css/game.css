@@ -258,7 +258,7 @@
     z-index: 220;
 }
 
-.turn-status--quick-phrase {
+.turn-status.turn-status--quick-phrase {
     overflow: hidden;
     border-radius: calc(var(--btn-radius) + 1px);
     background: #e8e8d8;
