@@ -261,12 +261,8 @@
 .turn-status--quick-phrase {
     overflow: hidden;
     border-radius: calc(var(--btn-radius) + 1px);
-    background: linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--surface-elevated) 52%, #fffdf7 48%),
-        color-mix(in srgb, var(--accent-soft) 42%, #fff8ec 58%)
-    );
-    border-color: color-mix(in srgb, var(--accent) 34%, #eadfc7);
+    background: #e8e8d8;
+    border-color: #e8e8d8;
     box-shadow:
         inset 0 1px 0 color-mix(in srgb, #ffffff 88%, transparent),
         inset 0 -1px 0 color-mix(in srgb, #f3e6cd 48%, transparent),
@@ -274,7 +270,7 @@
         0 5px 12px color-mix(in srgb, var(--accent) 8%, transparent),
         0 0 14px color-mix(in srgb, #fff2d8 44%, transparent);
     opacity: 1;
-    color: color-mix(in srgb, var(--text) 94%, #171309);
+    color: #1f1f1a;
 }
 
 .game-status-header--quick-phrase {
@@ -322,8 +318,8 @@
     text-align: center;
     font-weight: 680;
     letter-spacing: 0.006em;
-    color: color-mix(in srgb, var(--text) 96%, #151007);
-    text-shadow: 0 1px 0 color-mix(in srgb, #fffef8 72%, transparent);
+    color: #1f1f1a;
+    text-shadow: none;
 }
 
 @keyframes centerQuickPhraseIn {
