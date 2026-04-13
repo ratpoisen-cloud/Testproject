@@ -258,7 +258,7 @@
     z-index: 220;
 }
 
-.turn-status--quick-phrase {
+.turn-status.turn-status--quick-phrase {
     overflow: hidden;
     border-radius: calc(var(--btn-radius) + 1px);
     background: #e8e8d8;
@@ -346,11 +346,11 @@
 
 @keyframes centerQuickPhrasePulse {
     0%, 100% {
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, #f6e6c8 38%, transparent);
+        box-shadow: none;
         filter: brightness(1);
     }
     50% {
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, #f1d8a8 42%, transparent);
+        box-shadow: none;
         filter: brightness(1.025);
     }
 }
