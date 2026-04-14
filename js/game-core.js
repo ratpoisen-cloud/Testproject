@@ -839,7 +839,7 @@ window.renderBotGamesLobby = function() {
 
     container.innerHTML = '';
     if (!filtered.length) {
-        container.innerHTML = '<div class="empty-lobby">История игр с ботом пока пуста</div>';
+        container.innerHTML = '<div class="empty-lobby">История игр с Ичи пока пуста</div>';
         return;
     }
 
