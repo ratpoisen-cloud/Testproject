@@ -66,6 +66,7 @@ window.updateUI = function(data) {
     window.updateMoveHistory();
     window.updateFinishedGameActions(data);
     window.updateGameModal(data);
+    window.applyGameEndBoardEffects?.(window.game?.fen?.());
     if (window.isBotMode && data.gameState === 'game_over') {
         window.persistFinishedBotGame?.(data);
     }
@@ -161,7 +162,8 @@ window.updateTurnIndicator = function(isMyTurn) {
         return;
     }
 
-    if (window.game.game_over()) {
+    const isFinishedGame = window.isGameFinished ? window.isGameFinished(window.lastGameUiSnapshot) : window.game.game_over();
+    if (isFinishedGame) {
         const summary = window.getGameOverSummary?.(window.game, window.lastGameUiSnapshot) || {};
         const myColor = window.playerColor === 'w' || window.playerColor === 'b' ? window.playerColor : null;
         const isWinner = Boolean(myColor && summary.winnerColor === myColor);

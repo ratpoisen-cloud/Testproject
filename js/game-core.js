@@ -51,6 +51,18 @@ window.isGameFinished = function(gameData = null) {
     );
 };
 
+window.applyImmediateGameOverState = function(partialData = {}) {
+    const nextSnapshot = {
+        ...(window.lastGameUiSnapshot || {}),
+        ...partialData,
+        gameState: 'game_over'
+    };
+
+    window.lastKnownGameState = 'game_over';
+    window.updateUI?.(nextSnapshot);
+    window.applyGameEndBoardEffects?.(window.game?.fen?.());
+};
+
 window.canUseBoardReactions = function(gameData = null) {
     if (!window.currentRoomId || !window.playerColor || !window.game) return false;
     if (!window.isGameFinished(gameData)) return true;
@@ -1990,11 +2002,16 @@ window.acceptDraw = async function(gameRef, roomId) {
         gameState: 'game_over',
         message: 'Ничья по соглашению'
     });
-    const updateData = { 
-        gameState: 'game_over', 
+    const updateData = {
+        gameState: 'game_over',
         message: metadata.message,
-        pgn: window.game.pgn()
+        pgn: window.game.pgn(),
+        drawRequest: null
     };
+    window.applyImmediateGameOverState({
+        ...updateData,
+        players
+    });
     await window.updateGame(gameRef, updateData);
     hideDrawRequestBox();
     window.pendingDraw = null;
