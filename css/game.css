@@ -456,7 +456,7 @@
 .piece-game-over-loser {
     transform: rotate(90deg);
     transform-origin: center center;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
     filter: saturate(0.82);
 }
 
@@ -470,6 +470,21 @@
     line-height: 1;
     pointer-events: none;
     text-shadow: 0 3px 7px rgba(0, 0, 0, 0.6);
+}
+
+.king-game-over-marker--animate {
+    animation: kingGameOverMarkerIn 0.22s ease-out;
+}
+
+@keyframes kingGameOverMarkerIn {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -70%) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -82%) scale(1);
+    }
 }
 
 .board-reactions-layer {

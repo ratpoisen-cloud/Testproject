@@ -746,7 +746,7 @@ window.appendKingMarker = function(square, emoji, markerClass) {
     if (squareNode.querySelector(`.king-game-over-marker.${markerClass}`)) return;
 
     const marker = document.createElement('span');
-    marker.className = `king-game-over-marker ${markerClass}`;
+    marker.className = `king-game-over-marker king-game-over-marker--animate ${markerClass}`;
     marker.textContent = emoji;
     marker.setAttribute('aria-hidden', 'true');
     squareNode.appendChild(marker);
@@ -754,10 +754,17 @@ window.appendKingMarker = function(square, emoji, markerClass) {
 
 window.applyGameEndBoardEffects = function(fen) {
     window.clearGameEndBoardEffects();
-    if (!window.game || window.reviewMode) return;
+    if (!window.game) return;
 
     const summary = window.getGameOverSummary?.(window.game, window.lastGameUiSnapshot);
     if (!summary?.isFinished) return;
+
+    if (window.reviewMode) {
+        const maxPly = window.reviewGame?.history?.().length ?? window.game.history().length;
+        const reviewIndex = Number.isInteger(window.reviewPlyIndex) ? window.reviewPlyIndex : maxPly;
+        const isAtFinalReviewPly = Math.max(0, Math.min(reviewIndex, maxPly)) >= maxPly;
+        if (!isAtFinalReviewPly) return;
+    }
 
     const boardState = new Chess(fen || window.game.fen()).board();
     const kingSquares = { w: null, b: null };
