@@ -58,7 +58,8 @@ window.updateUI = function(data) {
     if (!data) return;
     window.lastGameUiSnapshot = data;
     
-    const isMyTurn = window.playerColor && (window.playerColor === window.game.turn());
+    const currentTurn = window.game?.turn?.();
+    const isMyTurn = Boolean(window.playerColor && currentTurn && window.playerColor === currentTurn);
     
     window.updateTurnIndicator(isMyTurn);
     window.updateOpponentHeader(data);
@@ -154,6 +155,12 @@ window.updateTurnIndicator = function(isMyTurn) {
     window.__centerQuickPhraseRenderState = null;
     clearCenterQuickPhraseView();
     
+    if (!window.game || typeof window.game.game_over !== 'function') {
+        turnStatus.className = 'turn-status opponent-turn';
+        turnText.innerText = 'Загрузка партии...';
+        return;
+    }
+
     if (window.game.game_over()) {
         turnStatus.className = 'turn-status opponent-turn';
         turnText.innerText = 'Игра окончена';
@@ -400,10 +407,6 @@ window.updateMoveHistory = function() {
                 moveListDiv.scrollTop = moveListDiv.scrollHeight;
             }
         }
-    }
-
-    if (history.length === 0) {
-        moveListDiv.replaceChildren(fragment);
     }
 
     window.lastRenderedMoveHistoryLength = history.length;
