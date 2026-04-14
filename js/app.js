@@ -164,10 +164,18 @@ window.addEventListener('DOMContentLoaded', () => {
     window.bindTopBrandHomeAction?.();
 
     // Ждем авторизации для инициализации кнопки очистки
+    let checkAttempts = 0;
+    const maxCheckAttempts = 120; // 60 секунд при интервале 500ms
     const checkUser = setInterval(() => {
+        checkAttempts += 1;
         if (window.currentUser) {
             clearInterval(checkUser);
             window.initClearFinishedButton(window.currentUser.uid);
+            return;
+        }
+
+        if (checkAttempts >= maxCheckAttempts) {
+            clearInterval(checkUser);
         }
     }, 500);
 
