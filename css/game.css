@@ -233,6 +233,31 @@
     opacity: 0.85;
 }
 
+.turn-status.turn-status--game-over {
+    opacity: 1;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.turn-status--result-checkmate {
+    background: color-mix(in srgb, var(--danger) 24%, var(--surface-elevated));
+    border-color: color-mix(in srgb, var(--danger) 62%, var(--border));
+    color: color-mix(in srgb, #ffffff 90%, var(--text));
+    box-shadow: 0 0 16px color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+.turn-status--result-resign {
+    background: color-mix(in srgb, var(--accent) 18%, var(--surface-elevated));
+    border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+}
+
+.turn-status--result-stalemate,
+.turn-status--result-draw,
+.turn-status--result-unknown {
+    background: color-mix(in srgb, var(--surface-elevated) 92%, var(--accent-soft));
+    border-color: color-mix(in srgb, var(--border) 88%, var(--accent));
+}
+
 .status-actions {
     position: relative;
     width: var(--btn-height);
@@ -422,6 +447,29 @@
     position: relative;
     box-shadow: inset 0 0 0 4px var(--board-check-outline), 0 0 16px var(--board-check-glow) !important;
     border-radius: 4px;
+}
+
+#myBoard .square-55d63 {
+    overflow: visible;
+}
+
+.piece-game-over-loser {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    transition: transform 0.2s ease;
+    filter: saturate(0.82);
+}
+
+.king-game-over-marker {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -82%);
+    z-index: 180;
+    font-size: clamp(16px, 2.3vw, 24px);
+    line-height: 1;
+    pointer-events: none;
+    text-shadow: 0 3px 7px rgba(0, 0, 0, 0.6);
 }
 
 .board-reactions-layer {

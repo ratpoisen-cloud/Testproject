@@ -162,8 +162,29 @@ window.updateTurnIndicator = function(isMyTurn) {
     }
 
     if (window.game.game_over()) {
-        turnStatus.className = 'turn-status opponent-turn';
-        turnText.innerText = 'Игра окончена';
+        const summary = window.getGameOverSummary?.(window.game, window.lastGameUiSnapshot) || {};
+        const myColor = window.playerColor === 'w' || window.playerColor === 'b' ? window.playerColor : null;
+        const isWinner = Boolean(myColor && summary.winnerColor === myColor);
+        const isLoser = Boolean(myColor && summary.loserColor === myColor);
+
+        let resultText = 'Игра окончена';
+        if (summary.termination === 'checkmate') {
+            if (isWinner) resultText = 'Победа';
+            else if (isLoser) resultText = 'Мат';
+            else resultText = 'Мат';
+        } else if (summary.termination === 'resign') {
+            if (isWinner) resultText = 'Победа';
+            else if (isLoser) resultText = 'Сдача';
+            else resultText = 'Сдача';
+        } else if (summary.termination === 'stalemate') {
+            resultText = 'Пат';
+        } else if (summary.termination === 'draw') {
+            resultText = 'Ничья';
+        }
+
+        turnStatus.className = 'turn-status turn-status--game-over';
+        turnStatus.classList.add(`turn-status--result-${summary.termination || 'unknown'}`);
+        turnText.innerText = resultText;
         return;
     }
     
@@ -501,21 +522,10 @@ window.updateGameModal = function(data) {
 
     const currentState = data?.gameState || null;
     const previousState = window.lastKnownGameState;
-    const isFirstStateSync = previousState === null;
-    const isRealGameOverTransition =
-        !isFirstStateSync &&
-        previousState === 'active' &&
-        currentState === 'game_over';
-    const isLocalBotGameOver = Boolean(window.isBotMode && currentState === 'game_over');
-
-    if ((isRealGameOverTransition || isLocalBotGameOver) && modal.classList.contains('hidden')) {
+    if (currentState === 'game_over' && !modal.classList.contains('hidden')) {
         const metadata = window.applyGameHeaders(window.game, data);
-        modal.classList.remove('hidden');
         document.getElementById('modal-title').innerHTML = '🏆 Игра окончена';
         document.getElementById('modal-desc').innerHTML = metadata.message;
-        document.getElementById('confirm-move-box').classList.add('hidden');
-        window.pendingMove = null;
-        window.clearSelection();
     }
 
     window.lastKnownGameState = currentState;

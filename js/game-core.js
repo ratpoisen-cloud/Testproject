@@ -444,6 +444,57 @@ window.getFinishedGameTerminationLabel = function(gameData) {
     return '';
 };
 
+window.getGameOverSummary = function(game = window.game, gameData = window.lastGameUiSnapshot || null) {
+    const fallback = {
+        isFinished: false,
+        termination: 'unknown',
+        resultCode: '*',
+        winnerColor: null,
+        loserColor: null
+    };
+
+    const isFinished = Boolean(
+        game?.game_over?.() ||
+        gameData?.gameState === 'game_over' ||
+        window.lastKnownGameState === 'game_over'
+    );
+    if (!isFinished) return fallback;
+
+    const message = String(gameData?.message || '').toLowerCase();
+    const resignColor = gameData?.resign === 'w' || gameData?.resign === 'b'
+        ? gameData.resign
+        : null;
+    const resultCode = window.resolveGameResult?.(game, gameData) || '*';
+    const loserByResult = resultCode === '1-0' ? 'b' : (resultCode === '0-1' ? 'w' : null);
+
+    let termination = 'unknown';
+    if (resignColor) {
+        termination = 'resign';
+    } else if (game?.in_checkmate?.() || message.includes('мат')) {
+        termination = 'checkmate';
+    } else if (game?.in_stalemate?.() || message.includes('пат')) {
+        termination = 'stalemate';
+    } else if (
+        resultCode === '1/2-1/2' ||
+        game?.in_draw?.() ||
+        message.includes('ничья') ||
+        message.includes('соглаш')
+    ) {
+        termination = 'draw';
+    }
+
+    const loserColor = resignColor || (termination === 'checkmate' ? game?.turn?.() : loserByResult);
+    const winnerColor = loserColor === 'w' ? 'b' : (loserColor === 'b' ? 'w' : null);
+
+    return {
+        isFinished: true,
+        termination,
+        resultCode,
+        winnerColor,
+        loserColor
+    };
+};
+
 window.getRequestedJoinColor = function() {
     const colorParam = new URLSearchParams(window.location.search).get('color');
     if (colorParam === 'w' || colorParam === 'b') return colorParam;
