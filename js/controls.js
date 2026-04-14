@@ -241,22 +241,23 @@ window.setupGameControls = function(gameRef, roomId) {
                 });
 
                 if (isBotMode()) {
-                    window.updateGameModal({
+                    window.applyImmediateGameOverState?.({
                         gameState: 'game_over',
                         message: metadata.message,
-                        resign: window.playerColor
+                        resign: window.playerColor,
+                        mode: 'bot'
                     });
-                    window.lastKnownGameState = 'game_over';
-                    window.updateUI({ gameState: 'game_over', message: metadata.message, mode: 'bot' });
                     return;
                 }
 
-                window.updateGame(gameRef, {
+                const updateData = {
                     gameState: 'game_over',
                     message: metadata.message,
                     pgn: window.game.pgn(),
                     resign: window.playerColor
-                });
+                };
+                window.applyImmediateGameOverState?.(updateData);
+                await window.updateGame(gameRef, updateData);
             }
         });
 
