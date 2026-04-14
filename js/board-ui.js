@@ -721,8 +721,11 @@ window.buildMovePreview = function(from, to, promotion = 'q') {
 };
 
 // Полная очистка подсветки
+window.BOARD_SQUARE_SELECTOR = '#myBoard .square-55d63';
+window.BOARD_PIECE_SELECTOR = '#myBoard .piece-417db';
+
 window.removeHighlights = function() {
-    $('#myBoard .square-55d63').removeClass('highlight-selected highlight-drag-source highlight-possible highlight-capture');
+    $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-selected highlight-drag-source highlight-possible highlight-capture');
 };
 
 // Подсветка клетки
@@ -731,11 +734,11 @@ window.highlightSquare = function(square, type) {
 };
 
 window.removeCheckHighlight = function() {
-    $('#myBoard .square-55d63').removeClass('highlight-check');
+    $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-check');
 };
 
 window.clearGameEndBoardEffects = function() {
-    $('#myBoard .piece-417db').removeClass('piece-game-over-loser');
+    $(window.BOARD_PIECE_SELECTOR).removeClass('piece-game-over-loser');
     document.querySelectorAll('#myBoard .king-game-over-marker').forEach((node) => node.remove());
 };
 
