@@ -371,8 +371,7 @@ window.setupBoardReactionUI = function() {
 
 window.openBoardReactionPicker = function(square) {
     if (!square) return;
-    if (!window.currentRoomId || !window.playerColor) return;
-    if (!window.game || window.game.game_over()) return;
+    if (!window.canUseBoardReactions?.()) return;
 
     const picker = document.getElementById('board-reaction-picker');
     const boardWrapper = document.querySelector('.board-wrapper');
