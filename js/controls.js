@@ -65,6 +65,11 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const isBotMode = () => Boolean(window.isBotMode);
 
+    const resolveMoveSoundEvent = (moveResult) => {
+        if (!moveResult) return null;
+        return moveResult.captured ? 'capture' : 'move';
+    };
+
     window.requestBotMove = async function() {
         if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
         if (window.game.turn() !== window.botColor) return;
@@ -84,6 +89,11 @@ window.setupGameControls = function(gameRef, roomId) {
             });
 
             if (!botMove) return;
+
+            const botMoveSoundEvent = resolveMoveSoundEvent(botMove);
+            if (botMoveSoundEvent) {
+                window.SoundManager?.play?.(botMoveSoundEvent);
+            }
 
             window.updateBoardPosition(window.game.fen(), true);
             window.highlightLastMove?.(botMove);
@@ -148,6 +158,11 @@ window.setupGameControls = function(gameRef, roomId) {
 
             if (window.highlightLastMove) {
                 window.highlightLastMove(moveResult);
+            }
+
+            const playerMoveSoundEvent = resolveMoveSoundEvent(moveResult);
+            if (playerMoveSoundEvent) {
+                window.SoundManager?.play?.(playerMoveSoundEvent);
             }
 
             window.updateBoardPosition(window.game.fen(), true);

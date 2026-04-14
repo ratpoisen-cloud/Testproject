@@ -480,6 +480,7 @@ window.handleDragStart = function(source, piece, position, orientation) {
     
     window.dragSourceSquare = source;
     window.showPossibleMoves(source);
+    window.SoundManager?.play?.('piece_select');
     
     return true;
 };
@@ -640,6 +641,7 @@ window.selectSquare = function(square) {
     window.clearSelection();
     window.selectedSquare = square;
     window.highlightSquare(square, 'highlight-selected');
+    window.SoundManager?.play?.('piece_select');
     
     const moves = window.game.moves({ square: square, verbose: true });
     moves.forEach(move => {
