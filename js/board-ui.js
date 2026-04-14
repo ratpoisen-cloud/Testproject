@@ -701,6 +701,8 @@ window.reapplyPersistentBoardHighlights = function(forcedFen = null) {
         document.querySelectorAll('.last-move')
             .forEach(el => el.classList.remove('last-move'));
     }
+
+    window.applyGameEndBoardEffects?.(effectiveFen);
 };
 
 // Создание безопасного предпросмотра хода без изменения основной партии
@@ -731,6 +733,73 @@ window.highlightSquare = function(square, type) {
 
 window.removeCheckHighlight = function() {
     $('#myBoard .square-55d63').removeClass('highlight-check');
+};
+
+window.clearGameEndBoardEffects = function() {
+    $('#myBoard .piece-417db').removeClass('piece-game-over-loser');
+    document.querySelectorAll('#myBoard .king-game-over-marker').forEach((node) => node.remove());
+};
+
+window.appendKingMarker = function(square, emoji, markerClass) {
+    if (!square || !emoji) return;
+    const squareNode = document.querySelector(`#myBoard .square-${square}`);
+    if (!squareNode) return;
+    if (squareNode.querySelector(`.king-game-over-marker.${markerClass}`)) return;
+
+    const marker = document.createElement('span');
+    marker.className = `king-game-over-marker ${markerClass}`;
+    marker.textContent = emoji;
+    marker.setAttribute('aria-hidden', 'true');
+    squareNode.appendChild(marker);
+};
+
+window.applyGameEndBoardEffects = function(fen) {
+    window.clearGameEndBoardEffects();
+    if (!window.game || window.reviewMode) return;
+
+    const summary = window.getGameOverSummary?.(window.game, window.lastGameUiSnapshot);
+    if (!summary?.isFinished) return;
+
+    const boardState = new Chess(fen || window.game.fen()).board();
+    const kingSquares = { w: null, b: null };
+
+    for (let rank = 0; rank < boardState.length; rank++) {
+        for (let file = 0; file < boardState[rank].length; file++) {
+            const piece = boardState[rank][file];
+            if (!piece || piece.type !== 'k') continue;
+            const fileChar = String.fromCharCode(97 + file);
+            const rankNumber = 8 - rank;
+            kingSquares[piece.color] = `${fileChar}${rankNumber}`;
+        }
+    }
+
+    const applyLoserVisual = (color) => {
+        const square = kingSquares[color];
+        if (!square) return;
+        document.querySelector(`#myBoard .square-${square} .piece-417db`)?.classList.add('piece-game-over-loser');
+    };
+
+    if (summary.termination === 'checkmate') {
+        const loserSquare = kingSquares[summary.loserColor];
+        if (loserSquare) {
+            window.highlightSquare(loserSquare, 'highlight-check');
+        }
+        applyLoserVisual(summary.loserColor);
+        window.appendKingMarker(loserSquare, '☠️', 'king-game-over-marker-death');
+        return;
+    }
+
+    if (summary.termination === 'resign') {
+        const loserSquare = kingSquares[summary.loserColor];
+        applyLoserVisual(summary.loserColor);
+        window.appendKingMarker(loserSquare, '🏳️', 'king-game-over-marker-resign');
+        return;
+    }
+
+    if (summary.termination === 'stalemate' || summary.termination === 'draw') {
+        window.appendKingMarker(kingSquares.w, '🤝', 'king-game-over-marker-draw');
+        window.appendKingMarker(kingSquares.b, '🤝', 'king-game-over-marker-draw');
+    }
 };
 
 window.findCheckedKingSquare = function(fen) {
