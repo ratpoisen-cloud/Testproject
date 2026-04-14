@@ -41,6 +41,7 @@ window.botGamesLevelFilter = 'all';
 window.lastSavedBotGameSignature = '';
 window.isBotHistoryViewer = false;
 window.currentBotSessionId = null;
+window.isArchivedFinishedView = false;
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -48,6 +49,12 @@ window.isGameFinished = function(gameData = null) {
         gameData?.gameState === 'game_over' ||
         window.lastKnownGameState === 'game_over'
     );
+};
+
+window.canUseBoardReactions = function(gameData = null) {
+    if (!window.currentRoomId || !window.playerColor || !window.game) return false;
+    if (!window.isGameFinished(gameData)) return true;
+    return !window.isArchivedFinishedView;
 };
 
 window.getReactionCycleKey = function() {
@@ -209,7 +216,7 @@ window.getActiveReactionBySquare = function(square, reactions = window.activeRea
 };
 
 window.pushBoardReaction = async function(square, emoji) {
-    if (!window.currentRoomId || !window.playerColor) return false;
+    if (!window.canUseBoardReactions?.()) return false;
 
     const liveReactions = window.normalizeBoardReactions(window.activeReactions);
     const existingReaction = window.getActiveReactionBySquare(square, liveReactions);
@@ -783,6 +790,7 @@ window.openBotHistoryViewer = function(gameId) {
 
     initLocalGameState();
     window.isBotHistoryViewer = true;
+    window.isArchivedFinishedView = true;
     window.isBotMode = true;
     window.playerColor = entry.userColor === 'b' ? 'b' : 'w';
     window.botColor = window.playerColor === 'w' ? 'b' : 'w';
@@ -1715,6 +1723,7 @@ function initLocalGameState() {
     window.isBotThinking = false;
     window.isBotHistoryViewer = false;
     window.currentBotSessionId = null;
+    window.isArchivedFinishedView = false;
     window.pendingDraw = null;
     window.pendingTakeback = null;
     window.playerColor = null;
@@ -1866,7 +1875,9 @@ window.initGame = async function(roomId) {
         
         const p = (await get(playersRef)).val() || {};
         const gameSnapshot = await get(gameRef);
-        if (isDirectInvitePendingForRoom(roomId, gameSnapshot.val(), uid)) {
+        const initialGameData = gameSnapshot.val() || null;
+        window.isArchivedFinishedView = initialGameData?.gameState === 'game_over';
+        if (isDirectInvitePendingForRoom(roomId, initialGameData, uid)) {
             markDirectInviteAsHandled(roomId);
         }
         window.playerColor = resolveAssignedColor(p, uid);
