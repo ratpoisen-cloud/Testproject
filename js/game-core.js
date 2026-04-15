@@ -43,6 +43,10 @@ window.lastSavedBotGameSignature = '';
 window.isBotHistoryViewer = false;
 window.currentBotSessionId = null;
 window.isArchivedFinishedView = false;
+window.gameSoundFlags = {
+    rookVoicePlayed: false,
+    queenVoicePlayed: false
+};
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -538,6 +542,82 @@ window.resolveMoveSoundEvent = function(moveResult) {
     return 'capture_default';
 };
 
+window.resetGameSoundFlags = function() {
+    window.gameSoundFlags = {
+        rookVoicePlayed: false,
+        queenVoicePlayed: false
+    };
+};
+
+window.resolveGameWinSoundEvent = function(gameInstance = window.game) {
+    if (!gameInstance?.game_over?.()) return null;
+    if (!gameInstance?.in_checkmate?.()) return null;
+
+    const loserColor = gameInstance.turn?.();
+    const winnerColor = loserColor === 'w' ? 'b' : (loserColor === 'b' ? 'w' : null);
+
+    if (winnerColor === 'w') return 'win_white';
+    if (winnerColor === 'b') return 'win_black';
+    return null;
+};
+
+window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
+    if (!moveResult || !window.game) return [];
+
+    const { allowVoiceLine = false } = options;
+    const events = [];
+    const isCheckmate = Boolean(window.game.in_checkmate?.());
+    const isCheck = !isCheckmate && Boolean(window.game.in_check?.());
+
+    if (moveResult.promotion) {
+        events.push('promotion');
+    }
+
+    if (isCheckmate) {
+        events.push('checkmate');
+        const winSoundEvent = window.resolveGameWinSoundEvent?.(window.game);
+        if (winSoundEvent) {
+            events.push(winSoundEvent);
+        }
+    } else if (isCheck) {
+        events.push('check');
+    }
+
+    if (allowVoiceLine && !isCheck && !isCheckmate) {
+        const movingPiece = String(moveResult.piece || '').toLowerCase();
+        if (movingPiece === 'r' && !window.gameSoundFlags?.rookVoicePlayed) {
+            events.push('rook_first_move_voice');
+            window.gameSoundFlags.rookVoicePlayed = true;
+        } else if (movingPiece === 'q' && !window.gameSoundFlags?.queenVoicePlayed) {
+            events.push('queen_first_move_voice');
+            window.gameSoundFlags.queenVoicePlayed = true;
+        }
+    }
+
+    return events;
+};
+
+window.resolveMoveSoundSequence = function(moveResult, options = {}) {
+    const primarySoundEvent = window.resolveMoveSoundEvent?.(moveResult);
+    const tailEvents = window.resolveMovePostSoundEvents?.(moveResult, options) || [];
+
+    return [primarySoundEvent, ...tailEvents].filter((eventName) => typeof eventName === 'string' && eventName);
+};
+
+window.playMoveSoundSequence = function(moveResult, options = {}) {
+    const queue = window.resolveMoveSoundSequence?.(moveResult, options) || [];
+    if (queue.length === 0) {
+        return Promise.resolve();
+    }
+
+    if (window.SoundManager?.playSequence) {
+        return window.SoundManager.playSequence(queue);
+    }
+
+    queue.forEach((eventName) => window.SoundManager?.play?.(eventName));
+    return Promise.resolve();
+};
+
 window.applyRemotePgnUpdate = function(pgn) {
     if (!window.game || !pgn) return false;
 
@@ -559,9 +639,8 @@ window.applyRemotePgnUpdate = function(pgn) {
 
     const history = window.game.history({ verbose: true });
     const lastMove = history[history.length - 1] || null;
-    const moveSoundEvent = window.resolveMoveSoundEvent?.(lastMove);
-    if (!isInitialRemoteSync && lastMove && moveSoundEvent) {
-        window.SoundManager?.play?.(moveSoundEvent);
+    if (!isInitialRemoteSync && lastMove) {
+        window.playMoveSoundSequence?.(lastMove, { allowVoiceLine: false });
     }
 
     window.syncReviewStateFromCurrentGame();
@@ -1776,6 +1855,7 @@ function initLocalGameState() {
     window.hasInitializedRemotePgnSync = false;
     window.lastKnownGameState = null;
     window.lastRenderedMoveHistoryLength = 0;
+    window.resetGameSoundFlags?.();
     window.syncReviewStateFromCurrentGame();
     window.activeReactions = [];
     window.reactionRateLimitState = { cycleKey: window.getReactionCycleKey(), count: 0 };
