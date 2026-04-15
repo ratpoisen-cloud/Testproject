@@ -20,6 +20,7 @@ window.reviewMode = false;
 window.reviewPlyIndex = null;
 window.reviewGame = null;
 window.lastRemotePgn = '';
+window.hasInitializedRemotePgnSync = false;
 window.lastKnownGameState = null;
 window.lastRenderedMoveHistoryLength = 0;
 window.activeReactions = [];
@@ -522,7 +523,16 @@ window.getRequestedJoinColor = function() {
 };
 
 window.applyRemotePgnUpdate = function(pgn) {
-    if (!window.game || !pgn || pgn === window.game.pgn()) return false;
+    if (!window.game || !pgn) return false;
+
+    const currentPgn = window.game.pgn();
+    const isInitialRemoteSync = !window.hasInitializedRemotePgnSync;
+    if (isInitialRemoteSync) {
+        window.hasInitializedRemotePgnSync = true;
+    }
+    const isNewPgnForClient = pgn !== currentPgn;
+    if (!isNewPgnForClient) return false;
+
     try {
         window.game.load_pgn(pgn);
     } catch (error) {
@@ -530,6 +540,14 @@ window.applyRemotePgnUpdate = function(pgn) {
         window.notify('Не удалось синхронизировать партию. Обновите страницу.', 'error', 3200);
         return false;
     }
+
+    const history = window.game.history({ verbose: true });
+    const lastMove = history[history.length - 1] || null;
+    const moveSoundEvent = lastMove?.captured ? 'capture' : 'move';
+    if (!isInitialRemoteSync && lastMove && moveSoundEvent) {
+        window.SoundManager?.play?.(moveSoundEvent);
+    }
+
     window.syncReviewStateFromCurrentGame();
 
     window.pendingMove = null;
@@ -541,7 +559,6 @@ window.applyRemotePgnUpdate = function(pgn) {
         window.goToReviewPly(window.reviewPlyIndex);
     } else {
         window.updateBoardPosition(window.game.fen(), true);
-        const history = window.game.history({ verbose: true });
         if (history.length > 0 && window.highlightLastMove) {
             window.highlightLastMove(history[history.length - 1]);
         }
@@ -1739,6 +1756,7 @@ function initLocalGameState() {
     window.pendingDraw = null;
     window.pendingTakeback = null;
     window.playerColor = null;
+    window.hasInitializedRemotePgnSync = false;
     window.lastKnownGameState = null;
     window.lastRenderedMoveHistoryLength = 0;
     window.syncReviewStateFromCurrentGame();
