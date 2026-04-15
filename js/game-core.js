@@ -522,6 +522,22 @@ window.getRequestedJoinColor = function() {
     return null;
 };
 
+window.resolveMoveSoundEvent = function(moveResult) {
+    if (!moveResult) return null;
+    if (!moveResult.captured) return 'move';
+
+    const movingPiece = String(moveResult.piece || '').toLowerCase();
+    if (movingPiece === 'p' || movingPiece === 'n' || movingPiece === 'k') {
+        return 'capture_default';
+    }
+
+    if (movingPiece === 'b' || movingPiece === 'r' || movingPiece === 'q') {
+        return 'capture_ranged';
+    }
+
+    return 'capture_default';
+};
+
 window.applyRemotePgnUpdate = function(pgn) {
     if (!window.game || !pgn) return false;
 
@@ -543,7 +559,7 @@ window.applyRemotePgnUpdate = function(pgn) {
 
     const history = window.game.history({ verbose: true });
     const lastMove = history[history.length - 1] || null;
-    const moveSoundEvent = lastMove?.captured ? 'capture' : 'move';
+    const moveSoundEvent = window.resolveMoveSoundEvent?.(lastMove);
     if (!isInitialRemoteSync && lastMove && moveSoundEvent) {
         window.SoundManager?.play?.(moveSoundEvent);
     }
@@ -1756,6 +1772,7 @@ function initLocalGameState() {
     window.pendingDraw = null;
     window.pendingTakeback = null;
     window.playerColor = null;
+    // Для каждой новой/переоткрытой партии первый remote PGN sync должен считаться initial (без звука).
     window.hasInitializedRemotePgnSync = false;
     window.lastKnownGameState = null;
     window.lastRenderedMoveHistoryLength = 0;
@@ -1898,6 +1915,7 @@ window.initGame = async function(roomId) {
         const requestedJoinColor = window.getRequestedJoinColor();
         const openMode = new URLSearchParams(window.location.search).get('view');
         
+        window.hasInitializedRemotePgnSync = false;
         initLocalGameState();
         window.shouldAutoEnterFinishedReview = openMode === 'finished';
         await ensureGameExists(gameRef, roomId);
