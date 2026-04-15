@@ -85,10 +85,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
             if (!botMove) return;
 
-            const botMoveSoundEvent = window.resolveMoveSoundEvent?.(botMove);
-            if (botMoveSoundEvent) {
-                window.SoundManager?.play?.(botMoveSoundEvent);
-            }
+            window.playMoveSoundSequence?.(botMove, { allowVoiceLine: false });
 
             window.updateBoardPosition(window.game.fen(), true);
             window.highlightLastMove?.(botMove);
@@ -155,10 +152,7 @@ window.setupGameControls = function(gameRef, roomId) {
                 window.highlightLastMove(moveResult);
             }
 
-            const playerMoveSoundEvent = window.resolveMoveSoundEvent?.(moveResult);
-            if (playerMoveSoundEvent) {
-                window.SoundManager?.play?.(playerMoveSoundEvent);
-            }
+            window.playMoveSoundSequence?.(moveResult, { allowVoiceLine: true });
 
             window.updateBoardPosition(window.game.fen(), true);
 

@@ -1,7 +1,7 @@
 // ==================== SOUND MANAGER ====================
 // Единый глобальный модуль звуков приложения.
-// Активные события: piece_select, move, capture_default, capture_ranged.
-// Зарезервированные события: castle, check, promotion, checkmate, game_start, game_end, enemy_move, your_turn.
+// Активные события: piece_select, move, capture_default, capture_ranged, promotion, check, checkmate, win_white, win_black, rook_first_move_voice, queen_first_move_voice.
+// Зарезервированные события: castle, game_start, game_end, enemy_move, your_turn.
 
 (function initSoundManager(global) {
     if (global.SoundManager) {
@@ -53,21 +53,61 @@
             cooldown: 0
         },
         check: {
-            src: null,
+            src: [
+                'assets/sounds/check-1.mp3',
+                'assets/sounds/check-2.mp3',
+                'assets/sounds/check-3.mp3'
+            ],
             volume: 1,
             category: 'gameplay',
             cooldown: 0
         },
         promotion: {
-            src: null,
+            src: [
+                'assets/sounds/promotion-1.mp3',
+                'assets/sounds/promotion-2.mp3'
+            ],
             volume: 1,
             category: 'gameplay',
             cooldown: 0
         },
         checkmate: {
-            src: null,
+            src: [
+                'assets/sounds/checkmate-1.mp3',
+                'assets/sounds/checkmate-2.mp3'
+            ],
             volume: 1,
             category: 'gameplay',
+            cooldown: 0
+        },
+        win_white: {
+            src: 'assets/sounds/win-white-1.mp3',
+            volume: 1,
+            category: 'gameplay',
+            cooldown: 0
+        },
+        win_black: {
+            src: 'assets/sounds/win-black-1.mp3',
+            volume: 1,
+            category: 'gameplay',
+            cooldown: 0
+        },
+        rook_first_move_voice: {
+            src: [
+                'assets/sounds/rook-first-move-1.mp3',
+                'assets/sounds/rook-first-move-2.mp3'
+            ],
+            volume: 1,
+            category: 'voice',
+            cooldown: 0
+        },
+        queen_first_move_voice: {
+            src: [
+                'assets/sounds/queen-first-move-1.mp3',
+                'assets/sounds/queen-first-move-2.mp3'
+            ],
+            volume: 1,
+            category: 'voice',
             cooldown: 0
         },
         game_start: {
@@ -149,6 +189,7 @@
         lastPlayedVariantIndex: {},
         lastPlayedAt: {},
         activeAudioNodes: new Set(),
+        sequenceQueue: Promise.resolve(),
 
         init() {
             if (this.initialized) {
@@ -239,18 +280,46 @@
             return Date.now() - lastPlayed < cooldownMs;
         },
 
-        play(eventName, options = {}) {
+        resolveSoundVariant(eventName) {
+            const soundVariants = this.sounds[eventName];
+            if (!Array.isArray(soundVariants) || soundVariants.length === 0) {
+                return null;
+            }
+
+            const availableVariants = soundVariants.filter((variant) => variant?.audio);
+            if (availableVariants.length === 0) {
+                return null;
+            }
+
+            const lastVariantIndex = this.lastPlayedVariantIndex[eventName];
+            const candidateVariants = availableVariants.length > 1
+                ? availableVariants.filter((variant) => variant !== soundVariants[lastVariantIndex])
+                : availableVariants;
+            const finalPool = candidateVariants.length > 0 ? candidateVariants : availableVariants;
+            const pickedVariant = finalPool[Math.floor(Math.random() * finalPool.length)];
+            const pickedVariantIndex = soundVariants.indexOf(pickedVariant);
+
+            return {
+                pickedVariant,
+                pickedVariantIndex
+            };
+        },
+
+        playInternal(eventName, options = {}, { waitForEnd = false } = {}) {
             if (!this.initialized) {
                 this.init();
             }
 
             if (!this.enabled || !eventName || this.isOnCooldown(eventName)) {
-                return;
+                return Promise.resolve(false);
             }
 
-            const soundVariants = this.sounds[eventName];
-            if (!Array.isArray(soundVariants) || soundVariants.length === 0) {
-                return;
+            const resolvedVariant = this.resolveSoundVariant(eventName);
+            if (!resolvedVariant?.pickedVariant?.audio) {
+                if (this.soundMeta[eventName]?.sources?.length) {
+                    console.warn(`[SoundManager] Нет доступных вариантов для "${eventName}"`);
+                }
+                return Promise.resolve(false);
             }
 
             const soundConfig = this.soundMeta[eventName] || { volume: 1 };
@@ -260,54 +329,111 @@
 
             const effectiveVolume = Math.max(0, Math.min(1, this.masterVolume * soundConfig.volume * runtimeVolume));
 
-            try {
-                const availableVariants = soundVariants.filter((variant) => variant?.audio);
-                if (availableVariants.length === 0) {
-                    return;
-                }
+            return new Promise((resolve) => {
+                try {
+                    const { pickedVariant, pickedVariantIndex } = resolvedVariant;
+                    const baseAudio = pickedVariant.audio;
+                    const audioToPlay = baseAudio.cloneNode(true);
+                    audioToPlay.volume = effectiveVolume;
+                    audioToPlay.dataset.eventName = eventName;
+                    audioToPlay.dataset.src = pickedVariant.src;
+                    this.lastPlayedAt[eventName] = Date.now();
+                    this.lastPlayedVariantIndex[eventName] = pickedVariantIndex;
+                    this.activeAudioNodes.add(audioToPlay);
 
-                const lastVariantIndex = this.lastPlayedVariantIndex[eventName];
-                const candidateVariants = availableVariants.length > 1
-                    ? availableVariants.filter((variant) => variant !== soundVariants[lastVariantIndex])
-                    : availableVariants;
-                const finalPool = candidateVariants.length > 0 ? candidateVariants : availableVariants;
-                const pickedVariant = finalPool[Math.floor(Math.random() * finalPool.length)];
-                const pickedVariantIndex = soundVariants.indexOf(pickedVariant);
-                const baseAudio = pickedVariant?.audio;
-                if (!baseAudio) {
-                    return;
-                }
+                    let settled = false;
+                    let failSafeTimer = null;
+                    const settle = (result = true) => {
+                        if (settled) return;
+                        settled = true;
+                        if (failSafeTimer) {
+                            clearTimeout(failSafeTimer);
+                            failSafeTimer = null;
+                        }
+                        this.activeAudioNodes.delete(audioToPlay);
+                        resolve(result);
+                    };
 
-                const audioToPlay = baseAudio.cloneNode(true);
-                audioToPlay.volume = effectiveVolume;
-                audioToPlay.dataset.eventName = eventName;
-                audioToPlay.dataset.src = pickedVariant.src;
-                this.lastPlayedAt[eventName] = Date.now();
-                this.lastPlayedVariantIndex[eventName] = pickedVariantIndex;
-                this.activeAudioNodes.add(audioToPlay);
+                    audioToPlay.addEventListener('ended', () => settle(true), { once: true });
+                    audioToPlay.addEventListener('error', () => {
+                        console.warn(`[SoundManager] Ошибка загрузки звука "${eventName}" (${pickedVariant.src})`);
+                        settle(false);
+                    }, { once: true });
+                    audioToPlay.addEventListener('abort', () => settle(false), { once: true });
+                    audioToPlay.addEventListener('pause', () => {
+                        if (audioToPlay.ended || audioToPlay.currentTime === 0) {
+                            settle(false);
+                        }
+                    });
 
-                const clearFromActive = () => {
-                    this.activeAudioNodes.delete(audioToPlay);
-                };
+                    if (waitForEnd) {
+                        const durationSeconds = Number(audioToPlay.duration);
+                        const hasKnownDuration = Number.isFinite(durationSeconds) && durationSeconds > 0;
+                        const fallbackTimeoutMs = hasKnownDuration
+                            ? Math.min(15000, Math.max(1500, Math.ceil(durationSeconds * 1000) + 1200))
+                            : 7000;
 
-                audioToPlay.addEventListener('ended', clearFromActive, { once: true });
-                audioToPlay.addEventListener('pause', () => {
-                    if (audioToPlay.ended || audioToPlay.currentTime === 0) {
-                        clearFromActive();
+                        failSafeTimer = setTimeout(() => {
+                            console.warn(
+                                `[SoundManager] Fail-safe: "${eventName}" превысил ожидание ${fallbackTimeoutMs}ms, переходим к следующему событию`
+                            );
+                            settle(false);
+                        }, fallbackTimeoutMs);
                     }
+
+                    const playPromise = audioToPlay.play();
+
+                    if (playPromise && typeof playPromise.then === 'function') {
+                        playPromise
+                            .then(() => {
+                                if (!waitForEnd) {
+                                    settle(true);
+                                }
+                            })
+                            .catch((error) => {
+                                console.warn(`[SoundManager] Не удалось воспроизвести "${eventName}"`, error);
+                                settle(false);
+                            });
+                    } else if (!waitForEnd) {
+                        settle(true);
+                    }
+                } catch (error) {
+                    console.warn(`[SoundManager] Ошибка при воспроизведении "${eventName}"`, error);
+                    resolve(false);
+                }
+            });
+        },
+
+        play(eventName, options = {}) {
+            return this.playInternal(eventName, options, { waitForEnd: false });
+        },
+
+        playSequence(events = [], options = {}) {
+            if (!this.initialized) {
+                this.init();
+            }
+
+            const queue = Array.isArray(events)
+                ? events.filter((eventName) => typeof eventName === 'string' && eventName.trim())
+                : [];
+
+            if (!this.enabled || queue.length === 0) {
+                return Promise.resolve();
+            }
+
+            const runSequence = async () => {
+                for (const eventName of queue) {
+                    await this.playInternal(eventName, options, { waitForEnd: true });
+                }
+            };
+
+            this.sequenceQueue = this.sequenceQueue
+                .then(runSequence)
+                .catch((error) => {
+                    console.warn('[SoundManager] Ошибка очереди последовательного воспроизведения', error);
                 });
 
-                const playPromise = audioToPlay.play();
-
-                if (playPromise && typeof playPromise.catch === 'function') {
-                    playPromise.catch((error) => {
-                        this.activeAudioNodes.delete(audioToPlay);
-                        console.warn(`[SoundManager] Не удалось воспроизвести "${eventName}"`, error);
-                    });
-                }
-            } catch (error) {
-                console.warn(`[SoundManager] Ошибка при воспроизведении "${eventName}"`, error);
-            }
+            return this.sequenceQueue;
         }
     };
 
