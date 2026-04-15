@@ -37,6 +37,8 @@ window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
 window.DIRECT_INVITE_HANDLED_STORAGE_KEY = 'chess_direct_invite_handled_v1';
 window.BOT_GAMES_HISTORY_STORAGE_KEY = 'chess_bot_games_history_v1';
 window.lobbyLastSnapshotByGame = new Map();
+window.lobbyGameCardRegistry = new Map();
+window.lobbyRenderedCardSignatureByRoom = new Map();
 window.lobbyHasProcessedFirstSnapshot = false;
 window.botGamesLevelFilter = 'all';
 window.lastSavedBotGameSignature = '';
@@ -1453,6 +1455,187 @@ function resetLobbyContainers(gamesList, finishedGamesList, playersList) {
     playersList.innerHTML = '';
 }
 
+function resetLobbyPlayersContainer(playersList) {
+    if (!playersList) return;
+    playersList.innerHTML = '';
+}
+
+function clearLobbyGameCardState() {
+    window.lobbyGameCardRegistry = new Map();
+    window.lobbyRenderedCardSignatureByRoom = new Map();
+}
+
+function getLobbyCardSignature(cardData) {
+    if (!cardData) return '';
+    const signatureParts = [
+        cardData.id || '',
+        cardData.isOver ? '1' : '0',
+        cardData.isWaitingForOpponent ? '1' : '0',
+        cardData.isMyTurn ? '1' : '0',
+        cardData.stateClass || '',
+        cardData.myColor || '',
+        cardData.opponentUid || '',
+        cardData.opponent || '',
+        cardData.opponentAvatar || '',
+        cardData.opponentPresenceText || '',
+        cardData.opponentPresenceVariant || '',
+        cardData.statusText || '',
+        cardData.isInviteForMe ? '1' : '0',
+        cardData.resultComment || '',
+        cardData.resultClass || '',
+        cardData.turnLabel || '',
+        cardData.turnClass || '',
+        cardData.canDeleteFromLobby ? '1' : '0',
+        cardData.timeAgo || ''
+    ];
+    return signatureParts.join('|');
+}
+
+function removeLobbySectionEmptyState(container) {
+    if (!container) return;
+    const emptyNode = container.querySelector(':scope > .empty-lobby');
+    if (emptyNode) {
+        emptyNode.remove();
+    }
+}
+
+function renderActiveLobbyEmptyState(gamesList, createGameBtn) {
+    if (!gamesList) return;
+    gamesList.innerHTML = buildLobbyEmptyState().activeGames;
+    bindLobbyEmptyStateActions(gamesList, createGameBtn);
+}
+
+function renderFinishedLobbyEmptyState(finishedGamesList) {
+    if (!finishedGamesList) return;
+    finishedGamesList.innerHTML = buildLobbyEmptyState().finishedGames;
+}
+
+function removeLobbyCardByRoomId(roomId) {
+    if (!roomId) return;
+    const existing = window.lobbyGameCardRegistry.get(roomId);
+    if (existing?.node?.parentNode) {
+        existing.node.parentNode.removeChild(existing.node);
+    }
+    window.lobbyGameCardRegistry.delete(roomId);
+    window.lobbyRenderedCardSignatureByRoom.delete(roomId);
+}
+
+function createOrUpdateLobbyCardNode({ roomId, cardData, userId, targetList, targetSection }) {
+    if (!roomId || !cardData || !targetList) return null;
+
+    const nextSignature = getLobbyCardSignature(cardData);
+    const existing = window.lobbyGameCardRegistry.get(roomId);
+    const previousSignature = window.lobbyRenderedCardSignatureByRoom.get(roomId);
+    const hasChanged = previousSignature !== nextSignature;
+    const hasSectionChanged = existing?.section && existing.section !== targetSection;
+
+    let node = existing?.node || null;
+    if (!node || hasChanged || hasSectionChanged) {
+        const nextNode = createLobbyGameElement(cardData, userId);
+        if (node?.parentNode) {
+            node.parentNode.replaceChild(nextNode, node);
+        }
+        node = nextNode;
+    }
+
+    targetList.appendChild(node);
+    window.lobbyGameCardRegistry.set(roomId, { node, section: targetSection });
+    window.lobbyRenderedCardSignatureByRoom.set(roomId, nextSignature);
+    return node;
+}
+
+function fullRebuildLobbyGames({ sortedGames, userId, gamesList, finishedGamesList, createGameBtn }) {
+    if (!gamesList) return { pendingInvitesCount: 0 };
+
+    gamesList.innerHTML = '';
+    if (finishedGamesList) finishedGamesList.innerHTML = '';
+    clearLobbyGameCardState();
+
+    let hasActiveGames = false;
+    let hasFinishedGames = false;
+    let pendingInvitesCount = 0;
+
+    sortedGames.forEach(([id, data]) => {
+        const cardData = buildLobbyGameCardData(id, data, userId);
+        if (!cardData) return;
+        if (cardData.isInviteForMe) pendingInvitesCount += 1;
+
+        const targetSection = cardData.isOver ? 'finished' : 'active';
+        const targetList = cardData.isOver ? finishedGamesList : gamesList;
+        if (!targetList) return;
+        createOrUpdateLobbyCardNode({
+            roomId: id,
+            cardData,
+            userId,
+            targetList,
+            targetSection
+        });
+
+        if (cardData.isOver) {
+            hasFinishedGames = true;
+        } else {
+            hasActiveGames = true;
+        }
+    });
+
+    if (!hasActiveGames) {
+        renderActiveLobbyEmptyState(gamesList, createGameBtn);
+    }
+    if (!hasFinishedGames) {
+        renderFinishedLobbyEmptyState(finishedGamesList);
+    }
+
+    return { pendingInvitesCount };
+}
+
+function incrementalUpdateLobbyGames({ sortedGames, userId, gamesList, finishedGamesList, createGameBtn }) {
+    if (!gamesList) return { pendingInvitesCount: 0 };
+
+    const seenRoomIds = new Set();
+    let hasActiveGames = false;
+    let hasFinishedGames = false;
+    let pendingInvitesCount = 0;
+
+    sortedGames.forEach(([id, data]) => {
+        const cardData = buildLobbyGameCardData(id, data, userId);
+        if (!cardData) return;
+        seenRoomIds.add(id);
+        if (cardData.isInviteForMe) pendingInvitesCount += 1;
+
+        const targetSection = cardData.isOver ? 'finished' : 'active';
+        const targetList = cardData.isOver ? finishedGamesList : gamesList;
+        if (!targetList) return;
+        removeLobbySectionEmptyState(targetList);
+        createOrUpdateLobbyCardNode({
+            roomId: id,
+            cardData,
+            userId,
+            targetList,
+            targetSection
+        });
+
+        if (cardData.isOver) {
+            hasFinishedGames = true;
+        } else {
+            hasActiveGames = true;
+        }
+    });
+
+    Array.from(window.lobbyGameCardRegistry.keys()).forEach((roomId) => {
+        if (seenRoomIds.has(roomId)) return;
+        removeLobbyCardByRoomId(roomId);
+    });
+
+    if (!hasActiveGames) {
+        renderActiveLobbyEmptyState(gamesList, createGameBtn);
+    }
+    if (!hasFinishedGames) {
+        renderFinishedLobbyEmptyState(finishedGamesList);
+    }
+
+    return { pendingInvitesCount };
+}
+
 function bindLobbyEmptyStateActions(container, createGameBtn) {
     const emptyActionBtn = container.querySelector('[data-empty-action="create-game"]');
     if (!emptyActionBtn || !createGameBtn) return;
@@ -1585,6 +1768,7 @@ window.loadLobby = function(user) {
     window.lobbyNotifiedDirectChallenges = getSeenDirectChallengeIds();
     window.lobbyHandledDirectInvites = getHandledDirectInviteIds();
     window.lobbyLastSnapshotByGame = new Map();
+    clearLobbyGameCardState();
     window.lobbyHasProcessedFirstSnapshot = false;
     if (typeof window.__lobbyWatchUnsubscribe === 'function') {
         window.__lobbyWatchUnsubscribe();
@@ -1596,10 +1780,11 @@ window.loadLobby = function(user) {
     const finishedGamesList = nodes.finishedGamesList;
     const playersList = document.getElementById('players-list');
     window.__lobbyWatchUnsubscribe = window.watchGames((snap) => {
-        resetLobbyContainers(gamesList, finishedGamesList, playersList);
+        resetLobbyPlayersContainer(playersList);
         const games = snap.val();
         if (!games) {
             window.lobbyLastSnapshotByGame = new Map();
+            clearLobbyGameCardState();
             const empty = buildLobbyEmptyState();
             gamesList.innerHTML = empty.activeGames;
             bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
@@ -1619,8 +1804,6 @@ window.loadLobby = function(user) {
         });
         window.ensurePresenceForUsers?.(presenceUids);
         const wasFirstSnapshot = !window.lobbyHasProcessedFirstSnapshot;
-        let hasActiveGames = false;
-        let hasFinishedGames = false;
         let pendingInvitesCount = 0;
         const nextSnapshotByGame = new Map();
 
@@ -1629,7 +1812,6 @@ window.loadLobby = function(user) {
             nextSnapshotByGame.set(id, data);
             const cardData = buildLobbyGameCardData(id, data, user.uid);
             if (!cardData) return;
-            if (cardData.isInviteForMe) pendingInvitesCount += 1;
 
             if (shouldNotifyDirectInvite(data, user.uid) && !window.lobbyNotifiedDirectChallenges.has(id)) {
                 const invite = extractDirectInvite(data);
@@ -1641,23 +1823,35 @@ window.loadLobby = function(user) {
             if (!wasFirstSnapshot && hasRoomBecameActiveForUser(previousData, data, user.uid)) {
                 window.notify(`Новая активная партия с ${cardData.opponent}`, 'success', 3200);
             }
-
-            const cardNode = createLobbyGameElement(cardData, user.uid);
-            if (cardData.isOver) {
-                hasFinishedGames = true;
-                finishedGamesList?.appendChild(cardNode);
-            } else {
-                hasActiveGames = true;
-                gamesList.appendChild(cardNode);
-            }
         });
+        try {
+            const updateResult = wasFirstSnapshot
+                ? fullRebuildLobbyGames({
+                    sortedGames,
+                    userId: user.uid,
+                    gamesList,
+                    finishedGamesList,
+                    createGameBtn: nodes.createGameBtn
+                })
+                : incrementalUpdateLobbyGames({
+                    sortedGames,
+                    userId: user.uid,
+                    gamesList,
+                    finishedGamesList,
+                    createGameBtn: nodes.createGameBtn
+                });
 
-        if (!hasActiveGames) {
-            gamesList.innerHTML = buildLobbyEmptyState().activeGames;
-            bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
-        }
-        if (!hasFinishedGames && finishedGamesList) {
-            finishedGamesList.innerHTML = buildLobbyEmptyState().finishedGames;
+            pendingInvitesCount = updateResult.pendingInvitesCount || 0;
+        } catch (error) {
+            console.error('Ошибка точечного обновления DOM лобби, выполняем fallback rebuild:', error);
+            const rebuildResult = fullRebuildLobbyGames({
+                sortedGames,
+                userId: user.uid,
+                gamesList,
+                finishedGamesList,
+                createGameBtn: nodes.createGameBtn
+            });
+            pendingInvitesCount = rebuildResult.pendingInvitesCount || 0;
         }
 
         syncLobbyGamesFilterVisibility(nodes, gamesList, finishedGamesList);
