@@ -89,6 +89,29 @@
         };
     };
 
+    // Частичный маппер для realtime UPDATE payload:
+    // переносит только реально присутствующие в payload поля (без default-ов),
+    // чтобы не затирать cache, если payload пришёл неполным.
+    const fromDbGamePartial = (row) => {
+        if (!row) return null;
+        const patch = {};
+        if (Object.prototype.hasOwnProperty.call(row, 'players')) patch.players = row.players ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'pgn')) patch.pgn = row.pgn ?? '';
+        if (Object.prototype.hasOwnProperty.call(row, 'fen')) patch.fen = row.fen ?? 'start';
+        if (Object.prototype.hasOwnProperty.call(row, 'game_state')) patch.gameState = row.game_state ?? 'active';
+        if (Object.prototype.hasOwnProperty.call(row, 'message')) patch.message = row.message ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'last_move_time')) patch.lastMoveTime = row.last_move_time ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'created_at')) patch.createdAt = row.created_at ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'takeback_request')) patch.takebackRequest = row.takeback_request ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'draw_request')) patch.drawRequest = row.draw_request ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'turn')) patch.turn = row.turn ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'last_move')) patch.lastMove = row.last_move ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'resign')) patch.resign = row.resign ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'reactions')) patch.reactions = row.reactions ?? [];
+        if (Object.prototype.hasOwnProperty.call(row, 'quick_phrase')) patch.quickPhrase = row.quick_phrase ?? null;
+        return patch;
+    };
+
     const toDbPatch = (data) => {
         const patch = {};
         if (Object.prototype.hasOwnProperty.call(data, 'players')) patch.players = data.players;
@@ -264,16 +287,118 @@
 
     // watchGames/watchGame/onValue имитируют Firebase realtime API,
     // но технически работают через Supabase Realtime channels.
-    const emitGamesToSubscribers = async () => {
-        const snap = await window.get(window.ref(null, 'games'));
+    // In-memory cache лобби:
+    // - первичная гидратация делается один раз при первом watchGames;
+    // - далее обновляется инкрементально из realtime INSERT/UPDATE/DELETE.
+    const lobbyGamesCache = new Map();
+    let isLobbyGamesCacheHydrated = false;
+    let lobbyGamesCacheHydrationPromise = null;
+    const pendingLobbyRealtimeEvents = [];
+
+    const makeGamesSnapshotFromCache = () => {
+        if (lobbyGamesCache.size === 0) return makeSnapshot(null);
+        const games = {};
+        for (const [roomId, game] of lobbyGamesCache.entries()) {
+            games[roomId] = game;
+        }
+        return makeSnapshot(games);
+    };
+
+    const emitGamesToSubscribers = () => {
+        const snap = makeGamesSnapshotFromCache();
         for (const cb of gamesSubscribers) cb(snap);
+    };
+
+    const hydrateLobbyGamesCache = async () => {
+        if (isLobbyGamesCacheHydrated) return;
+        if (lobbyGamesCacheHydrationPromise) {
+            await lobbyGamesCacheHydrationPromise;
+            return;
+        }
+
+        lobbyGamesCacheHydrationPromise = (async () => {
+            const { data, error } = await supabase.from('games').select('*');
+            if (error) {
+                console.error('watchGames initial cache hydrate error:', error);
+                throw error;
+            }
+
+            lobbyGamesCache.clear();
+            (data || []).forEach((row) => {
+                if (!row?.room_id) return;
+                lobbyGamesCache.set(row.room_id, fromDbGame(row));
+            });
+            isLobbyGamesCacheHydrated = true;
+            // Важно для гонки "realtime раньше hydration":
+            // события, пришедшие до завершения initial select(*),
+            // применяем строго после полной гидратации cache.
+            while (pendingLobbyRealtimeEvents.length > 0) {
+                const event = pendingLobbyRealtimeEvents.shift();
+                applyLobbyGamesRealtimePayload(event, { allowBuffering: false });
+            }
+        })();
+
+        try {
+            await lobbyGamesCacheHydrationPromise;
+        } finally {
+            lobbyGamesCacheHydrationPromise = null;
+        }
+    };
+
+    const applyLobbyGamesRealtimePayload = (payload, options = {}) => {
+        const allowBuffering = options.allowBuffering !== false;
+        if (!payload) return;
+
+        // Пока не завершена initial hydration, не мутируем cache:
+        // буферизуем событие и применим его после hydrate.
+        if (!isLobbyGamesCacheHydrated && allowBuffering) {
+            pendingLobbyRealtimeEvents.push(payload);
+            return;
+        }
+
+        const eventType = payload.eventType;
+        const newRow = payload.new || null;
+        const oldRow = payload.old || null;
+        const roomId = newRow?.room_id || oldRow?.room_id;
+        if (!roomId) {
+            console.warn('watchGames realtime payload without room_id:', payload);
+            return;
+        }
+
+        if (eventType === 'DELETE') {
+            lobbyGamesCache.delete(roomId);
+            emitGamesToSubscribers();
+            return;
+        }
+
+        if (eventType === 'INSERT') {
+            if (!newRow) {
+                console.warn('watchGames INSERT payload without new row:', payload);
+                return;
+            }
+            const mapped = fromDbGame(newRow);
+            if (mapped) lobbyGamesCache.set(roomId, mapped);
+            emitGamesToSubscribers();
+            return;
+        }
+
+        if (eventType === 'UPDATE') {
+            if (!newRow) {
+                console.warn('watchGames UPDATE payload without new row:', payload);
+                return;
+            }
+            const cached = lobbyGamesCache.get(roomId) || {};
+            const patch = fromDbGamePartial(newRow) || {};
+            lobbyGamesCache.set(roomId, { ...cached, ...patch });
+            emitGamesToSubscribers();
+        }
     };
 
     const ensureGamesChannel = () => {
         if (gamesChannels.size > 0) return;
         const channel = supabase
             .channel(`games-lobby-${Math.random().toString(36).slice(2)}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'games' }, emitGamesToSubscribers)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'games' }, applyLobbyGamesRealtimePayload)
             .subscribe();
         gamesChannels.add(channel);
     };
@@ -302,14 +427,34 @@
     window.watchGames = function watchGames(callback) {
         gamesSubscribers.add(callback);
         ensureGamesChannel();
-
-        window.get(window.ref(null, 'games')).then(callback);
+        // Первый запуск: один запрос на полный список игр.
+        // Далее отправляем подписчикам только слепки из локального cache,
+        // который инкрементально поддерживается realtime-событиями.
+        hydrateLobbyGamesCache()
+            .then(() => {
+                ensureGamesChannel();
+                callback(makeGamesSnapshotFromCache());
+            })
+            .catch((e) => {
+                console.error('watchGames initial snapshot error:', e);
+                // Если hydration не удалась, кеш остаётся негидратированным.
+                // Это предотвращает частичное состояние; при следующем
+                // вызове watchGames будет повторная попытка hydrate.
+                lobbyGamesCache.clear();
+                pendingLobbyRealtimeEvents.length = 0;
+                isLobbyGamesCacheHydrated = false;
+                callback(makeSnapshot(null));
+            });
 
         return () => {
             gamesSubscribers.delete(callback);
             if (gamesSubscribers.size === 0) {
                 for (const channel of gamesChannels) safeUnsubscribe(channel);
                 gamesChannels.clear();
+                lobbyGamesCache.clear();
+                pendingLobbyRealtimeEvents.length = 0;
+                isLobbyGamesCacheHydrated = false;
+                lobbyGamesCacheHydrationPromise = null;
             }
         };
     };
