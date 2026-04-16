@@ -316,6 +316,20 @@
     let lobbyGamesCacheHydrationPromise = null;
     const pendingLobbyRealtimeEvents = [];
 
+    const getLobbyGameSignature = (game) => {
+        if (!game) return '';
+        return JSON.stringify([
+            game.players || null,
+            game.gameState || null,
+            game.lastMoveTime || null,
+            game.createdAt || null,
+            game.turn || null,
+            game.pgn || null,
+            game.message || null,
+            game.resign || null
+        ]);
+    };
+
     const makeGamesSnapshotFromCache = () => {
         if (lobbyGamesCache.size === 0) return makeSnapshot(null);
         const games = {};
@@ -398,7 +412,10 @@
                 return;
             }
             const mapped = fromDbGame(newRow);
-            if (mapped) lobbyGamesCache.set(roomId, mapped);
+            if (!mapped) return;
+            const previous = lobbyGamesCache.get(roomId) || null;
+            if (getLobbyGameSignature(previous) === getLobbyGameSignature(mapped)) return;
+            lobbyGamesCache.set(roomId, mapped);
             emitGamesToSubscribers();
             return;
         }
@@ -410,7 +427,9 @@
             }
             const cached = lobbyGamesCache.get(roomId) || {};
             const patch = fromDbGamePartial(newRow) || {};
-            lobbyGamesCache.set(roomId, { ...cached, ...patch });
+            const next = { ...cached, ...patch };
+            if (getLobbyGameSignature(cached) === getLobbyGameSignature(next)) return;
+            lobbyGamesCache.set(roomId, next);
             emitGamesToSubscribers();
         }
     };

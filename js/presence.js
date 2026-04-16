@@ -408,6 +408,7 @@
 
         trackedUids.clear();
         pendingUidLoads.clear();
+        cache.clear();
         activeUserId = null;
         lastPresenceWriteKey = '';
         lastActivitySentAt = 0;

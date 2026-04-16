@@ -426,7 +426,6 @@ window.setupAuth = function() {
     // Выход
     logoutBtn.onclick = () => {
         signOut(window.auth)
-            .then(() => cleanupGuestUiState())
             .catch((err) => {
                 window.notify('Ошибка выхода: ' + (err?.message || err), 'error', 3600);
             });
