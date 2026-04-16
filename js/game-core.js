@@ -1161,7 +1161,6 @@ function isMyTurnForLobbyGame(gameData, userId) {
 
 function getGameMoveCount(gameData) {
     if (!gameData) return 0;
-    if (Number.isFinite(gameData?.lastMove)) return 1;
     if (Number.isFinite(gameData?.turn)) return 1;
 
     const pgn = String(gameData?.pgn || '').trim();
