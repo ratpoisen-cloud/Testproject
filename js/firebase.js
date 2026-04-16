@@ -131,6 +131,29 @@
         return patch;
     };
 
+    // Минимальный безопасный набор полей для лобби-кеша (watchGames):
+    // - players: участники, имена, аватары, direct invite metadata
+    // - game_state: active/finished для секций и правил
+    // - last_move_time/created_at: сортировка и timeAgo
+    // - turn/last_move/fen/pgn: "Ваш ход" + определение старта партии
+    // - message/resign: подписи результата завершённых партий
+    //
+    // ВАЖНО: это влияет только на initial hydrate лобби-кеша.
+    // get(game)/watchGame по конкретной комнате продолжают читать select('*').
+    const LOBBY_GAMES_SELECT_FIELDS = [
+        'room_id',
+        'players',
+        'game_state',
+        'last_move_time',
+        'created_at',
+        'turn',
+        'last_move',
+        'fen',
+        'pgn',
+        'message',
+        'resign'
+    ].join(',');
+
     const makeSnapshot = (value) => ({
         val: () => value,
         exists: () => value !== null && value !== undefined
@@ -317,7 +340,7 @@
         }
 
         lobbyGamesCacheHydrationPromise = (async () => {
-            const { data, error } = await supabase.from('games').select('*');
+            const { data, error } = await supabase.from('games').select(LOBBY_GAMES_SELECT_FIELDS);
             if (error) {
                 console.error('watchGames initial cache hydrate error:', error);
                 throw error;
@@ -330,7 +353,7 @@
             });
             isLobbyGamesCacheHydrated = true;
             // Важно для гонки "realtime раньше hydration":
-            // события, пришедшие до завершения initial select(*),
+            // события, пришедшие до завершения initial hydrate-select,
             // применяем строго после полной гидратации cache.
             while (pendingLobbyRealtimeEvents.length > 0) {
                 const event = pendingLobbyRealtimeEvents.shift();
