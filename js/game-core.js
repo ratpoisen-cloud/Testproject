@@ -37,6 +37,8 @@ window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
 window.DIRECT_INVITE_HANDLED_STORAGE_KEY = 'chess_direct_invite_handled_v1';
 window.BOT_GAMES_HISTORY_STORAGE_KEY = 'chess_bot_games_history_v1';
 window.lobbyLastSnapshotByGame = new Map();
+window.lobbyGameCardRegistry = new Map();
+window.lobbyRenderedCardSignatureByRoom = new Map();
 window.lobbyHasProcessedFirstSnapshot = false;
 window.botGamesLevelFilter = 'all';
 window.lastSavedBotGameSignature = '';
@@ -1447,10 +1449,135 @@ function createLobbyGameElement(cardData, userId) {
     return item;
 }
 
-function resetLobbyContainers(gamesList, finishedGamesList, playersList) {
+function getLobbyCardSignature(cardData) {
+    if (!cardData) return '';
+    return [
+        cardData.id,
+        cardData.stateClass,
+        cardData.isMyTurn ? 1 : 0,
+        cardData.isInviteForMe ? 1 : 0,
+        cardData.resultClass || '',
+        cardData.opponentUid || '',
+        cardData.opponent,
+        cardData.opponentAvatar || '',
+        cardData.opponentPresenceText || '',
+        cardData.opponentPresenceVariant || '',
+        cardData.statusText || '',
+        cardData.turnLabel || '',
+        cardData.turnClass || '',
+        cardData.resultComment || '',
+        cardData.myColor || '',
+        cardData.timeAgo || '',
+        cardData.isOver ? 1 : 0,
+        cardData.canDeleteFromLobby ? 1 : 0
+    ].join('|');
+}
+
+function clearLobbyGameCardRegistry() {
+    window.lobbyGameCardRegistry = new Map();
+    window.lobbyRenderedCardSignatureByRoom = new Map();
+}
+
+function createOrUpdateLobbyCardNode({ roomId, cardData, userId, gamesList, finishedGamesList }) {
+    if (!roomId || !cardData) return null;
+    const nextSignature = getLobbyCardSignature(cardData);
+    const prevSignature = window.lobbyRenderedCardSignatureByRoom.get(roomId);
+    const existingEntry = window.lobbyGameCardRegistry.get(roomId) || null;
+    let node = existingEntry?.node || null;
+
+    if (!node || prevSignature !== nextSignature) {
+        const nextNode = createLobbyGameElement(cardData, userId);
+        if (node && node.parentNode) {
+            node.parentNode.replaceChild(nextNode, node);
+        }
+        node = nextNode;
+    }
+
+    const targetContainer = cardData.isOver ? finishedGamesList : gamesList;
+    if (node && targetContainer && node.parentNode !== targetContainer) {
+        targetContainer.appendChild(node);
+    }
+
+    window.lobbyGameCardRegistry.set(roomId, { node, isOver: cardData.isOver });
+    window.lobbyRenderedCardSignatureByRoom.set(roomId, nextSignature);
+    return node;
+}
+
+function fullRebuildLobbyGames({ sortedGames, userId, gamesList, finishedGamesList, wasFirstSnapshot }) {
     gamesList.innerHTML = '';
     if (finishedGamesList) finishedGamesList.innerHTML = '';
-    playersList.innerHTML = '';
+    clearLobbyGameCardRegistry();
+
+    let hasActiveGames = false;
+    let hasFinishedGames = false;
+    let pendingInvitesCount = 0;
+    const nextSnapshotByGame = new Map();
+
+    sortedGames.forEach(([id, data]) => {
+        const previousData = window.lobbyLastSnapshotByGame.get(id) || null;
+        nextSnapshotByGame.set(id, data);
+        const cardData = buildLobbyGameCardData(id, data, userId);
+        if (!cardData) return;
+        if (cardData.isInviteForMe) pendingInvitesCount += 1;
+
+        if (shouldNotifyDirectInvite(data, userId) && !window.lobbyNotifiedDirectChallenges.has(id)) {
+            const invite = extractDirectInvite(data);
+            window.lobbyNotifiedDirectChallenges.add(id);
+            persistSeenDirectChallengeIds(window.lobbyNotifiedDirectChallenges);
+            window.notify(`${invite.createdByName || 'Игрок'} приглашает вас в новую партию`, 'info', 4200);
+        }
+
+        if (!wasFirstSnapshot && hasRoomBecameActiveForUser(previousData, data, userId)) {
+            window.notify(`Новая активная партия с ${cardData.opponent}`, 'success', 3200);
+        }
+
+        createOrUpdateLobbyCardNode({ roomId: id, cardData, userId, gamesList, finishedGamesList });
+        if (cardData.isOver) hasFinishedGames = true;
+        else hasActiveGames = true;
+    });
+
+    return { hasActiveGames, hasFinishedGames, pendingInvitesCount, nextSnapshotByGame };
+}
+
+function incrementalUpdateLobbyGames({ sortedGames, userId, gamesList, finishedGamesList, wasFirstSnapshot }) {
+    let hasActiveGames = false;
+    let hasFinishedGames = false;
+    let pendingInvitesCount = 0;
+    const nextSnapshotByGame = new Map();
+    const seenRoomIds = new Set();
+
+    sortedGames.forEach(([id, data]) => {
+        seenRoomIds.add(id);
+        const previousData = window.lobbyLastSnapshotByGame.get(id) || null;
+        nextSnapshotByGame.set(id, data);
+        const cardData = buildLobbyGameCardData(id, data, userId);
+        if (!cardData) return;
+        if (cardData.isInviteForMe) pendingInvitesCount += 1;
+
+        if (shouldNotifyDirectInvite(data, userId) && !window.lobbyNotifiedDirectChallenges.has(id)) {
+            const invite = extractDirectInvite(data);
+            window.lobbyNotifiedDirectChallenges.add(id);
+            persistSeenDirectChallengeIds(window.lobbyNotifiedDirectChallenges);
+            window.notify(`${invite.createdByName || 'Игрок'} приглашает вас в новую партию`, 'info', 4200);
+        }
+
+        if (!wasFirstSnapshot && hasRoomBecameActiveForUser(previousData, data, userId)) {
+            window.notify(`Новая активная партия с ${cardData.opponent}`, 'success', 3200);
+        }
+
+        createOrUpdateLobbyCardNode({ roomId: id, cardData, userId, gamesList, finishedGamesList });
+        if (cardData.isOver) hasFinishedGames = true;
+        else hasActiveGames = true;
+    });
+
+    window.lobbyGameCardRegistry.forEach((entry, roomId) => {
+        if (seenRoomIds.has(roomId)) return;
+        entry?.node?.remove?.();
+        window.lobbyGameCardRegistry.delete(roomId);
+        window.lobbyRenderedCardSignatureByRoom.delete(roomId);
+    });
+
+    return { hasActiveGames, hasFinishedGames, pendingInvitesCount, nextSnapshotByGame };
 }
 
 function bindLobbyEmptyStateActions(container, createGameBtn) {
@@ -1573,7 +1700,7 @@ window.initLobby = function() {
     window.setLobbyScreen('hub');
     window.renderBotGamesLobby?.();
     if (!window.__lobbyPresenceWatcherBound) {
-        window.watchPresenceLayer?.(() => window.refreshLobbyPresenceLabels?.());
+        window.watchPresenceLayer?.((changedUid) => window.refreshLobbyPresenceLabels?.(changedUid));
         window.__lobbyPresenceWatcherBound = true;
     }
 };
@@ -1585,6 +1712,7 @@ window.loadLobby = function(user) {
     window.lobbyNotifiedDirectChallenges = getSeenDirectChallengeIds();
     window.lobbyHandledDirectInvites = getHandledDirectInviteIds();
     window.lobbyLastSnapshotByGame = new Map();
+    clearLobbyGameCardRegistry();
     window.lobbyHasProcessedFirstSnapshot = false;
     if (typeof window.__lobbyWatchUnsubscribe === 'function') {
         window.__lobbyWatchUnsubscribe();
@@ -1596,10 +1724,10 @@ window.loadLobby = function(user) {
     const finishedGamesList = nodes.finishedGamesList;
     const playersList = document.getElementById('players-list');
     window.__lobbyWatchUnsubscribe = window.watchGames((snap) => {
-        resetLobbyContainers(gamesList, finishedGamesList, playersList);
         const games = snap.val();
         if (!games) {
             window.lobbyLastSnapshotByGame = new Map();
+            clearLobbyGameCardRegistry();
             const empty = buildLobbyEmptyState();
             gamesList.innerHTML = empty.activeGames;
             bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
@@ -1611,46 +1739,29 @@ window.loadLobby = function(user) {
         }
 
         const sortedGames = sortLobbyGames(games);
-        const presenceUids = [];
-        sortedGames.forEach(([, data]) => {
-            const players = data?.players || {};
-            if (players.white) presenceUids.push(players.white);
-            if (players.black) presenceUids.push(players.black);
-        });
-        window.ensurePresenceForUsers?.(presenceUids);
         const wasFirstSnapshot = !window.lobbyHasProcessedFirstSnapshot;
-        let hasActiveGames = false;
-        let hasFinishedGames = false;
-        let pendingInvitesCount = 0;
-        const nextSnapshotByGame = new Map();
+        const updateResult = wasFirstSnapshot
+            ? fullRebuildLobbyGames({
+                sortedGames,
+                userId: user.uid,
+                gamesList,
+                finishedGamesList,
+                wasFirstSnapshot
+            })
+            : incrementalUpdateLobbyGames({
+                sortedGames,
+                userId: user.uid,
+                gamesList,
+                finishedGamesList,
+                wasFirstSnapshot
+            });
 
-        sortedGames.forEach(([id, data]) => {
-            const previousData = window.lobbyLastSnapshotByGame.get(id) || null;
-            nextSnapshotByGame.set(id, data);
-            const cardData = buildLobbyGameCardData(id, data, user.uid);
-            if (!cardData) return;
-            if (cardData.isInviteForMe) pendingInvitesCount += 1;
-
-            if (shouldNotifyDirectInvite(data, user.uid) && !window.lobbyNotifiedDirectChallenges.has(id)) {
-                const invite = extractDirectInvite(data);
-                window.lobbyNotifiedDirectChallenges.add(id);
-                persistSeenDirectChallengeIds(window.lobbyNotifiedDirectChallenges);
-                window.notify(`${invite.createdByName || 'Игрок'} приглашает вас в новую партию`, 'info', 4200);
-            }
-
-            if (!wasFirstSnapshot && hasRoomBecameActiveForUser(previousData, data, user.uid)) {
-                window.notify(`Новая активная партия с ${cardData.opponent}`, 'success', 3200);
-            }
-
-            const cardNode = createLobbyGameElement(cardData, user.uid);
-            if (cardData.isOver) {
-                hasFinishedGames = true;
-                finishedGamesList?.appendChild(cardNode);
-            } else {
-                hasActiveGames = true;
-                gamesList.appendChild(cardNode);
-            }
-        });
+        const {
+            hasActiveGames,
+            hasFinishedGames,
+            pendingInvitesCount,
+            nextSnapshotByGame
+        } = updateResult;
 
         if (!hasActiveGames) {
             gamesList.innerHTML = buildLobbyEmptyState().activeGames;
@@ -1665,6 +1776,7 @@ window.loadLobby = function(user) {
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
         window.renderPlayersLobby(playersList, playersAggregate);
+        window.ensurePresenceForUsers?.(window.collectVisiblePresenceUids?.() || []);
         window.refreshLobbyPresenceLabels?.();
         if (!window.lobbyHasProcessedFirstSnapshot) {
             window.markLobbyReady?.();
@@ -1672,6 +1784,20 @@ window.loadLobby = function(user) {
         window.lobbyHasProcessedFirstSnapshot = true;
         window.lobbyLastSnapshotByGame = nextSnapshotByGame;
     });
+};
+
+window.collectVisiblePresenceUids = function() {
+    const uids = new Set();
+    document.querySelectorAll('[data-opponent-uid]').forEach((node) => {
+        const uid = String(node.dataset.opponentUid || '').trim();
+        if (uid) uids.add(uid);
+    });
+    document.querySelectorAll('[data-player-uid]').forEach((node) => {
+        const uid = String(node.dataset.playerUid || '').trim();
+        if (uid) uids.add(uid);
+    });
+    if (window.currentUser?.uid) uids.add(window.currentUser.uid);
+    return Array.from(uids);
 };
 
 window.buildPlayersAggregate = function(sortedGames, userId) {
@@ -1803,9 +1929,12 @@ window.renderPlayersLobby = function(container, players) {
     });
 };
 
-window.refreshLobbyPresenceLabels = function() {
+window.refreshLobbyPresenceLabels = function(changedUid = null) {
+    const targetUid = typeof changedUid === 'string' && changedUid.trim() ? changedUid : null;
+
     document.querySelectorAll('[data-opponent-uid]').forEach((node) => {
         const uid = node.dataset.opponentUid;
+        if (targetUid && uid !== targetUid) return;
         const presenceTextNode = node.querySelector('.game-opponent-presence-text');
         const presenceDotNode = node.querySelector('.game-opponent-presence-dot');
         if (!uid || !presenceTextNode || !presenceDotNode) return;
@@ -1819,6 +1948,7 @@ window.refreshLobbyPresenceLabels = function() {
 
     document.querySelectorAll('[data-player-uid]').forEach((node) => {
         const uid = node.dataset.playerUid;
+        if (targetUid && uid !== targetUid) return;
         const presenceNode = node.querySelector('.player-presence-line');
         if (!uid || !presenceNode) return;
         presenceNode.textContent = window.getPresenceText?.(uid) || 'не в сети';
