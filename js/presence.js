@@ -6,8 +6,9 @@
     const supabase = window.supabaseClient;
     const ONLINE_HEARTBEAT_MS = 70 * 1000;
     const RECENTLY_SEEN_MS = 5 * 60 * 1000;
-    const HEARTBEAT_INTERVAL_MS = 30 * 1000;
-    const ACTIVITY_THROTTLE_MS = 15 * 1000;
+    const HEARTBEAT_INTERVAL_MS = 55 * 1000;
+    const ACTIVITY_THROTTLE_MS = 40 * 1000;
+    const ONLINE_STATE_MIN_WRITE_GAP_MS = 10 * 1000;
 
     const MANUAL_STATUS_PRESETS = {
         away_5: { key: 'away_5', text: 'Отошёл на 5 минут', ttlMs: 5 * 60 * 1000 },
@@ -19,12 +20,14 @@
     const cache = new Map();
     const listeners = new Set();
     const pendingUidLoads = new Set();
+    const trackedUids = new Set();
     let realtimeChannel = null;
     let heartbeatTimer = null;
     let expiryTimer = null;
     let lastActivitySentAt = 0;
     let activeUserId = null;
     let isStarted = false;
+    let lastOnlineStateWriteAt = 0;
 
     const now = () => Date.now();
 
@@ -40,7 +43,7 @@
 
     const setCache = (row) => {
         if (!row?.uid) return;
-        cache.set(row.uid, {
+        const nextValue = {
             uid: row.uid,
             isOnline: Boolean(row.is_online),
             lastSeenAt: Number(row.last_seen_at || 0),
@@ -48,6 +51,26 @@
             manualStatusText: row.manual_status_text || null,
             manualStatusExpiresAt: Number(row.manual_status_expires_at || 0) || null,
             updatedAt: Number(row.updated_at_ms || row.last_seen_at || 0)
+        };
+        const prev = cache.get(row.uid);
+        const isSame = prev
+            && prev.isOnline === nextValue.isOnline
+            && prev.lastSeenAt === nextValue.lastSeenAt
+            && prev.manualStatus === nextValue.manualStatus
+            && prev.manualStatusText === nextValue.manualStatusText
+            && prev.manualStatusExpiresAt === nextValue.manualStatusExpiresAt
+            && prev.updatedAt === nextValue.updatedAt;
+        if (isSame) return false;
+        cache.set(row.uid, nextValue);
+        return true;
+    };
+
+    const trackUids = (uids = []) => {
+        (uids || []).forEach((uid) => {
+            if (typeof uid !== 'string') return;
+            const cleanUid = uid.trim();
+            if (!cleanUid) return;
+            trackedUids.add(cleanUid);
         });
     };
 
@@ -96,19 +119,37 @@
             .upsert(payload, { onConflict: 'uid' });
         if (error) {
             console.warn('Presence upsert error:', error);
+            return;
+        }
+        if (setCache(payload)) {
+            emit(activeUserId);
         }
     };
 
     const sendHeartbeat = async ({ force = false, markOnline = true } = {}) => {
         if (!activeUserId) return;
         const ts = now();
+        const own = getCached(activeUserId);
         if (!force && ts - lastActivitySentAt < ACTIVITY_THROTTLE_MS) return;
+        if (!force && own?.isOnline && own.lastSeenAt && ts - own.lastSeenAt < ACTIVITY_THROTTLE_MS) return;
         lastActivitySentAt = ts;
 
         await upsertPresence({
             is_online: Boolean(markOnline),
             last_seen_at: ts
         });
+    };
+
+    const updateOwnOnlineState = async (isOnline) => {
+        if (!activeUserId) return;
+        const ts = now();
+        const own = getCached(activeUserId);
+        const nextOnline = Boolean(isOnline);
+        if (own && own.isOnline === nextOnline && ts - lastOnlineStateWriteAt < ONLINE_STATE_MIN_WRITE_GAP_MS) {
+            return;
+        }
+        lastOnlineStateWriteAt = ts;
+        await upsertPresence({ is_online: nextOnline, last_seen_at: ts });
     };
 
     const bindPresenceLifecycle = () => {
@@ -119,7 +160,7 @@
             if (document.visibilityState === 'visible') {
                 sendHeartbeat({ force: true, markOnline: true });
             } else {
-                upsertPresence({ is_online: false, last_seen_at: now() });
+                updateOwnOnlineState(false);
             }
         };
 
@@ -130,13 +171,13 @@
 
         document.addEventListener('visibilitychange', onVisible);
         window.addEventListener('focus', () => sendHeartbeat({ force: true, markOnline: true }));
-        window.addEventListener('blur', () => upsertPresence({ is_online: false, last_seen_at: now() }));
+        window.addEventListener('blur', () => updateOwnOnlineState(false));
         window.addEventListener('beforeunload', () => {
             if (!activeUserId) return;
-            upsertPresence({ is_online: false, last_seen_at: now() });
+            updateOwnOnlineState(false);
         });
 
-        ['pointerdown', 'keydown', 'mousemove', 'touchstart'].forEach((eventName) => {
+        ['pointerdown', 'keydown', 'touchstart'].forEach((eventName) => {
             window.addEventListener(eventName, throttledActivity, { passive: true });
         });
     };
@@ -152,7 +193,9 @@
             }, (payload) => {
                 const row = payload.new || payload.old;
                 if (!row?.uid) return;
-                setCache(row);
+                if (row.uid !== activeUserId && trackedUids.size && !trackedUids.has(row.uid)) return;
+                const wasChanged = setCache(row);
+                if (!wasChanged) return;
                 if (row.uid === activeUserId) {
                     scheduleExpiryCheck();
                     sanitizeManualStatus();
@@ -165,6 +208,7 @@
     window.ensurePresenceForUsers = async function ensurePresenceForUsers(uids = []) {
         if (!supabase) return;
         const uniqueUids = Array.from(new Set((uids || []).filter((uid) => typeof uid === 'string' && uid.trim())));
+        if (uniqueUids.length) trackUids(uniqueUids);
         const missing = uniqueUids.filter((uid) => !cache.has(uid) && !pendingUidLoads.has(uid));
         if (!missing.length) return;
         missing.forEach((uid) => pendingUidLoads.add(uid));
@@ -181,8 +225,11 @@
             return;
         }
 
-        (data || []).forEach(setCache);
-        emit();
+        let hasChanges = false;
+        (data || []).forEach((row) => {
+            if (setCache(row)) hasChanges = true;
+        });
+        if (hasChanges) emit();
     };
 
     window.getEffectivePresence = function getEffectivePresence(uid, options = {}) {
@@ -262,16 +309,14 @@
         ensureRealtimeSubscription();
         bindPresenceLifecycle();
 
-        await upsertPresence({
-            is_online: true,
-            last_seen_at: now()
-        });
+        trackUids([activeUserId]);
+        await sendHeartbeat({ force: true, markOnline: true });
         await window.ensurePresenceForUsers([activeUserId]);
 
         if (!heartbeatTimer) {
             heartbeatTimer = setInterval(() => {
                 if (document.visibilityState !== 'visible') return;
-                sendHeartbeat({ force: true, markOnline: true });
+                sendHeartbeat({ force: false, markOnline: true });
             }, HEARTBEAT_INTERVAL_MS);
         }
 
@@ -283,10 +328,7 @@
     window.stopPresenceLayer = async function stopPresenceLayer() {
         if (!activeUserId) return;
 
-        await upsertPresence({
-            is_online: false,
-            last_seen_at: now()
-        });
+        await updateOwnOnlineState(false);
 
         if (heartbeatTimer) {
             clearInterval(heartbeatTimer);
@@ -307,52 +349,62 @@
         return window.getPresenceText(activeUserId);
     };
 
-    window.refreshPresenceUI = function refreshPresenceUI() {
+    window.refreshPresenceUI = function refreshPresenceUI(changedUid = null) {
         const trigger = document.getElementById('presence-status-trigger');
         const summary = document.getElementById('user-presence-summary');
         const summaryIndicator = document.getElementById('user-presence-indicator');
         const summaryText = document.getElementById('user-presence-text');
+        const changedUidSafe = typeof changedUid === 'string' && changedUid.trim() ? changedUid : null;
         if (trigger) {
             const isAvailable = Boolean(window.currentUser && !window.isBotMode);
-            const effective = window.getEffectivePresence?.(activeUserId) || { text: 'не в сети', tone: 'offline' };
-            const text = effective.text || window.getCurrentPresenceStatusText();
-            const indicatorVariant = typeof window.resolvePresenceIndicatorVariant === 'function'
-                ? window.resolvePresenceIndicatorVariant(effective)
-                : 'offline';
-            trigger.disabled = !isAvailable;
-            trigger.title = isAvailable ? 'Изменить статус' : 'Статус недоступен';
-            trigger.setAttribute('aria-label', isAvailable ? `Изменить статус. Текущий статус: ${text}` : 'Статус недоступен');
-            if (typeof window.applyStatusIndicatorClass === 'function') {
-                window.applyStatusIndicatorClass(summaryIndicator, isAvailable ? indicatorVariant : 'offline');
-            }
-            if (summaryText) {
-                summaryText.textContent = text;
-                summaryText.title = text;
-            }
-            const isCompactMobileLayout = typeof window.isCompactMobilePresenceLayout === 'function'
-                ? window.isCompactMobilePresenceLayout()
-                : false;
-            if (summary) {
-                summary.classList.toggle('user-presence-summary--tap-edit', isAvailable && isCompactMobileLayout);
-                if (isAvailable && isCompactMobileLayout) {
-                    summary.setAttribute('role', 'button');
-                    summary.setAttribute('tabindex', '0');
-                    summary.setAttribute('aria-haspopup', 'menu');
-                    summary.setAttribute('aria-label', `Изменить статус. Текущий статус: ${text}`);
-                } else {
-                    summary.removeAttribute('role');
-                    summary.removeAttribute('tabindex');
-                    summary.removeAttribute('aria-haspopup');
-                    summary.removeAttribute('aria-label');
+            if (!changedUidSafe || changedUidSafe === activeUserId) {
+                const effective = window.getEffectivePresence?.(activeUserId) || { text: 'не в сети', tone: 'offline' };
+                const text = effective.text || window.getCurrentPresenceStatusText();
+                const indicatorVariant = typeof window.resolvePresenceIndicatorVariant === 'function'
+                    ? window.resolvePresenceIndicatorVariant(effective)
+                    : 'offline';
+                trigger.disabled = !isAvailable;
+                trigger.title = isAvailable ? 'Изменить статус' : 'Статус недоступен';
+                trigger.setAttribute('aria-label', isAvailable ? `Изменить статус. Текущий статус: ${text}` : 'Статус недоступен');
+                if (typeof window.applyStatusIndicatorClass === 'function') {
+                    window.applyStatusIndicatorClass(summaryIndicator, isAvailable ? indicatorVariant : 'offline');
+                }
+                if (summaryText) {
+                    summaryText.textContent = text;
+                    summaryText.title = text;
+                }
+                const isCompactMobileLayout = typeof window.isCompactMobilePresenceLayout === 'function'
+                    ? window.isCompactMobilePresenceLayout()
+                    : false;
+                if (summary) {
+                    summary.classList.toggle('user-presence-summary--tap-edit', isAvailable && isCompactMobileLayout);
+                    if (isAvailable && isCompactMobileLayout) {
+                        summary.setAttribute('role', 'button');
+                        summary.setAttribute('tabindex', '0');
+                        summary.setAttribute('aria-haspopup', 'menu');
+                        summary.setAttribute('aria-label', `Изменить статус. Текущий статус: ${text}`);
+                    } else {
+                        summary.removeAttribute('role');
+                        summary.removeAttribute('tabindex');
+                        summary.removeAttribute('aria-haspopup');
+                        summary.removeAttribute('aria-label');
+                    }
                 }
             }
         }
 
         if (window.lastGameUiSnapshot) {
-            window.updateOpponentHeader?.(window.lastGameUiSnapshot);
+            const players = window.lastGameUiSnapshot.players || {};
+            const myColor = window.playerColor;
+            const opponentUid = myColor === 'w'
+                ? (players.black || null)
+                : (myColor === 'b' ? (players.white || null) : null);
+            if (!changedUidSafe || (opponentUid && opponentUid === changedUidSafe)) {
+                window.updateOpponentHeader?.(window.lastGameUiSnapshot);
+            }
         }
 
-        window.refreshLobbyPresenceLabels?.();
+        window.refreshLobbyPresenceLabels?.(changedUidSafe);
     };
 
     window.initPresenceStatusControls = function initPresenceStatusControls() {
@@ -417,7 +469,7 @@
             compactLayoutQuery.addListener(() => window.refreshPresenceUI());
         }
 
-        window.watchPresenceLayer(() => window.refreshPresenceUI());
+        window.watchPresenceLayer((changedUid) => window.refreshPresenceUI(changedUid));
 
         window.__presenceControlsBound = true;
         if (isStarted) {

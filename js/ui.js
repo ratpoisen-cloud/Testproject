@@ -245,21 +245,27 @@ window.updateOpponentHeader = function(data) {
     let isInteractivePresence = true;
     let indicatorVariant = 'offline';
     if (isViewer) {
+        window.__lastEnsuredOpponentUid = null;
         presenceText = 'Режим наблюдения';
         indicatorVariant = 'offline';
         isInteractivePresence = false;
     } else if (isBotGame) {
+        window.__lastEnsuredOpponentUid = null;
         const botPresence = window.getEffectivePresence?.('', { isBot: true, botText: 'готов к игре' })
             || { text: 'готов к игре', tone: 'neutral' };
         presenceText = botPresence.text;
         indicatorVariant = window.resolvePresenceIndicatorVariant(botPresence, { isBot: true });
         isInteractivePresence = false;
     } else if (opponentUid) {
-        window.ensurePresenceForUsers?.([opponentUid]);
+        if (window.__lastEnsuredOpponentUid !== opponentUid) {
+            window.ensurePresenceForUsers?.([opponentUid]);
+            window.__lastEnsuredOpponentUid = opponentUid;
+        }
         const presence = window.getEffectivePresence?.(opponentUid) || { text: 'не в сети', tone: 'offline' };
         presenceText = presence.text;
         indicatorVariant = window.resolvePresenceIndicatorVariant(presence);
     } else {
+        window.__lastEnsuredOpponentUid = null;
         presenceText = 'Ожидание соперника';
         indicatorVariant = 'offline';
         isInteractivePresence = false;
