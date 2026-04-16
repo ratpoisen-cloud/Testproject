@@ -7,8 +7,9 @@
     const ONLINE_HEARTBEAT_MS = 70 * 1000;
     const RECENTLY_SEEN_MS = 5 * 60 * 1000;
     const HEARTBEAT_INTERVAL_MS = 55 * 1000;
-    const ACTIVITY_THROTTLE_MS = 40 * 1000;
+    const ACTIVITY_THROTTLE_MS = 45 * 1000;
     const ONLINE_STATE_MIN_WRITE_GAP_MS = 10 * 1000;
+    const LAST_SEEN_MIN_WRITE_GAP_MS = 30 * 1000;
 
     const MANUAL_STATUS_PRESETS = {
         away_5: { key: 'away_5', text: 'Отошёл на 5 минут', ttlMs: 5 * 60 * 1000 },
@@ -25,6 +26,7 @@
     let heartbeatTimer = null;
     let expiryTimer = null;
     let lastActivitySentAt = 0;
+    let lastPresenceWriteKey = '';
     let activeUserId = null;
     let isStarted = false;
     let lastOnlineStateWriteAt = 0;
@@ -76,6 +78,36 @@
 
     const getCached = (uid) => cache.get(uid) || null;
 
+    const buildWriteSignature = (payload) => {
+        const own = getCached(activeUserId);
+        if (!own) return '';
+        const normalizedOnline = payload.is_online ?? own.isOnline;
+        const normalizedManualStatus = payload.manual_status !== undefined ? payload.manual_status : own.manualStatus;
+        const normalizedManualText = payload.manual_status_text !== undefined ? payload.manual_status_text : own.manualStatusText;
+        const normalizedManualExpires = payload.manual_status_expires_at !== undefined
+            ? (payload.manual_status_expires_at || null)
+            : (own.manualStatusExpiresAt || null);
+        return JSON.stringify({
+            isOnline: Boolean(normalizedOnline),
+            manualStatus: normalizedManualStatus || null,
+            manualStatusText: normalizedManualText || null,
+            manualStatusExpiresAt: normalizedManualExpires
+        });
+    };
+
+    window.setTrackedPresenceUids = function setTrackedPresenceUids(uids = []) {
+        const nextTracked = new Set();
+        (uids || []).forEach((uid) => {
+            if (typeof uid !== 'string') return;
+            const cleanUid = uid.trim();
+            if (!cleanUid) return;
+            nextTracked.add(cleanUid);
+        });
+        if (activeUserId) nextTracked.add(activeUserId);
+        trackedUids.clear();
+        nextTracked.forEach((uid) => trackedUids.add(uid));
+    };
+
     const scheduleExpiryCheck = () => {
         if (expiryTimer) {
             clearTimeout(expiryTimer);
@@ -107,6 +139,26 @@
 
     const upsertPresence = async (patch) => {
         if (!supabase || !activeUserId) return;
+        const own = getCached(activeUserId);
+        const explicitLastSeenAt = Number(patch?.last_seen_at || 0);
+        const hasLastSeenUpdate = Number.isFinite(explicitLastSeenAt) && explicitLastSeenAt > 0;
+        if (own && hasLastSeenUpdate) {
+            const lastSeenGap = explicitLastSeenAt - Number(own.lastSeenAt || 0);
+            if (lastSeenGap > 0
+                && lastSeenGap < LAST_SEEN_MIN_WRITE_GAP_MS
+                && patch.manual_status === undefined
+                && patch.manual_status_text === undefined
+                && patch.manual_status_expires_at === undefined
+                && patch.is_online === own.isOnline) {
+                return;
+            }
+        }
+
+        const writeKey = buildWriteSignature(patch);
+        if (writeKey && own && !hasLastSeenUpdate && writeKey === lastPresenceWriteKey) {
+            return;
+        }
+
         const ts = now();
         const payload = {
             uid: activeUserId,
@@ -120,6 +172,9 @@
         if (error) {
             console.warn('Presence upsert error:', error);
             return;
+        }
+        if (writeKey) {
+            lastPresenceWriteKey = writeKey;
         }
         if (setCache(payload)) {
             emit(activeUserId);
@@ -225,11 +280,16 @@
             return;
         }
 
-        let hasChanges = false;
+        const changedUids = [];
         (data || []).forEach((row) => {
-            if (setCache(row)) hasChanges = true;
+            if (setCache(row)) changedUids.push(row.uid);
         });
-        if (hasChanges) emit();
+        if (!changedUids.length) return;
+        if (changedUids.length === 1) {
+            emit(changedUids[0]);
+            return;
+        }
+        emit();
     };
 
     window.getEffectivePresence = function getEffectivePresence(uid, options = {}) {
@@ -306,6 +366,7 @@
     window.startPresenceLayer = async function startPresenceLayer(user) {
         if (!supabase || !user?.uid) return;
         activeUserId = user.uid;
+        lastPresenceWriteKey = '';
         ensureRealtimeSubscription();
         bindPresenceLifecycle();
 
