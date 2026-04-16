@@ -365,8 +365,14 @@
 
     window.startPresenceLayer = async function startPresenceLayer(user) {
         if (!supabase || !user?.uid) return;
+        if (activeUserId && activeUserId !== user.uid) {
+            await window.stopPresenceLayer();
+        }
         activeUserId = user.uid;
         lastPresenceWriteKey = '';
+        lastActivitySentAt = 0;
+        pendingUidLoads.clear();
+        trackedUids.clear();
         ensureRealtimeSubscription();
         bindPresenceLifecycle();
 
@@ -400,7 +406,12 @@
             expiryTimer = null;
         }
 
+        trackedUids.clear();
+        pendingUidLoads.clear();
         activeUserId = null;
+        lastPresenceWriteKey = '';
+        lastActivitySentAt = 0;
+        lastOnlineStateWriteAt = 0;
         isStarted = false;
         emit();
     };
