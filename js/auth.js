@@ -78,6 +78,7 @@ window.setupAuth = function() {
             window.__lobbyWatchUnsubscribe();
             window.__lobbyWatchUnsubscribe = null;
         }
+        window.clearPendingLobbyDomFlush?.();
         window.pendingDraw = null;
         window.pendingTakeback = null;
         window.pendingMove = null;
