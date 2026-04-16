@@ -577,6 +577,12 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
     const events = [];
     const isCheckmate = Boolean(window.game.in_checkmate?.());
     const isCheck = !isCheckmate && Boolean(window.game.in_check?.());
+    const isCheckForCurrentClient = Boolean(
+        isCheck &&
+        window.playerColor &&
+        typeof window.game.turn === 'function' &&
+        window.playerColor === window.game.turn()
+    );
 
     if (moveResult.promotion) {
         events.push('promotion');
@@ -588,7 +594,7 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
         if (winSoundEvent) {
             events.push(winSoundEvent);
         }
-    } else if (isCheck) {
+    } else if (isCheckForCurrentClient) {
         events.push('check');
     }
 
@@ -1275,15 +1281,55 @@ function extractDirectInvite(data) {
     return invite;
 }
 
+function resolveDirectInviteStatus(invite) {
+    const rawStatus = invite?.status ?? invite?.state ?? invite?.inviteStatus;
+    if (rawStatus === undefined || rawStatus === null) return '';
+    return String(rawStatus).trim().toLowerCase();
+}
+
+function isDirectInviteRelevant(invite) {
+    if (!invite) return false;
+
+    const status = resolveDirectInviteStatus(invite);
+    if (status) {
+        const inactiveStatuses = new Set([
+            'accepted',
+            'declined',
+            'rejected',
+            'cancelled',
+            'canceled',
+            'expired',
+            'handled',
+            'resolved',
+            'revoked',
+            'withdrawn',
+            'closed'
+        ]);
+        if (inactiveStatuses.has(status)) return false;
+    }
+
+    if (invite.acceptedAt || invite.declinedAt || invite.rejectedAt || invite.cancelledAt || invite.canceledAt || invite.handledAt) {
+        return false;
+    }
+
+    if (Number.isFinite(invite.expiresAt) && invite.expiresAt <= Date.now()) {
+        return false;
+    }
+
+    return true;
+}
+
 function shouldNotifyDirectInvite(data, userId) {
     const invite = extractDirectInvite(data);
     if (!invite) return false;
+    if (!isDirectInviteRelevant(invite)) return false;
     return invite.targetUid === userId && invite.createdByUid !== userId;
 }
 
 function isDirectInvitePendingForRoom(roomId, data, userId) {
     const invite = extractDirectInvite(data);
     if (!invite || !roomId || !userId || data?.gameState === 'game_over') return false;
+    if (!isDirectInviteRelevant(invite)) return false;
     if (invite.targetUid !== userId || invite.createdByUid === userId) return false;
     if (isGameStarted(data)) return false;
     return !window.lobbyHandledDirectInvites?.has?.(roomId);
@@ -2053,6 +2099,7 @@ window.loadLobby = function(user) {
         const games = snap.val();
         const wasFirstSnapshot = !window.lobbyHasProcessedFirstSnapshot;
         const nextSnapshotByGame = new Map();
+        let shouldPersistSeenIds = false;
 
         Object.entries(games || {}).forEach(([id, data]) => {
             const previousData = window.lobbyLastEventSnapshotByGame.get(id) || null;
@@ -2060,10 +2107,18 @@ window.loadLobby = function(user) {
             const cardData = buildLobbyGameCardData(id, data, user.uid);
             if (!cardData) return;
 
-            if (shouldNotifyDirectInvite(data, user.uid) && !window.lobbyNotifiedDirectChallenges.has(id)) {
+            if (wasFirstSnapshot && isDirectInvitePendingForRoom(id, data, user.uid) && !window.lobbyNotifiedDirectChallenges.has(id)) {
+                window.lobbyNotifiedDirectChallenges.add(id);
+                shouldPersistSeenIds = true;
+            }
+
+            const isNewDirectInviteAfterInit = !wasFirstSnapshot
+                && shouldNotifyDirectInvite(data, user.uid)
+                && !extractDirectInvite(previousData);
+            if (isNewDirectInviteAfterInit && !window.lobbyNotifiedDirectChallenges.has(id)) {
                 const invite = extractDirectInvite(data);
                 window.lobbyNotifiedDirectChallenges.add(id);
-                persistSeenDirectChallengeIds(window.lobbyNotifiedDirectChallenges);
+                shouldPersistSeenIds = true;
                 window.notify(`${invite.createdByName || 'Игрок'} приглашает вас в новую партию`, 'info', 4200);
             }
 
@@ -2071,6 +2126,9 @@ window.loadLobby = function(user) {
                 window.notify(`Новая активная партия с ${cardData.opponent}`, 'success', 3200);
             }
         });
+        if (shouldPersistSeenIds) {
+            persistSeenDirectChallengeIds(window.lobbyNotifiedDirectChallenges);
+        }
         window.lobbyLastEventSnapshotByGame = nextSnapshotByGame;
 
         scheduleLobbyDomUpdate({
