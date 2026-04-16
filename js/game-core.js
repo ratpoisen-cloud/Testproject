@@ -40,6 +40,9 @@ window.lobbyLastSnapshotByGame = new Map();
 window.lobbyLastEventSnapshotByGame = new Map();
 window.lobbyGameCardRegistry = new Map();
 window.lobbyRenderedCardSignatureByRoom = new Map();
+window.lobbyPlayerCardRegistry = new Map();
+window.lobbyRenderedPlayerSignatureByUid = new Map();
+window.lobbyLastPlayersAggregate = [];
 window.lobbyHasProcessedFirstSnapshot = false;
 window.LOBBY_DOM_FLUSH_DEBOUNCE_MS = 140;
 window.__lobbyDomFlushTimer = null;
@@ -1452,14 +1455,14 @@ function createLobbyGameElement(cardData, userId) {
     return item;
 }
 
-function resetLobbyPlayersContainer(playersList) {
-    if (!playersList) return;
-    playersList.innerHTML = '';
-}
-
 function clearLobbyGameCardState() {
     window.lobbyGameCardRegistry = new Map();
     window.lobbyRenderedCardSignatureByRoom = new Map();
+}
+
+function clearLobbyPlayerCardState() {
+    window.lobbyPlayerCardRegistry = new Map();
+    window.lobbyRenderedPlayerSignatureByUid = new Map();
 }
 
 function getLobbyCardSignature(cardData) {
@@ -1507,6 +1510,11 @@ function renderFinishedLobbyEmptyState(finishedGamesList) {
     finishedGamesList.innerHTML = buildLobbyEmptyState().finishedGames;
 }
 
+function renderPlayersLobbyEmptyState(playersList) {
+    if (!playersList) return;
+    playersList.innerHTML = '<div class="empty-lobby">Нет соперников<br><small>Завершите или начните партию с игроком</small></div>';
+}
+
 function removeLobbyCardByRoomId(roomId) {
     if (!roomId) return;
     const existing = window.lobbyGameCardRegistry.get(roomId);
@@ -1515,6 +1523,166 @@ function removeLobbyCardByRoomId(roomId) {
     }
     window.lobbyGameCardRegistry.delete(roomId);
     window.lobbyRenderedCardSignatureByRoom.delete(roomId);
+}
+
+function removeLobbyPlayerCardByUid(uid) {
+    if (!uid) return;
+    const existing = window.lobbyPlayerCardRegistry.get(uid);
+    if (existing?.node?.parentNode) {
+        existing.node.parentNode.removeChild(existing.node);
+    }
+    window.lobbyPlayerCardRegistry.delete(uid);
+    window.lobbyRenderedPlayerSignatureByUid.delete(uid);
+}
+
+function buildPlayerLobbyCardData(player) {
+    const selectedFilter = window.playersExpandedResultFilter?.[player.uid] || '';
+    const selectedGames = selectedFilter ? (player.finishedGames?.[selectedFilter] || []) : [];
+    const selectedGamesSorted = selectedGames
+        .slice()
+        .sort((a, b) => (b.data.lastMoveTime || b.data.createdAt || 0) - (a.data.lastMoveTime || a.data.createdAt || 0));
+
+    const selectedGameCards = selectedGamesSorted
+        .map((gameEntry) => {
+            const cardData = buildLobbyGameCardData(gameEntry.id, gameEntry.data, window.currentUser?.uid || '');
+            if (!cardData) return null;
+            return { id: gameEntry.id, cardData };
+        })
+        .filter(Boolean);
+
+    return {
+        ...player,
+        selectedFilter,
+        selectedGameCards
+    };
+}
+
+function getPlayerLobbyCardSignature(playerCardData) {
+    if (!playerCardData) return '';
+    const finishedCardsSignature = playerCardData.selectedGameCards
+        .map((entry) => getLobbyCardSignature(entry.cardData))
+        .join('||');
+    const signatureParts = [
+        playerCardData.uid || '',
+        playerCardData.name || '',
+        playerCardData.avatarUrl || '',
+        String(playerCardData.wins || 0),
+        String(playerCardData.losses || 0),
+        String(playerCardData.draws || 0),
+        playerCardData.selectedFilter || '',
+        finishedCardsSignature
+    ];
+    return signatureParts.join('|');
+}
+
+function createPlayersLobbyElement(container, player) {
+    const playerItem = document.createElement('div');
+    playerItem.className = 'player-item';
+    playerItem.dataset.playerUid = player.uid;
+    const presenceText = window.getPresenceText?.(player.uid) || 'не в сети';
+
+    playerItem.innerHTML = `
+        <div class="player-item-header">
+            <div class="player-info">
+                <div class="player-name-row">${getAvatarMarkup(player.name, player.avatarUrl)} <b>${player.name}</b></div>
+                <div class="player-presence-line">${presenceText}</div>
+                <div class="player-stats">
+                    <button class="player-stat-pill player-stat-pill-win ${player.selectedFilter === 'wins' ? 'is-active' : ''}" type="button" data-result-filter="wins">Выиграно: ${player.wins}</button>
+                    <button class="player-stat-pill player-stat-pill-loss ${player.selectedFilter === 'losses' ? 'is-active' : ''}" type="button" data-result-filter="losses">Проиграно: ${player.losses}</button>
+                    <button class="player-stat-pill player-stat-pill-draw ${player.selectedFilter === 'draws' ? 'is-active' : ''}" type="button" data-result-filter="draws">Ничьи: ${player.draws}</button>
+                </div>
+            </div>
+            <div class="game-actions">
+                <button class="btn btn-sm play-btn player-play-btn">Играть</button>
+            </div>
+        </div>
+        ${player.selectedFilter ? `
+            <div class="player-finished-list">
+                ${player.selectedGameCards.length ? '' : '<div class="empty-lobby">Подходящих завершённых партий пока нет</div>'}
+            </div>
+        ` : ''}
+    `;
+
+    const playBtn = playerItem.querySelector('.player-play-btn');
+    playBtn.onclick = async (event) => {
+        event.stopPropagation();
+        const user = await window.requireAuthForGame();
+        if (!user) return;
+        openDirectChallengeModal(getLobbyNodes(), player);
+    };
+
+    playerItem.querySelectorAll('[data-result-filter]').forEach((filterBtn) => {
+        filterBtn.onclick = (event) => {
+            event.stopPropagation();
+            const nextFilter = filterBtn.dataset.resultFilter;
+            window.playersExpandedResultFilter = window.playersExpandedResultFilter || {};
+            window.playersExpandedResultFilter[player.uid] = player.selectedFilter === nextFilter ? '' : nextFilter;
+            incrementalUpdatePlayersLobby(container, window.lobbyLastPlayersAggregate || []);
+        };
+    });
+
+    if (player.selectedFilter && player.selectedGameCards.length) {
+        const listNode = playerItem.querySelector('.player-finished-list');
+        player.selectedGameCards.forEach((entry) => {
+            const cardNode = createLobbyGameElement(entry.cardData, window.currentUser?.uid || '');
+            cardNode.classList.add('player-finished-card');
+            listNode.appendChild(cardNode);
+        });
+    }
+
+    bindAvatarFallbackHandlers(playerItem);
+    return playerItem;
+}
+
+function createOrUpdatePlayerLobbyCardNode({ container, playerCardData }) {
+    if (!container || !playerCardData?.uid) return null;
+
+    const uid = playerCardData.uid;
+    const nextSignature = getPlayerLobbyCardSignature(playerCardData);
+    const existing = window.lobbyPlayerCardRegistry.get(uid);
+    const previousSignature = window.lobbyRenderedPlayerSignatureByUid.get(uid);
+    const hasChanged = previousSignature !== nextSignature;
+
+    let node = existing?.node || null;
+    if (!node || hasChanged) {
+        const nextNode = createPlayersLobbyElement(container, playerCardData);
+        if (node?.parentNode) {
+            node.parentNode.replaceChild(nextNode, node);
+        }
+        node = nextNode;
+    }
+
+    container.appendChild(node);
+    window.lobbyPlayerCardRegistry.set(uid, { node });
+    window.lobbyRenderedPlayerSignatureByUid.set(uid, nextSignature);
+    return node;
+}
+
+function incrementalUpdatePlayersLobby(container, players) {
+    if (!container) return;
+    const safePlayers = Array.isArray(players) ? players : [];
+
+    if (!safePlayers.length) {
+        clearLobbyPlayerCardState();
+        renderPlayersLobbyEmptyState(container);
+        return;
+    }
+
+    const seenUids = new Set();
+    const playersWithViewState = safePlayers.map((player) => buildPlayerLobbyCardData(player));
+    playersWithViewState.forEach((playerCardData) => {
+        seenUids.add(playerCardData.uid);
+        removeLobbySectionEmptyState(container);
+        createOrUpdatePlayerLobbyCardNode({
+            container,
+            playerCardData
+        });
+    });
+
+    Array.from(window.lobbyPlayerCardRegistry.keys()).forEach((uid) => {
+        if (seenUids.has(uid)) return;
+        removeLobbyPlayerCardByUid(uid);
+    });
 }
 
 function createOrUpdateLobbyCardNode({ roomId, cardData, userId, targetList, targetSection }) {
@@ -1652,11 +1820,13 @@ function flushLobbyDomUpdate() {
     if (!games) {
         window.lobbyLastSnapshotByGame = new Map();
         clearLobbyGameCardState();
+        clearLobbyPlayerCardState();
         const empty = buildLobbyEmptyState();
         gamesList.innerHTML = empty.activeGames;
         bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
         if (finishedGamesList) finishedGamesList.innerHTML = empty.finishedGames;
         playersList.innerHTML = empty.players;
+        window.lobbyLastPlayersAggregate = [];
         updateGamesHubInviteIndicator(nodes, 0);
         if (!window.lobbyHasProcessedFirstSnapshot) {
             window.markLobbyReady?.();
@@ -1701,8 +1871,8 @@ function flushLobbyDomUpdate() {
     updateGamesHubInviteIndicator(nodes, pendingInvitesCount);
 
     const playersAggregate = window.buildPlayersAggregate(sortedGames, userId);
-    resetLobbyPlayersContainer(playersList);
-    window.renderPlayersLobby(playersList, playersAggregate);
+    window.lobbyLastPlayersAggregate = playersAggregate;
+    incrementalUpdatePlayersLobby(playersList, playersAggregate);
     const visiblePresenceUids = window.collectVisiblePresenceUids?.() || [];
     window.setTrackedPresenceUids?.(visiblePresenceUids);
     window.ensurePresenceForUsers?.(visiblePresenceUids);
@@ -1865,7 +2035,9 @@ window.loadLobby = function(user) {
     window.lobbyHandledDirectInvites = getHandledDirectInviteIds();
     window.lobbyLastSnapshotByGame = new Map();
     window.lobbyLastEventSnapshotByGame = new Map();
+    window.lobbyLastPlayersAggregate = [];
     clearLobbyGameCardState();
+    clearLobbyPlayerCardState();
     window.lobbyHasProcessedFirstSnapshot = false;
     window.clearPendingLobbyDomFlush?.();
     if (typeof window.__lobbyWatchUnsubscribe === 'function') {
@@ -1984,77 +2156,7 @@ window.buildPlayersAggregate = function(sortedGames, userId) {
 };
 
 window.renderPlayersLobby = function(container, players) {
-    container.innerHTML = '';
-
-    if (!players.length) {
-        container.innerHTML = '<div class="empty-lobby">Нет соперников<br><small>Завершите или начните партию с игроком</small></div>';
-        return;
-    }
-
-    players.forEach((player) => {
-        const selectedFilter = window.playersExpandedResultFilter?.[player.uid] || '';
-        const selectedGames = selectedFilter ? (player.finishedGames?.[selectedFilter] || []) : [];
-        const playerItem = document.createElement('div');
-        playerItem.className = 'player-item';
-        playerItem.dataset.playerUid = player.uid;
-        const presenceText = window.getPresenceText?.(player.uid) || 'не в сети';
-        playerItem.innerHTML = `
-            <div class="player-item-header">
-                <div class="player-info">
-                    <div class="player-name-row">${getAvatarMarkup(player.name, player.avatarUrl)} <b>${player.name}</b></div>
-                    <div class="player-presence-line">${presenceText}</div>
-                    <div class="player-stats">
-                        <button class="player-stat-pill player-stat-pill-win ${selectedFilter === 'wins' ? 'is-active' : ''}" type="button" data-result-filter="wins">Выиграно: ${player.wins}</button>
-                        <button class="player-stat-pill player-stat-pill-loss ${selectedFilter === 'losses' ? 'is-active' : ''}" type="button" data-result-filter="losses">Проиграно: ${player.losses}</button>
-                        <button class="player-stat-pill player-stat-pill-draw ${selectedFilter === 'draws' ? 'is-active' : ''}" type="button" data-result-filter="draws">Ничьи: ${player.draws}</button>
-                    </div>
-                </div>
-                <div class="game-actions">
-                    <button class="btn btn-sm play-btn player-play-btn">Играть</button>
-                </div>
-            </div>
-            ${selectedFilter ? `
-                <div class="player-finished-list">
-                    ${selectedGames.length ? '' : '<div class="empty-lobby">Подходящих завершённых партий пока нет</div>'}
-                </div>
-            ` : ''}
-        `;
-
-        const playBtn = playerItem.querySelector('.player-play-btn');
-        playBtn.onclick = async (event) => {
-            event.stopPropagation();
-            const user = await window.requireAuthForGame();
-            if (!user) return;
-            openDirectChallengeModal(getLobbyNodes(), player);
-        };
-
-        playerItem.querySelectorAll('[data-result-filter]').forEach((filterBtn) => {
-            filterBtn.onclick = (event) => {
-                event.stopPropagation();
-                const nextFilter = filterBtn.dataset.resultFilter;
-                window.playersExpandedResultFilter = window.playersExpandedResultFilter || {};
-                window.playersExpandedResultFilter[player.uid] = selectedFilter === nextFilter ? '' : nextFilter;
-                window.renderPlayersLobby(container, players);
-            };
-        });
-
-        if (selectedFilter && selectedGames.length) {
-            const listNode = playerItem.querySelector('.player-finished-list');
-            selectedGames
-                .slice()
-                .sort((a, b) => (b.data.lastMoveTime || b.data.createdAt || 0) - (a.data.lastMoveTime || a.data.createdAt || 0))
-                .forEach((gameEntry) => {
-                    const cardData = buildLobbyGameCardData(gameEntry.id, gameEntry.data, window.currentUser?.uid || '');
-                    if (!cardData) return;
-                    const cardNode = createLobbyGameElement(cardData, window.currentUser?.uid || '');
-                    cardNode.classList.add('player-finished-card');
-                    listNode.appendChild(cardNode);
-                });
-        }
-
-        bindAvatarFallbackHandlers(playerItem);
-        container.appendChild(playerItem);
-    });
+    incrementalUpdatePlayersLobby(container, players);
 };
 
 window.refreshLobbyPresenceLabels = function(changedUid = null) {
