@@ -1988,7 +1988,9 @@ window.loadLobby = function(user) {
 
         const playersAggregate = window.buildPlayersAggregate(sortedGames, user.uid);
         window.renderPlayersLobby(playersList, playersAggregate);
-        window.ensurePresenceForUsers?.(window.collectVisiblePresenceUids?.() || []);
+        const visiblePresenceUids = window.collectVisiblePresenceUids?.() || [];
+        window.setTrackedPresenceUids?.(visiblePresenceUids);
+        window.ensurePresenceForUsers?.(visiblePresenceUids);
         window.refreshLobbyPresenceLabels?.();
         if (!window.lobbyHasProcessedFirstSnapshot) {
             window.markLobbyReady?.();
