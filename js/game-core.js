@@ -1494,7 +1494,11 @@ function createOrUpdateLobbyCardNode({ roomId, cardData, userId, gamesList, fini
     }
 
     const targetContainer = cardData.isOver ? finishedGamesList : gamesList;
-    if (node && targetContainer && node.parentNode !== targetContainer) {
+    if (node && targetContainer) {
+        const emptyStateNode = targetContainer.querySelector(':scope > .empty-lobby');
+        if (emptyStateNode) {
+            emptyStateNode.remove();
+        }
         targetContainer.appendChild(node);
     }
 
@@ -1565,6 +1569,13 @@ function incrementalUpdateLobbyGames({ sortedGames, userId, gamesList, finishedG
             window.notify(`Новая активная партия с ${cardData.opponent}`, 'success', 3200);
         }
 
+        const targetContainer = cardData.isOver ? finishedGamesList : gamesList;
+        if (targetContainer) {
+            const emptyStateNode = targetContainer.querySelector(':scope > .empty-lobby');
+            if (emptyStateNode) {
+                emptyStateNode.remove();
+            }
+        }
         createOrUpdateLobbyCardNode({ roomId: id, cardData, userId, gamesList, finishedGamesList });
         if (cardData.isOver) hasFinishedGames = true;
         else hasActiveGames = true;
