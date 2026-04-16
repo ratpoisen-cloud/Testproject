@@ -135,7 +135,7 @@
     // - players: участники, имена, аватары, direct invite metadata
     // - game_state: active/finished для секций и правил
     // - last_move_time/created_at: сортировка и timeAgo
-    // - turn/last_move/fen/pgn: "Ваш ход" + определение старта партии
+    // - turn/pgn: "Ваш ход" + определение старта партии + fallback для legacy
     // - message/resign: подписи результата завершённых партий
     //
     // ВАЖНО: это влияет только на initial hydrate лобби-кеша.
@@ -147,8 +147,6 @@
         'last_move_time',
         'created_at',
         'turn',
-        'last_move',
-        'fen',
         'pgn',
         'message',
         'resign'
