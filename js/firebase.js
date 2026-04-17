@@ -65,7 +65,8 @@
             last_move: game.lastMove || null,
             resign: game.resign || null,
             reactions: game.reactions || [],
-            quick_phrase: game.quickPhrase || null
+            quick_phrase: game.quickPhrase || null,
+            rematch_request: game.rematchRequest || null
         };
     };
 
@@ -85,7 +86,8 @@
             lastMove: row.last_move || null,
             resign: row.resign || null,
             reactions: row.reactions || [],
-            quickPhrase: row.quick_phrase || null
+            quickPhrase: row.quick_phrase || null,
+            rematchRequest: row.rematch_request || null
         };
     };
 
@@ -109,6 +111,7 @@
         if (Object.prototype.hasOwnProperty.call(row, 'resign')) patch.resign = row.resign ?? null;
         if (Object.prototype.hasOwnProperty.call(row, 'reactions')) patch.reactions = row.reactions ?? [];
         if (Object.prototype.hasOwnProperty.call(row, 'quick_phrase')) patch.quickPhrase = row.quick_phrase ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'rematch_request')) patch.rematchRequest = row.rematch_request ?? null;
         return patch;
     };
 
@@ -128,6 +131,7 @@
         if (Object.prototype.hasOwnProperty.call(data, 'resign')) patch.resign = data.resign;
         if (Object.prototype.hasOwnProperty.call(data, 'reactions')) patch.reactions = data.reactions;
         if (Object.prototype.hasOwnProperty.call(data, 'quickPhrase')) patch.quick_phrase = data.quickPhrase;
+        if (Object.prototype.hasOwnProperty.call(data, 'rematchRequest')) patch.rematch_request = data.rematchRequest;
         return patch;
     };
 
@@ -149,7 +153,8 @@
         'turn',
         'pgn',
         'message',
-        'resign'
+        'resign',
+        'rematch_request'
     ].join(',');
 
     const makeSnapshot = (value) => ({
@@ -180,6 +185,10 @@
 
     window.getDrawRef = function getDrawRef(roomId) {
         return { path: `games/${roomId}/drawRequest`, roomId, field: 'drawRequest', type: 'field' };
+    };
+
+    window.getRematchRef = function getRematchRef(roomId) {
+        return { path: `games/${roomId}/rematchRequest`, roomId, field: 'rematchRequest', type: 'field' };
     };
 
     // Firebase-like get(): снаружи возвращает snapshot-объект в старом стиле,
@@ -326,7 +335,8 @@
             game.turn || null,
             game.pgn || null,
             game.message || null,
-            game.resign || null
+            game.resign || null,
+            game.rematchRequest || null
         ]);
     };
 
