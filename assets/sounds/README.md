@@ -17,6 +17,7 @@
 - `buttonrollover.wav` → `button_rollover`
 - `buttonclick.wav` → `button_click`
 - `buttonclickrelease.wav` → `button_click_release`
+- `modal.mp3` → `modal_open`
 - `move-1.mp3`, `move-2.mp3`, `move-3.mp3`, `move-4.mp3` → `move`
 - `capture-default-1.mp3`, `capture-default-2.mp3` → `capture_default`
 - `capture-ranged-1.mp3`, `capture-ranged-2.mp3` → `capture_ranged`
@@ -46,6 +47,13 @@
   Для него включён anti-spam через cooldown в `SoundManager` и дополнительная фильтрация повторного hover внутри одного элемента.
 - `button_click` / `button_click_release` — звук нажатия и отпускания для интерактивных элементов интерфейса (лобби, модалки, action buttons, контролы).
 - UI-звуки не применяются к drag шахматных фигур, клеткам доски и прочей игровой механике.
+- `modal_open` — **не общий звук любой модалки**. Он играет только для адресата входящих событий:
+  - запрос отмены хода;
+  - запрос реванша;
+  - предложение ничьей;
+  - приглашение в новую игру (лобби);
+  - приглашение на реванш (лобби).
+  Для `promotion modal`, finished-game modal, обычных confirm/settings/modal-окон этот звук не используется.
 
 1. **Случайный выбор без немедленного повтора**
    - Для событий с несколькими вариантами (`move`, `capture_*`, `promotion`, `check`, `checkmate`, voice lines) берётся случайный вариант, но не тот же, что игрался в прошлый раз для этого события.

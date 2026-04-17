@@ -14,6 +14,7 @@ create table if not exists public.games (
   created_at bigint not null,
   takeback_request jsonb,
   draw_request jsonb,
+  rematch_request jsonb,
   turn text,
   last_move bigint,
   resign text,
@@ -27,6 +28,9 @@ add column if not exists reactions jsonb not null default '[]'::jsonb;
 
 alter table public.games
 add column if not exists quick_phrase jsonb;
+
+alter table public.games
+add column if not exists rematch_request jsonb;
 
 update public.games
 set reactions = '[]'::jsonb

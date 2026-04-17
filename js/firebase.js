@@ -65,7 +65,8 @@
             last_move: game.lastMove || null,
             resign: game.resign || null,
             reactions: game.reactions || [],
-            quick_phrase: game.quickPhrase || null
+            quick_phrase: game.quickPhrase || null,
+            rematch_request: game.rematchRequest || null
         };
     };
 
@@ -85,7 +86,8 @@
             lastMove: row.last_move || null,
             resign: row.resign || null,
             reactions: row.reactions || [],
-            quickPhrase: row.quick_phrase || null
+            quickPhrase: row.quick_phrase || null,
+            rematchRequest: row.rematch_request || null
         };
     };
 
@@ -109,6 +111,7 @@
         if (Object.prototype.hasOwnProperty.call(row, 'resign')) patch.resign = row.resign ?? null;
         if (Object.prototype.hasOwnProperty.call(row, 'reactions')) patch.reactions = row.reactions ?? [];
         if (Object.prototype.hasOwnProperty.call(row, 'quick_phrase')) patch.quickPhrase = row.quick_phrase ?? null;
+        if (Object.prototype.hasOwnProperty.call(row, 'rematch_request')) patch.rematchRequest = row.rematch_request ?? null;
         return patch;
     };
 
@@ -128,6 +131,7 @@
         if (Object.prototype.hasOwnProperty.call(data, 'resign')) patch.resign = data.resign;
         if (Object.prototype.hasOwnProperty.call(data, 'reactions')) patch.reactions = data.reactions;
         if (Object.prototype.hasOwnProperty.call(data, 'quickPhrase')) patch.quick_phrase = data.quickPhrase;
+        if (Object.prototype.hasOwnProperty.call(data, 'rematchRequest')) patch.rematch_request = data.rematchRequest;
         return patch;
     };
 
@@ -140,7 +144,7 @@
     //
     // ВАЖНО: это влияет только на initial hydrate лобби-кеша.
     // get(game)/watchGame по конкретной комнате продолжают читать select('*').
-    const LOBBY_GAMES_SELECT_FIELDS = [
+    const LOBBY_GAMES_SELECT_FIELDS_LEGACY = [
         'room_id',
         'players',
         'game_state',
@@ -150,6 +154,11 @@
         'pgn',
         'message',
         'resign'
+    ].join(',');
+
+    const LOBBY_GAMES_SELECT_FIELDS_EXTENDED = [
+        LOBBY_GAMES_SELECT_FIELDS_LEGACY,
+        'rematch_request'
     ].join(',');
 
     const makeSnapshot = (value) => ({
@@ -180,6 +189,10 @@
 
     window.getDrawRef = function getDrawRef(roomId) {
         return { path: `games/${roomId}/drawRequest`, roomId, field: 'drawRequest', type: 'field' };
+    };
+
+    window.getRematchRef = function getRematchRef(roomId) {
+        return { path: `games/${roomId}/rematchRequest`, roomId, field: 'rematchRequest', type: 'field' };
     };
 
     // Firebase-like get(): снаружи возвращает snapshot-объект в старом стиле,
@@ -326,7 +339,8 @@
             game.turn || null,
             game.pgn || null,
             game.message || null,
-            game.resign || null
+            game.resign || null,
+            game.rematchRequest || null
         ]);
     };
 
@@ -352,10 +366,28 @@
         }
 
         lobbyGamesCacheHydrationPromise = (async () => {
-            const { data, error } = await supabase.from('games').select(LOBBY_GAMES_SELECT_FIELDS);
+            let data = null;
+            let error = null;
+
+            ({ data, error } = await supabase.from('games').select(LOBBY_GAMES_SELECT_FIELDS_EXTENDED));
+
             if (error) {
-                console.error('watchGames initial cache hydrate error:', error);
-                throw error;
+                const message = String(error?.message || '');
+                const details = String(error?.details || '');
+                const hint = String(error?.hint || '');
+                const isMissingRematchColumn = /rematch_request/i.test(`${message} ${details} ${hint}`);
+
+                if (!isMissingRematchColumn) {
+                    console.error('watchGames initial cache hydrate error:', error);
+                    throw error;
+                }
+
+                console.warn('watchGames: rematch_request column is unavailable, fallback to legacy lobby fields');
+                ({ data, error } = await supabase.from('games').select(LOBBY_GAMES_SELECT_FIELDS_LEGACY));
+                if (error) {
+                    console.error('watchGames legacy fallback hydrate error:', error);
+                    throw error;
+                }
             }
 
             lobbyGamesCache.clear();
