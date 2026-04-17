@@ -1469,16 +1469,26 @@ function sortLobbyGames(games) {
         .sort((a, b) => {
             const aData = a.entry[1];
             const bData = b.entry[1];
-            const aOver = aData.gameState === 'game_over';
-            const bOver = bData.gameState === 'game_over';
+            const userId = window.currentUser?.uid || '';
+            const aActionableRematchInvite = userId
+                ? Boolean(window.getRematchInvitationForUser?.(a.entry[0], aData, userId))
+                : false;
+            const bActionableRematchInvite = userId
+                ? Boolean(window.getRematchInvitationForUser?.(b.entry[0], bData, userId))
+                : false;
+            const aOver = aData.gameState === 'game_over' && !aActionableRematchInvite;
+            const bOver = bData.gameState === 'game_over' && !bActionableRematchInvite;
 
             if (aOver !== bOver) return aOver ? 1 : -1;
 
-            const userId = window.currentUser?.uid || '';
             if (!aOver && !bOver && userId) {
                 const aIsInvite = isDirectInvitePendingForRoom(a.entry[0], aData, userId);
                 const bIsInvite = isDirectInvitePendingForRoom(b.entry[0], bData, userId);
                 if (aIsInvite !== bIsInvite) return aIsInvite ? -1 : 1;
+
+                if (aActionableRematchInvite !== bActionableRematchInvite) {
+                    return aActionableRematchInvite ? -1 : 1;
+                }
 
                 const aIsMyTurn = isMyTurnForLobbyGame(aData, userId);
                 const bIsMyTurn = isMyTurnForLobbyGame(bData, userId);
@@ -1739,6 +1749,7 @@ function buildLobbyGameCardData(id, data, userId) {
     const isDirectInviteForMe = isDirectInvitePendingForRoom(id, data, userId);
     const isRematchInviteForMe = Boolean(rematchInvite);
     const isInviteForMe = isDirectInviteForMe || isRematchInviteForMe;
+    const shouldSurfaceRematchInActive = isOver && isRematchInviteForMe;
     const showInviteStatus = isDirectInviteForMe || (isDirectInvite && !isOver && !hasStarted && isWaitingForOpponent);
     const showRematchInviteStatus = isRematchInviteForMe && isOver;
     const statusText = isOver
@@ -1749,7 +1760,10 @@ function buildLobbyGameCardData(id, data, userId) {
                 ? (isInviteForMe ? 'Приглашение' : 'Приглашение отправлено')
                 : ''));
     const effectiveStatusText = showRematchInviteStatus ? 'Реванш' : statusText;
-    const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
+    const stateClass = shouldSurfaceRematchInActive
+        ? 'active'
+        : (isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active'));
+    const displaySection = shouldSurfaceRematchInActive ? 'active' : (isOver ? 'finished' : 'active');
     const resultComment = isOver ? window.getFinishedGameTerminationLabel(data) : '';
     const presenceSnapshot = getLobbyPresenceSnapshot(opponentUid, { isWaitingForOpponent });
 
@@ -1769,6 +1783,7 @@ function buildLobbyGameCardData(id, data, userId) {
         isInviteForMe,
         isDirectInviteForMe,
         isRematchInviteForMe,
+        displaySection,
         rematchInviteId: rematchInvite?.id || '',
         resultComment,
         resultClass: resultState?.className || '',
@@ -2156,8 +2171,8 @@ function fullRebuildLobbyGames({ sortedGames, userId, gamesList, finishedGamesLi
         if (!cardData) return;
         if (cardData.isInviteForMe) pendingInvitesCount += 1;
 
-        const targetSection = cardData.isOver ? 'finished' : 'active';
-        const targetList = cardData.isOver ? finishedGamesList : gamesList;
+        const targetSection = cardData.displaySection || (cardData.isOver ? 'finished' : 'active');
+        const targetList = targetSection === 'finished' ? finishedGamesList : gamesList;
         if (!targetList) return;
         createOrUpdateLobbyCardNode({
             roomId: id,
@@ -2167,7 +2182,7 @@ function fullRebuildLobbyGames({ sortedGames, userId, gamesList, finishedGamesLi
             targetSection
         });
 
-        if (cardData.isOver) {
+        if (targetSection === 'finished') {
             hasFinishedGames = true;
         } else {
             hasActiveGames = true;
@@ -2198,8 +2213,8 @@ function incrementalUpdateLobbyGames({ sortedGames, userId, gamesList, finishedG
         seenRoomIds.add(id);
         if (cardData.isInviteForMe) pendingInvitesCount += 1;
 
-        const targetSection = cardData.isOver ? 'finished' : 'active';
-        const targetList = cardData.isOver ? finishedGamesList : gamesList;
+        const targetSection = cardData.displaySection || (cardData.isOver ? 'finished' : 'active');
+        const targetList = targetSection === 'finished' ? finishedGamesList : gamesList;
         if (!targetList) return;
         removeLobbySectionEmptyState(targetList);
         createOrUpdateLobbyCardNode({
@@ -2210,7 +2225,7 @@ function incrementalUpdateLobbyGames({ sortedGames, userId, gamesList, finishedG
             targetSection
         });
 
-        if (cardData.isOver) {
+        if (targetSection === 'finished') {
             hasFinishedGames = true;
         } else {
             hasActiveGames = true;
