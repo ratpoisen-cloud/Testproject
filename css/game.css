@@ -595,6 +595,41 @@
     justify-content: center;
 }
 
+.promotion-choice-card {
+    min-width: 300px;
+}
+
+.promotion-choice-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(56px, 1fr));
+    gap: 12px;
+}
+
+.promotion-choice-btn {
+    min-height: 72px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 88%, #fff 12%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.15s ease;
+}
+
+.promotion-choice-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 20px color-mix(in srgb, #000 20%, transparent);
+}
+
+.promotion-choice-piece {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
 .btn-round {
     width: 56px;
     height: 56px;

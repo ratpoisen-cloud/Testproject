@@ -26,6 +26,7 @@ window.boardReactionLongPressTriggered = false;
 window.__boardResizeSyncObserver = null;
 window.__boardResizeSyncRafId = null;
 window.__boardResizeSyncTimeoutId = null;
+window.pendingPromotionSelection = null;
 
 window.syncBoardSizeWithLayout = function() {
     if (!window.board || typeof window.board.resize !== 'function') {
@@ -155,7 +156,9 @@ window.resetTransientBoardInteractionState = function() {
     window.dragSourceSquare = null;
     window.selectedSquare = null;
     window.pendingMove = null;
+    window.pendingPromotionSelection = null;
     window.removeHighlights();
+    window.closePromotionChoiceModal?.();
     window.closeBoardReactionPicker?.();
     document.getElementById('confirm-move-box')?.classList.add('hidden');
 };
@@ -218,6 +221,7 @@ window.initPieceSetControls = function(pieceSetSelect) {
 
 // Инициализация доски
 window.initBoard = function(playerColor) {
+    window.initPromotionChoiceModalBindings?.();
     window.board = Chessboard('myBoard', window.getBoardConfig());
     window.updateCheckHighlight(window.game?.fen ? window.game.fen() : 'start');
     
@@ -234,6 +238,28 @@ window.initBoard = function(playerColor) {
     window.scheduleBoardResizeSync();
     
     return window.board;
+};
+
+window.initPromotionChoiceModalBindings = function() {
+    if (window.__promotionChoiceBindingsInitialized) return;
+    window.__promotionChoiceBindingsInitialized = true;
+
+    const modal = document.getElementById('promotion-choice-box');
+    if (!modal) return;
+
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            window.closePromotionChoiceModal?.();
+            window.updateBoardPosition(window.game?.fen?.() || 'start', true);
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        if (modal.classList.contains('hidden')) return;
+        window.closePromotionChoiceModal?.();
+        window.updateBoardPosition(window.game?.fen?.() || 'start', true);
+    });
 };
 
 window.setupBoardReactionUI = function() {
@@ -532,6 +558,81 @@ window.removeTemporaryHighlights = function() {
     $('#myBoard .square-55d63').removeClass('highlight-drag-source highlight-possible highlight-capture');
 };
 
+window.getPieceAssetPath = function(pieceType, colorCode = 'w') {
+    const pieceTheme = window.getCurrentPieceTheme();
+    const safeColorCode = colorCode === 'b' ? 'b' : 'w';
+    const safePieceType = String(pieceType || 'q').toLowerCase();
+    const pieceKey = `${safeColorCode}${safePieceType.toUpperCase()}`;
+    return pieceTheme.replace('{piece}', pieceKey);
+};
+
+window.getPromotionChoices = function(from, to) {
+    if (!window.game || !from || !to) return [];
+    const moves = window.game.moves({ square: from, verbose: true });
+    const promotionMoves = moves
+        .filter((move) => move.to === to && move.promotion)
+        .map((move) => String(move.promotion).toLowerCase());
+    if (!promotionMoves.length) return [];
+    const ordered = ['q', 'r', 'b', 'n'];
+    return ordered.filter((pieceType) => promotionMoves.includes(pieceType));
+};
+
+window.applyPendingMovePreview = function(from, to, promotion = 'q') {
+    const preview = window.buildMovePreview(from, to, promotion);
+    if (!preview) return false;
+    window.pendingMove = preview;
+    window.updateBoardPosition(preview.previewFen, true);
+    document.getElementById('confirm-move-box')?.classList.remove('hidden');
+    return true;
+};
+
+window.closePromotionChoiceModal = function() {
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
+    window.pendingPromotionSelection = null;
+};
+
+window.openPromotionChoiceModal = function({ from, to, choices = ['q', 'r', 'b', 'n'] }) {
+    const modal = document.getElementById('promotion-choice-box');
+    const optionsNode = document.getElementById('promotion-choice-options');
+    if (!modal || !optionsNode) {
+        return window.applyPendingMovePreview(from, to, 'q');
+    }
+
+    const playerColorCode = window.playerColor === 'b' ? 'b' : 'w';
+    window.pendingPromotionSelection = { from, to, choices };
+    optionsNode.innerHTML = '';
+
+    choices.forEach((pieceType) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'promotion-choice-btn';
+        button.dataset.promotion = pieceType;
+        button.setAttribute('aria-label', `Превратить в ${pieceType.toUpperCase()}`);
+
+        const img = document.createElement('img');
+        img.className = 'promotion-choice-piece';
+        img.src = window.getPieceAssetPath(pieceType, playerColorCode);
+        img.alt = '';
+        img.setAttribute('aria-hidden', 'true');
+        button.appendChild(img);
+
+        button.addEventListener('click', () => {
+            const pending = window.pendingPromotionSelection;
+            if (!pending) return;
+            const applied = window.applyPendingMovePreview(pending.from, pending.to, pieceType);
+            window.closePromotionChoiceModal();
+            if (!applied) {
+                window.updateBoardPosition(window.game.fen(), true);
+            }
+        });
+
+        optionsNode.appendChild(button);
+    });
+
+    modal.classList.remove('hidden');
+    return true;
+};
+
 // Обработка сброса фигуры (drag-and-drop)
 window.handleDrop = function(source, target) {
     if (window.isMobile) return 'snapback';
@@ -549,21 +650,18 @@ window.handleDrop = function(source, target) {
         return 'snapback';
     }
     
-    const preview = window.buildMovePreview(source, target, 'q');
-    
-    if (!preview) {
+    const promotionChoices = window.getPromotionChoices(source, target);
+    if (promotionChoices.length) {
+        window.openPromotionChoiceModal({ from: source, to: target, choices: promotionChoices });
         window.dragSourceSquare = null;
         return 'snapback';
     }
-    
-    // Сохраняем ход
-    window.pendingMove = preview;
-    
-    // Показываем ход на доске
-    window.updateBoardPosition(preview.previewFen, true);
-    
-    // Показываем оверлей подтверждения
-    document.getElementById('confirm-move-box')?.classList.remove('hidden');
+
+    const previewApplied = window.applyPendingMovePreview(source, target, 'q');
+    if (!previewApplied) {
+        window.dragSourceSquare = null;
+        return 'snapback';
+    }
     
     window.dragSourceSquare = null;
     return 'snapback';
@@ -609,13 +707,15 @@ window.handleMobileClick = function(square) {
             return;
         }
         
-        const preview = window.buildMovePreview(window.selectedSquare, square, 'q');
-        
-        if (preview) {
-            window.pendingMove = preview;
-            // Показываем ход на доске
-            window.updateBoardPosition(preview.previewFen, true);
-            document.getElementById('confirm-move-box').classList.remove('hidden');
+        const from = window.selectedSquare;
+        const promotionChoices = window.getPromotionChoices(from, square);
+        if (promotionChoices.length) {
+            const opened = window.openPromotionChoiceModal({ from, to: square, choices: promotionChoices });
+            window.clearSelection();
+            if (!opened) {
+                window.updateBoardPosition(window.game.fen(), true);
+            }
+        } else if (window.applyPendingMovePreview(from, square, 'q')) {
             window.clearSelection();
         } else {
             if (piece && piece.color === window.playerColor) {

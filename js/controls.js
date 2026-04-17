@@ -52,7 +52,9 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const resetPendingMoveUI = () => {
         window.pendingMove = null;
+        window.pendingPromotionSelection = null;
         hideElement('confirm-move-box');
+        window.closePromotionChoiceModal?.();
         window.clearSelection();
     };
 
@@ -142,6 +144,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
             if (!moveResult) {
                 window.pendingMove = null;
+                window.pendingPromotionSelection = null;
                 hideElement('confirm-move-box');
                 window.updateBoardPosition(window.game.fen(), true);
                 window.clearSelection();
@@ -203,7 +206,9 @@ window.setupGameControls = function(gameRef, roomId) {
         setClickHandler('cancel-move-btn', () => {
             if (window.pendingMove) {
                 window.pendingMove = null;
+                window.pendingPromotionSelection = null;
                 hideElement('confirm-move-box');
+                window.closePromotionChoiceModal?.();
 
                 // Плавно возвращаем доску в исходное состояние
                 if (window.isMobile) {
