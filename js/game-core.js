@@ -228,7 +228,109 @@ window.confirmRematchForRoom = async function(roomId, confirmerUid) {
         }
     });
 
-    return newId;
+    return startedRoomId;
+};
+
+window.requestRematchFromRoom = async function(roomId, requesterUid) {
+    if (!roomId || !requesterUid) return null;
+    const gameSnap = await get(window.getGameRef(roomId));
+    const gameData = gameSnap.val();
+    if (!gameData || gameData.gameState !== 'game_over') return null;
+
+    const players = gameData.players || {};
+    const requesterColor = players.white === requesterUid ? 'w' : (players.black === requesterUid ? 'b' : null);
+    if (!requesterColor) return null;
+    const targetUid = requesterColor === 'w' ? players.black : players.white;
+    if (!targetUid) return null;
+
+    const existing = gameData.rematchRequest || null;
+    const existingStatus = window.resolveRematchStatus(existing);
+    if (existing && (existingStatus === 'pending' || existingStatus === 'accepted')) {
+        const nextConfirmedBy = { ...(existing.confirmedBy || {}), [requesterColor]: true };
+        const now = Date.now();
+        const nextRequest = {
+            ...existing,
+            status: 'pending',
+            confirmedBy: nextConfirmedBy,
+            updatedAt: now
+        };
+        await window.updateGame(window.getGameRef(roomId), {
+            rematchRequest: nextRequest
+        });
+        const startedRoomId = await window.finalizeRematchIfReady(roomId, {
+            ...gameData,
+            rematchRequest: nextRequest
+        });
+        return { roomId, rematchRequestId: existing.id || '', startedRoomId: startedRoomId || null };
+    }
+
+    const now = Date.now();
+    const request = {
+        id: `${roomId}_${now}`,
+        type: 'rematch_invite',
+        createdAt: now,
+        updatedAt: now,
+        expiresAt: now + (1000 * 60 * 60 * 12),
+        createdByUid: requesterUid,
+        createdByName: window.currentUser?.displayName || window.currentUser?.email?.split('@')[0] || 'Игрок',
+        targetUid,
+        status: 'pending',
+        confirmedBy: {
+            [requesterColor]: true
+        },
+        proposedRoomId: window.generateRoomId()
+    };
+
+    await window.updateGame(window.getGameRef(roomId), { rematchRequest: request });
+    return { roomId, rematchRequestId: request.id, startedRoomId: null };
+};
+
+window.confirmRematchForRoom = async function(roomId, confirmerUid) {
+    if (!roomId || !confirmerUid) return null;
+    const gameRef = window.getGameRef(roomId);
+    const gameSnap = await get(gameRef);
+    const gameData = gameSnap.val();
+    const players = gameData?.players || {};
+    const rematch = gameData?.rematchRequest || null;
+    if (!window.isRematchRequestRelevant(rematch)) return null;
+
+    const confirmerColor = players.white === confirmerUid ? 'w' : (players.black === confirmerUid ? 'b' : null);
+    if (!confirmerColor) return null;
+    const nextConfirmedBy = { ...(rematch.confirmedBy || {}), [confirmerColor]: true };
+    const now = Date.now();
+    const nextRequest = {
+        ...rematch,
+        confirmedBy: nextConfirmedBy,
+        status: 'pending',
+        updatedAt: now
+    };
+
+    await window.updateGame(gameRef, {
+        rematchRequest: nextRequest
+    });
+
+    return window.finalizeRematchIfReady(roomId, {
+        ...gameData,
+        rematchRequest: nextRequest
+    });
+};
+
+window.declineRematchForRoom = async function(roomId, declinerUid) {
+    if (!roomId || !declinerUid) return;
+    const gameRef = window.getGameRef(roomId);
+    const gameSnap = await get(gameRef);
+    const gameData = gameSnap.val();
+    const rematch = gameData?.rematchRequest || null;
+    if (!rematch) return;
+    await window.updateGame(gameRef, {
+        rematchRequest: {
+            ...rematch,
+            status: 'declined',
+            declinedByUid: declinerUid,
+            declinedAt: Date.now(),
+            updatedAt: Date.now()
+        }
+    });
 };
 
 window.declineRematchForRoom = async function(roomId, declinerUid) {
