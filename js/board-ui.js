@@ -26,6 +26,13 @@ window.boardReactionLongPressTriggered = false;
 window.__boardResizeSyncObserver = null;
 window.__boardResizeSyncRafId = null;
 window.__boardResizeSyncTimeoutId = null;
+window.pendingPromotionSelection = null;
+
+const PROMOTION_PIECE_ORDER = ['q', 'r', 'b', 'n'];
+const PROMOTION_GLYPHS = {
+    w: { q: '♕', r: '♖', b: '♗', n: '♘' },
+    b: { q: '♛', r: '♜', b: '♝', n: '♞' }
+};
 
 window.syncBoardSizeWithLayout = function() {
     if (!window.board || typeof window.board.resize !== 'function') {
@@ -155,9 +162,11 @@ window.resetTransientBoardInteractionState = function() {
     window.dragSourceSquare = null;
     window.selectedSquare = null;
     window.pendingMove = null;
+    window.pendingPromotionSelection = null;
     window.removeHighlights();
     window.closeBoardReactionPicker?.();
     document.getElementById('confirm-move-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
 };
 
 window.rebuildBoardWithCurrentState = function() {
@@ -549,6 +558,12 @@ window.handleDrop = function(source, target) {
         return 'snapback';
     }
     
+    if (window.moveRequiresPromotion(source, target)) {
+        const opened = window.openPromotionChoice(source, target);
+        window.dragSourceSquare = null;
+        return opened ? 'snapback' : 'snapback';
+    }
+
     const preview = window.buildMovePreview(source, target, 'q');
     
     if (!preview) {
@@ -609,6 +624,12 @@ window.handleMobileClick = function(square) {
             return;
         }
         
+        if (window.moveRequiresPromotion(window.selectedSquare, square)) {
+            window.openPromotionChoice(window.selectedSquare, square);
+            window.clearSelection();
+            return;
+        }
+
         const preview = window.buildMovePreview(window.selectedSquare, square, 'q');
         
         if (preview) {
@@ -720,6 +741,56 @@ window.buildMovePreview = function(from, to, promotion = 'q') {
         san: move.san,
         previewFen: previewGame.fen()
     };
+};
+
+window.moveRequiresPromotion = function(from, to) {
+    if (!window.game) return false;
+    const piece = window.game.get(from);
+    if (!piece || piece.type !== 'p') return false;
+    const targetRank = String(to || '').charAt(1);
+    return (piece.color === 'w' && targetRank === '8') || (piece.color === 'b' && targetRank === '1');
+};
+
+window.ensurePromotionChoiceBindings = function() {
+    const container = document.getElementById('promotion-choice-options');
+    if (!container || container.dataset.bound === '1') return;
+    container.dataset.bound = '1';
+    container.querySelectorAll('[data-promotion-piece]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const selectedPiece = button.dataset.promotionPiece;
+            const pending = window.pendingPromotionSelection;
+            if (!pending || !selectedPiece) return;
+
+            const preview = window.buildMovePreview(pending.from, pending.to, selectedPiece);
+            const box = document.getElementById('promotion-choice-box');
+            box?.classList.add('hidden');
+            window.pendingPromotionSelection = null;
+            if (!preview) return;
+
+            window.pendingMove = preview;
+            window.updateBoardPosition(preview.previewFen, true);
+            document.getElementById('confirm-move-box')?.classList.remove('hidden');
+            window.clearSelection?.();
+        });
+    });
+};
+
+window.openPromotionChoice = function(from, to) {
+    const box = document.getElementById('promotion-choice-box');
+    const options = document.getElementById('promotion-choice-options');
+    if (!box || !options) return false;
+
+    window.ensurePromotionChoiceBindings();
+    window.pendingPromotionSelection = { from, to };
+
+    const color = window.playerColor === 'b' ? 'b' : 'w';
+    options.querySelectorAll('[data-promotion-piece]').forEach((button) => {
+        const piece = button.dataset.promotionPiece;
+        button.textContent = PROMOTION_GLYPHS[color]?.[piece] || '♛';
+    });
+
+    box.classList.remove('hidden');
+    return true;
 };
 
 // Полная очистка подсветки

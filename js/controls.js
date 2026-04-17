@@ -22,9 +22,14 @@ window.setupGameControls = function(gameRef, roomId) {
             window.initBotGame({ color: window.playerColor, level: window.botLevel || 'medium' });
             return;
         }
-        const newId = await window.createRematchGameFromRoom(roomId);
-        if (!newId) return;
-        location.href = location.origin + location.pathname + `?room=${newId}`;
+        const requesterUid = window.currentUser?.uid;
+        if (!requesterUid) return;
+        const result = await window.requestRematchFromRoom(roomId, requesterUid);
+        if (!result) {
+            window.notify('Не удалось отправить запрос реванша', 'error', 2800);
+            return;
+        }
+        window.notify('Запрос реванша отправлен', 'success', 2600);
     };
 
     const bindPgnCopyButton = (buttonId) => {
@@ -52,7 +57,9 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const resetPendingMoveUI = () => {
         window.pendingMove = null;
+        window.pendingPromotionSelection = null;
         hideElement('confirm-move-box');
+        hideElement('promotion-choice-box');
         window.clearSelection();
     };
 
@@ -121,6 +128,8 @@ window.setupGameControls = function(gameRef, roomId) {
         }
         document.getElementById('takeback-request-box')?.classList.add('hidden');
         document.getElementById('draw-request-box')?.classList.add('hidden');
+        document.getElementById('rematch-request-box')?.classList.add('hidden');
+        document.getElementById('promotion-choice-box')?.classList.add('hidden');
     };
 
     const hasOpponentJoined = async () => {
@@ -354,6 +363,7 @@ window.setupGameControls = function(gameRef, roomId) {
     // ===== Takeback =====
     const bindTakebackControls = () => {
         if (isBotMode()) return;
+        let lastIncomingTakebackKey = '';
         // Запрос отмены хода
         setClickHandler('takeback-btn', () => {
             if (isFinishedGame()) {
@@ -390,9 +400,17 @@ window.setupGameControls = function(gameRef, roomId) {
                 }
 
                 if (request.from !== window.playerColor && !request.answered) {
+                    const requestKey = `${request.timestamp || ''}:${request.from || ''}`;
+                    if (requestKey && requestKey !== lastIncomingTakebackKey) {
+                        window.SoundManager?.play?.('modal_open');
+                        lastIncomingTakebackKey = requestKey;
+                    }
                     requestBox?.classList.remove('hidden');
                     window.pendingTakeback = request;
+                    return;
                 }
+                requestBox?.classList.add('hidden');
+                window.pendingTakeback = null;
             });
         }
 
@@ -435,6 +453,7 @@ window.setupGameControls = function(gameRef, roomId) {
     // ===== Draw =====
     const bindDrawControls = () => {
         if (isBotMode()) return;
+        let lastIncomingDrawKey = '';
         // Кнопка "Предложить ничью"
         setClickHandler('draw-btn', () => {
             if (isFinishedGame()) {
@@ -478,6 +497,11 @@ window.setupGameControls = function(gameRef, roomId) {
 
                 window.pendingDraw = request;
                 if (request.from !== window.playerColor && !request.answered) {
+                    const requestKey = `${request.timestamp || ''}:${request.from || ''}`;
+                    if (requestKey && requestKey !== lastIncomingDrawKey) {
+                        window.SoundManager?.play?.('modal_open');
+                        lastIncomingDrawKey = requestKey;
+                    }
                     document.getElementById('draw-request-text').innerHTML =
                         `${request.fromName || 'Соперник'} предлагает ничью`;
                     drawRequestBox?.classList.remove('hidden');
@@ -512,6 +536,60 @@ window.setupGameControls = function(gameRef, roomId) {
             if (window.pendingDraw) {
                 window.rejectDraw(gameRef, roomId);
             }
+        });
+    };
+
+    const bindRematchControls = () => {
+        if (isBotMode()) return;
+        let lastIncomingRematchKey = '';
+
+        const rematchRef = window.getRematchRef?.(roomId);
+        if (typeof onValue !== 'undefined' && rematchRef) {
+            onValue(rematchRef, (snap) => {
+                const request = snap.val();
+                const requestBox = document.getElementById('rematch-request-box');
+                if (!request || !window.isRematchRequestRelevant?.(request) || isFinishedGame() === false) {
+                    requestBox?.classList.add('hidden');
+                    window.pendingRematch = null;
+                    return;
+                }
+
+                const isIncoming = request.createdByUid
+                    && request.createdByUid !== window.currentUser?.uid
+                    && !request.confirmedBy?.[window.playerColor];
+
+                if (isIncoming) {
+                    const requestKey = `${request.id || ''}:${request.updatedAt || ''}`;
+                    if (requestKey && requestKey !== lastIncomingRematchKey) {
+                        window.SoundManager?.play?.('modal_open');
+                        lastIncomingRematchKey = requestKey;
+                    }
+                    document.getElementById('rematch-request-text').textContent =
+                        `${request.createdByName || 'Соперник'} предлагает реванш`;
+                    requestBox?.classList.remove('hidden');
+                    window.pendingRematch = request;
+                    return;
+                }
+
+                requestBox?.classList.add('hidden');
+                window.pendingRematch = request;
+            });
+        }
+
+        setClickHandler('rematch-accept', async () => {
+            if (!window.pendingRematch || !window.currentUser?.uid) return;
+            const newId = await window.confirmRematchForRoom(roomId, window.currentUser.uid);
+            document.getElementById('rematch-request-box')?.classList.add('hidden');
+            if (newId) {
+                location.href = `${location.origin}${location.pathname}?room=${newId}`;
+            }
+        });
+
+        setClickHandler('rematch-reject', async () => {
+            if (!window.currentUser?.uid) return;
+            await window.declineRematchForRoom(roomId, window.currentUser.uid);
+            document.getElementById('rematch-request-box')?.classList.add('hidden');
+            window.pendingRematch = null;
         });
     };
 
@@ -553,5 +631,6 @@ window.setupGameControls = function(gameRef, roomId) {
     bindReviewControls();
     bindTakebackControls();
     bindDrawControls();
+    bindRematchControls();
     bindGameOverControls();
 };
