@@ -1469,16 +1469,13 @@ function sortLobbyGames(games) {
         .sort((a, b) => {
             const aData = a.entry[1];
             const bData = b.entry[1];
-            const userId = window.currentUser?.uid || '';
-            const aHasRematchInvite = userId ? isRematchInvitePendingForRoom(a.entry[0], aData, userId) : false;
-            const bHasRematchInvite = userId ? isRematchInvitePendingForRoom(b.entry[0], bData, userId) : false;
-            const aOver = aData.gameState === 'game_over' && !aHasRematchInvite;
-            const bOver = bData.gameState === 'game_over' && !bHasRematchInvite;
+            const aOver = aData.gameState === 'game_over';
+            const bOver = bData.gameState === 'game_over';
 
             if (aOver !== bOver) return aOver ? 1 : -1;
 
+            const userId = window.currentUser?.uid || '';
             if (!aOver && !bOver && userId) {
-                if (aHasRematchInvite !== bHasRematchInvite) return aHasRematchInvite ? -1 : 1;
                 const aIsInvite = isDirectInvitePendingForRoom(a.entry[0], aData, userId);
                 const bIsInvite = isDirectInvitePendingForRoom(b.entry[0], bData, userId);
                 if (aIsInvite !== bIsInvite) return aIsInvite ? -1 : 1;
@@ -1706,94 +1703,6 @@ function isDirectInvitePendingForRoom(roomId, data, userId) {
     return !window.lobbyHandledDirectInvites?.has?.(roomId);
 }
 
-function extractRematchInvite(data) {
-    const invite = data?.rematchRequest || data?.players?.rematchRequest || data?.rematch;
-    if (!invite || typeof invite !== 'object') return null;
-    return invite;
-}
-
-function resolveRematchInviteStatus(invite) {
-    const rawStatus = invite?.status ?? invite?.state ?? invite?.inviteStatus;
-    if (rawStatus === undefined || rawStatus === null) return '';
-    return String(rawStatus).trim().toLowerCase();
-}
-
-function isRematchInviteRelevant(invite) {
-    if (!invite) return false;
-
-    const status = resolveRematchInviteStatus(invite);
-    if (status) {
-        const inactiveStatuses = new Set([
-            'accepted',
-            'declined',
-            'rejected',
-            'cancelled',
-            'canceled',
-            'expired',
-            'handled',
-            'resolved',
-            'revoked',
-            'withdrawn',
-            'closed'
-        ]);
-        if (inactiveStatuses.has(status)) return false;
-    }
-
-    if (invite.acceptedAt || invite.declinedAt || invite.rejectedAt || invite.cancelledAt || invite.canceledAt || invite.handledAt) {
-        return false;
-    }
-
-    if (Number.isFinite(invite.expiresAt) && invite.expiresAt <= Date.now()) {
-        return false;
-    }
-
-    return true;
-}
-
-function getRematchInvitationForUser(roomId, data, userId) {
-    if (!roomId || !userId || data?.gameState !== 'game_over') return null;
-    const invite = extractRematchInvite(data);
-    if (!invite || !isRematchInviteRelevant(invite)) return null;
-
-    const players = data?.players || {};
-    const whiteUid = players.white || null;
-    const blackUid = players.black || null;
-    const myColor = whiteUid === userId ? 'w' : (blackUid === userId ? 'b' : null);
-    if (!myColor) return null;
-
-    const normalizeColor = (value) => {
-        const raw = String(value || '').trim().toLowerCase();
-        if (raw === 'w' || raw === 'white') return 'w';
-        if (raw === 'b' || raw === 'black') return 'b';
-        return null;
-    };
-
-    const createdByUidRaw = invite.createdByUid || invite.fromUid || invite.requestedByUid || invite.senderUid || invite.byUid || null;
-    const createdByColor = normalizeColor(invite.createdByColor || invite.fromColor || invite.requestedByColor || invite.byColor || invite.from || invite.by);
-    const targetUidRaw = invite.targetUid || invite.toUid || invite.invitedUid || invite.receiverUid || invite.forUid || null;
-    const targetColor = normalizeColor(invite.targetColor || invite.toColor || invite.invitedColor || invite.forColor || invite.to || invite.target);
-
-    const createdByUid = createdByUidRaw
-        || (createdByColor === 'w' ? whiteUid : (createdByColor === 'b' ? blackUid : null));
-    const targetUid = targetUidRaw
-        || (targetColor === 'w' ? whiteUid : (targetColor === 'b' ? blackUid : null))
-        || (createdByUid === whiteUid ? blackUid : (createdByUid === blackUid ? whiteUid : null));
-
-    if (targetUid && targetUid !== userId) return null;
-    if (createdByUid && createdByUid === userId) return null;
-
-    return {
-        invite,
-        roomId,
-        createdByUid: createdByUid || null,
-        targetUid: targetUid || userId
-    };
-}
-
-function isRematchInvitePendingForRoom(roomId, data, userId) {
-    return Boolean(getRematchInvitationForUser(roomId, data, userId));
-}
-
 function hasRoomBecameActiveForUser(previousData, currentData, userId) {
     const previousCard = previousData ? buildLobbyGameCardData('', previousData, userId) : null;
     const currentCard = buildLobbyGameCardData('', currentData, userId);
@@ -1833,7 +1742,7 @@ function buildLobbyGameCardData(id, data, userId) {
     const showInviteStatus = isDirectInviteForMe || (isDirectInvite && !isOver && !hasStarted && isWaitingForOpponent);
     const showRematchInviteStatus = isRematchInviteForMe && isOver;
     const statusText = isOver
-        ? (showRematchStatus ? 'Реванш' : resultState.label)
+        ? resultState.label
         : (isWaitingForOpponent
             ? 'Ожидание'
             : (showInviteStatus
@@ -1847,7 +1756,6 @@ function buildLobbyGameCardData(id, data, userId) {
     return {
         id,
         isOver,
-        showInFinishedSection: isOver && !isActionableRematch,
         isWaitingForOpponent,
         isMyTurn,
         stateClass,
@@ -1864,9 +1772,7 @@ function buildLobbyGameCardData(id, data, userId) {
         rematchInviteId: rematchInvite?.id || '',
         resultComment,
         resultClass: resultState?.className || '',
-        turnLabel: isActionableRematch
-            ? 'Вас пригласили'
-            : (!isOver && !isWaitingForOpponent ? (isMyTurn ? 'Ваш ход' : 'Ход соперника') : ''),
+        turnLabel: !isOver && !isWaitingForOpponent ? (isMyTurn ? 'Ваш ход' : 'Ход соперника') : '',
         turnClass: isMyTurn ? 'my-turn' : 'opponent-turn',
         canDeleteFromLobby: isOver || isWaitingForOpponent,
         timeAgo: window.formatTimeAgo(data.lastMoveTime || data.createdAt || 0)
@@ -1926,7 +1832,7 @@ function createLobbyGameElement(cardData, userId) {
                 <span class="game-opponent-presence-text" title="${cardData.opponentPresenceText}">${cardData.opponentPresenceText}</span>
             </div>
             <div class="game-meta">
-                ${cardData.isInviteForMe ? `<span class="game-invite-dot" aria-hidden="true"></span><span class="game-turn-pill opponent-turn">${cardData.isRematchInviteForMe ? 'Вас пригласили на реванш' : 'Вас пригласили'}</span>` : ''}
+                ${cardData.isInviteForMe ? '<span class="game-invite-dot" aria-hidden="true"></span><span class="game-turn-pill opponent-turn">Вас пригласили</span>' : ''}
                 ${cardData.isMyTurn ? '<span class="game-my-turn-dot" aria-hidden="true"></span>' : ''}
                 ${cardData.turnLabel ? `<span class="game-turn-pill ${cardData.turnClass}">${cardData.turnLabel}</span>` : ''}
                 ${cardData.resultComment ? `<span class="game-finish-note">${cardData.resultComment}</span>` : ''}
@@ -1936,8 +1842,8 @@ function createLobbyGameElement(cardData, userId) {
             </div>
         </div>
         <div class="game-actions">
-            <button class="btn btn-sm play-btn">${cardData.showInFinishedSection ? 'Смотреть' : 'Играть'}</button>
-            <button class="btn btn-primary btn-sm rematch-btn ${cardData.showInFinishedSection ? '' : 'hidden'}">Реванш</button>
+            <button class="btn btn-sm play-btn">${cardData.isOver ? 'Смотреть' : 'Играть'}</button>
+            <button class="btn btn-primary btn-sm rematch-btn ${cardData.isOver ? '' : 'hidden'}">Реванш</button>
             <button class="btn btn-sm delete-btn ${cardData.canDeleteFromLobby ? '' : 'hidden'}" data-game-id="${cardData.id}">Удалить</button>
         </div>
     `;
@@ -1954,7 +1860,7 @@ function createLobbyGameElement(cardData, userId) {
     };
 
     const rematchBtn = item.querySelector('.rematch-btn');
-    if (rematchBtn && cardData.showInFinishedSection) {
+    if (rematchBtn && cardData.isOver) {
         rematchBtn.onclick = async (event) => {
             event.stopPropagation();
             const requesterUid = window.currentUser?.uid;
@@ -1995,7 +1901,6 @@ function getLobbyCardSignature(cardData) {
     const signatureParts = [
         cardData.id || '',
         cardData.isOver ? '1' : '0',
-        cardData.showInFinishedSection ? '1' : '0',
         cardData.isWaitingForOpponent ? '1' : '0',
         cardData.isMyTurn ? '1' : '0',
         cardData.stateClass || '',
@@ -2007,8 +1912,6 @@ function getLobbyCardSignature(cardData) {
         cardData.opponentPresenceVariant || '',
         cardData.statusText || '',
         cardData.isInviteForMe ? '1' : '0',
-        cardData.isRematchInviteForMe ? '1' : '0',
-        cardData.isActionableRematch ? '1' : '0',
         cardData.resultComment || '',
         cardData.resultClass || '',
         cardData.turnLabel || '',
@@ -2253,8 +2156,8 @@ function fullRebuildLobbyGames({ sortedGames, userId, gamesList, finishedGamesLi
         if (!cardData) return;
         if (cardData.isInviteForMe) pendingInvitesCount += 1;
 
-        const targetSection = cardData.showInFinishedSection ? 'finished' : 'active';
-        const targetList = cardData.showInFinishedSection ? finishedGamesList : gamesList;
+        const targetSection = cardData.isOver ? 'finished' : 'active';
+        const targetList = cardData.isOver ? finishedGamesList : gamesList;
         if (!targetList) return;
         createOrUpdateLobbyCardNode({
             roomId: id,
@@ -2264,7 +2167,7 @@ function fullRebuildLobbyGames({ sortedGames, userId, gamesList, finishedGamesLi
             targetSection
         });
 
-        if (cardData.showInFinishedSection) {
+        if (cardData.isOver) {
             hasFinishedGames = true;
         } else {
             hasActiveGames = true;
@@ -2295,8 +2198,8 @@ function incrementalUpdateLobbyGames({ sortedGames, userId, gamesList, finishedG
         seenRoomIds.add(id);
         if (cardData.isInviteForMe) pendingInvitesCount += 1;
 
-        const targetSection = cardData.showInFinishedSection ? 'finished' : 'active';
-        const targetList = cardData.showInFinishedSection ? finishedGamesList : gamesList;
+        const targetSection = cardData.isOver ? 'finished' : 'active';
+        const targetList = cardData.isOver ? finishedGamesList : gamesList;
         if (!targetList) return;
         removeLobbySectionEmptyState(targetList);
         createOrUpdateLobbyCardNode({
@@ -2307,7 +2210,7 @@ function incrementalUpdateLobbyGames({ sortedGames, userId, gamesList, finishedG
             targetSection
         });
 
-        if (cardData.showInFinishedSection) {
+        if (cardData.isOver) {
             hasFinishedGames = true;
         } else {
             hasActiveGames = true;
