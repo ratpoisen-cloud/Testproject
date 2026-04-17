@@ -75,13 +75,69 @@ body[data-ui-theme="pixel"] {
 }
 
 body[data-ui-theme="pixel"] .card,
-body[data-ui-theme="pixel"] .hub-tile,
 body[data-ui-theme="pixel"] .modal-content,
 body[data-ui-theme="pixel"] .system-menu {
     border-radius: 10px;
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), 0 14px 26px rgba(0, 0, 0, 0.34);
 }
 
+
+body[data-ui-theme="pixel"] .hub-tile {
+    --pixel-tile-depth: 11px;
+    --pixel-tile-press-hover: 4px;
+    --pixel-tile-press-active: 9px;
+    position: relative;
+    isolation: isolate;
+    z-index: 0;
+    overflow: visible;
+    transform: translateY(0);
+    border-radius: 16px;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, #334867) 0%, color-mix(in srgb, var(--surface-elevated) 84%, #222f45) 28%, color-mix(in srgb, var(--surface) 82%, #101827) 100%),
+        repeating-linear-gradient(180deg, color-mix(in srgb, #ffffff 3%, transparent) 0 2px, transparent 2px 4px);
+    border: 1px solid color-mix(in srgb, var(--accent) 44%, var(--border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, #d8f5ff 12%, transparent), 0 18px 0 -7px color-mix(in srgb, #000 38%, transparent), 0 24px 0 -12px color-mix(in srgb, #000 52%, transparent), inset 0 1px 0 color-mix(in srgb, #eefaff 36%, transparent), inset 0 -1px 0 color-mix(in srgb, #081220 65%, transparent);
+    transition: transform 0.14s steps(3, end), border-color 0.14s steps(2, end), background 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-ui-theme="pixel"] .hub-tile::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: -1;
+    transform: translateY(var(--pixel-tile-depth));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent-dark) 52%, #1f2d44) 0%, color-mix(in srgb, var(--border) 94%, #060b14) 100%);
+    border: 1px solid color-mix(in srgb, var(--border) 95%, #03060c);
+    box-shadow: 0 12px 0 -6px color-mix(in srgb, #000 52%, transparent), 0 16px 20px color-mix(in srgb, #000 58%, transparent);
+    pointer-events: none;
+    transition: transform 0.14s steps(3, end), background 0.2s ease, border-color 0.2s ease;
+}
+
+body[data-ui-theme="pixel"] .hub-tile:hover,
+body[data-ui-theme="pixel"] .hub-tile:focus-visible {
+    transform: translateY(var(--pixel-tile-press-hover));
+    border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--accent) 13%, #3b5172) 0%, color-mix(in srgb, var(--surface-elevated) 88%, #25344d) 30%, color-mix(in srgb, var(--surface) 84%, #121c2c) 100%),
+        repeating-linear-gradient(180deg, color-mix(in srgb, #ffffff 4%, transparent) 0 2px, transparent 2px 4px);
+    box-shadow: 0 0 0 1px color-mix(in srgb, #ecfbff 18%, transparent), 0 13px 0 -7px color-mix(in srgb, #000 34%, transparent), 0 18px 0 -11px color-mix(in srgb, #000 46%, transparent), inset 0 1px 0 color-mix(in srgb, #f2fcff 42%, transparent), inset 0 -1px 0 color-mix(in srgb, #081220 72%, transparent);
+}
+
+body[data-ui-theme="pixel"] .hub-tile:active {
+    transform: translateY(var(--pixel-tile-press-active));
+    border-color: color-mix(in srgb, var(--accent) 66%, var(--border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, #e5f8ff 16%, transparent), 0 8px 0 -7px color-mix(in srgb, #000 34%, transparent), 0 10px 14px color-mix(in srgb, #000 42%, transparent), inset 0 1px 0 color-mix(in srgb, #f2fdff 28%, transparent), inset 0 -1px 0 color-mix(in srgb, #081220 78%, transparent);
+}
+
+body[data-ui-theme="pixel"] .hub-tile:hover::before,
+body[data-ui-theme="pixel"] .hub-tile:focus-visible::before {
+    transform: translateY(calc(var(--pixel-tile-depth) - var(--pixel-tile-press-hover)));
+}
+
+body[data-ui-theme="pixel"] .hub-tile:active::before {
+    transform: translateY(1px);
+}
 body[data-ui-theme="pixel"] .btn,
 body[data-ui-theme="pixel"] .board-settings-select,
 body[data-ui-theme="pixel"] .system-select,
