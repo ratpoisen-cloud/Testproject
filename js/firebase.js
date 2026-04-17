@@ -153,7 +153,13 @@
         'turn',
         'pgn',
         'message',
-        'resign'
+        'resign',
+        'rematch_request'
+    ].join(',');
+
+    const LOBBY_GAMES_SELECT_FIELDS_EXTENDED = [
+        LOBBY_GAMES_SELECT_FIELDS_LEGACY,
+        'rematch_request'
     ].join(',');
 
     const LOBBY_GAMES_SELECT_FIELDS_EXTENDED = [
@@ -375,14 +381,14 @@
                 const message = String(error?.message || '');
                 const details = String(error?.details || '');
                 const hint = String(error?.hint || '');
-                const isLikelySchemaMismatch = /rematch_request|schema|column|cache/i.test(`${message} ${details} ${hint}`);
+                const isMissingRematchColumn = /rematch_request/i.test(`${message} ${details} ${hint}`);
 
-                if (!isLikelySchemaMismatch) {
-                    console.warn('watchGames extended hydrate failed, trying legacy fallback:', error);
-                } else {
-                    console.warn('watchGames: rematch_request is unavailable, fallback to legacy lobby fields');
+                if (!isMissingRematchColumn) {
+                    console.error('watchGames initial cache hydrate error:', error);
+                    throw error;
                 }
 
+                console.warn('watchGames: rematch_request column is unavailable, fallback to legacy lobby fields');
                 ({ data, error } = await supabase.from('games').select(LOBBY_GAMES_SELECT_FIELDS_LEGACY));
                 if (error) {
                     console.error('watchGames legacy fallback hydrate error:', error);

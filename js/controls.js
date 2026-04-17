@@ -29,10 +29,6 @@ window.setupGameControls = function(gameRef, roomId) {
             window.notify('Не удалось отправить запрос реванша', 'error', 2800);
             return;
         }
-        if (result.startedRoomId) {
-            location.href = `${location.origin}${location.pathname}?room=${result.startedRoomId}`;
-            return;
-        }
         window.notify('Запрос реванша отправлен', 'success', 2600);
     };
 
@@ -563,7 +559,7 @@ window.setupGameControls = function(gameRef, roomId) {
                     && !request.confirmedBy?.[window.playerColor];
 
                 if (isIncoming) {
-                    const requestKey = `${roomId || ''}:${request.id || ''}`;
+                    const requestKey = `${request.id || ''}:${request.updatedAt || ''}`;
                     if (requestKey && requestKey !== lastIncomingRematchKey) {
                         window.SoundManager?.play?.('modal_open');
                         lastIncomingRematchKey = requestKey;
