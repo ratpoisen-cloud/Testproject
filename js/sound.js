@@ -1,6 +1,6 @@
 // ==================== SOUND MANAGER ====================
 // Единый глобальный модуль звуков приложения.
-// Активные события: piece_select, move, capture_default, capture_ranged, promotion, check, checkmate, win_white, win_black, defeat, draw, rook_first_move_voice, queen_first_move_voice.
+// Активные события: piece_select, button_rollover, button_click, button_click_release, move, capture_default, capture_ranged, promotion, check, checkmate, win_white, win_black, defeat, draw, rook_first_move_voice, queen_first_move_voice.
 // Зарезервированные события: castle, game_start, game_end, enemy_move, your_turn.
 
 (function initSoundManager(global) {
@@ -14,6 +14,24 @@
             volume: 1,
             category: 'ui',
             cooldown: 90
+        },
+        button_rollover: {
+            src: 'assets/sounds/buttonrollover.wav',
+            volume: 0.42,
+            category: 'ui',
+            cooldown: 140
+        },
+        button_click: {
+            src: 'assets/sounds/buttonclick.wav',
+            volume: 0.5,
+            category: 'ui',
+            cooldown: 70
+        },
+        button_click_release: {
+            src: 'assets/sounds/buttonclickrelease.wav',
+            volume: 0.5,
+            category: 'ui',
+            cooldown: 70
         },
         move: {
             src: [
@@ -202,6 +220,7 @@
         lastPlayedAt: {},
         activeAudioNodes: new Set(),
         sequenceQueue: Promise.resolve(),
+        uiButtonSoundsBound: false,
 
         init() {
             if (this.initialized) {
@@ -446,9 +465,197 @@
                 });
 
             return this.sequenceQueue;
+        },
+
+        bindUIButtonSounds(options = {}) {
+            if (this.uiButtonSoundsBound) {
+                return;
+            }
+
+            const interactiveSelector = options.selector || [
+                'button',
+                '[role="button"]',
+                '.btn',
+                '.hub-tile',
+                '.review-control-btn',
+                '.board-settings-icon-btn',
+                '.top-lobby-brand-btn'
+            ].join(', ');
+
+            const excludedSelector = options.excludedSelector || [
+                '#myBoard',
+                '#myBoard *',
+                '.chessboard-63f37',
+                '.chessboard-63f37 *',
+                '.square-55d63',
+                '.square-55d63 *',
+                '.piece-417db',
+                '.piece-417db *'
+            ].join(', ');
+            const canHover = window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches ?? false;
+            const activePressTargets = new Map();
+            let lastRolloverElement = null;
+            let lastRolloverAt = 0;
+
+            const resolveInteractiveTarget = (eventTarget) => {
+                if (!(eventTarget instanceof Element)) {
+                    return null;
+                }
+                const candidate = eventTarget.closest(interactiveSelector);
+                if (!candidate) {
+                    return null;
+                }
+
+                if (excludedSelector && candidate.matches(excludedSelector)) {
+                    return null;
+                }
+
+                if (excludedSelector && candidate.closest(excludedSelector)) {
+                    return null;
+                }
+
+                return candidate;
+            };
+
+            const isDisabled = (node) => {
+                if (!node) return true;
+                if (node.closest('[aria-disabled="true"], [disabled], .disabled, .is-disabled')) {
+                    return true;
+                }
+                if ('disabled' in node && node.disabled) {
+                    return true;
+                }
+                return false;
+            };
+
+            const isVisible = (node) => {
+                if (!node || !node.isConnected) {
+                    return false;
+                }
+                if (node.closest('.hidden, [hidden], [aria-hidden="true"]')) {
+                    return false;
+                }
+                const style = window.getComputedStyle(node);
+                if (!style || style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') {
+                    return false;
+                }
+                return node.getClientRects().length > 0;
+            };
+
+            const canPlayForNode = (node) => Boolean(node && !isDisabled(node) && isVisible(node));
+
+            const handlePointerDown = (event) => {
+                if (typeof event.button === 'number' && event.button !== 0) {
+                    return;
+                }
+                const target = resolveInteractiveTarget(event.target);
+                if (!canPlayForNode(target)) {
+                    return;
+                }
+
+                const pointerKey = typeof event.pointerId === 'number' ? `pointer:${event.pointerId}` : 'pointer:mouse';
+                activePressTargets.set(pointerKey, target);
+                this.play('button_click');
+            };
+
+            const handlePointerUp = (event) => {
+                if (typeof event.button === 'number' && event.button !== 0) {
+                    return;
+                }
+
+                const pointerKey = typeof event.pointerId === 'number' ? `pointer:${event.pointerId}` : 'pointer:mouse';
+                const pressedTarget = activePressTargets.get(pointerKey);
+                const releaseTarget = resolveInteractiveTarget(event.target);
+                activePressTargets.delete(pointerKey);
+
+                if (!canPlayForNode(releaseTarget)) {
+                    return;
+                }
+                if (pressedTarget && pressedTarget !== releaseTarget) {
+                    return;
+                }
+                this.play('button_click_release');
+            };
+
+            const handleMouseOver = (event) => {
+                if (!canHover) {
+                    return;
+                }
+
+                const target = resolveInteractiveTarget(event.target);
+                if (!canPlayForNode(target)) {
+                    return;
+                }
+
+                const previousTarget = resolveInteractiveTarget(event.relatedTarget);
+                if (previousTarget === target) {
+                    return;
+                }
+
+                const now = Date.now();
+                if (lastRolloverElement === target && now - lastRolloverAt < 200) {
+                    return;
+                }
+
+                lastRolloverElement = target;
+                lastRolloverAt = now;
+                this.play('button_rollover');
+            };
+
+            if (window.PointerEvent) {
+                document.addEventListener('pointerdown', handlePointerDown, true);
+                document.addEventListener('pointerup', handlePointerUp, true);
+                document.addEventListener('pointercancel', (event) => {
+                    const pointerKey = typeof event.pointerId === 'number' ? `pointer:${event.pointerId}` : 'pointer:mouse';
+                    activePressTargets.delete(pointerKey);
+                }, true);
+            } else {
+                document.addEventListener('mousedown', (event) => {
+                    handlePointerDown({
+                        target: event.target,
+                        pointerId: 'mouse',
+                        button: event.button
+                    });
+                }, true);
+                document.addEventListener('mouseup', (event) => {
+                    handlePointerUp({
+                        target: event.target,
+                        pointerId: 'mouse',
+                        button: event.button
+                    });
+                }, true);
+                document.addEventListener('touchstart', (event) => {
+                    const touch = event.changedTouches?.[0];
+                    handlePointerDown({
+                        target: event.target,
+                        pointerId: touch?.identifier ?? 'touch',
+                        button: 0
+                    });
+                }, { capture: true, passive: true });
+                document.addEventListener('touchend', (event) => {
+                    const touch = event.changedTouches?.[0];
+                    handlePointerUp({
+                        target: event.target,
+                        pointerId: touch?.identifier ?? 'touch',
+                        button: 0
+                    });
+                }, { capture: true, passive: true });
+                document.addEventListener('touchcancel', (event) => {
+                    const touch = event.changedTouches?.[0];
+                    activePressTargets.delete(`pointer:${touch?.identifier ?? 'touch'}`);
+                }, { capture: true, passive: true });
+            }
+
+            document.addEventListener('mouseover', handleMouseOver, true);
+            this.uiButtonSoundsBound = true;
         }
     };
 
     manager.init();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => manager.bindUIButtonSounds(), { once: true });
+    } else {
+        manager.bindUIButtonSounds();
+    }
     global.SoundManager = manager;
 })(window);
