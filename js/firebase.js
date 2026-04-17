@@ -153,13 +153,7 @@
         'turn',
         'pgn',
         'message',
-        'resign',
-        'rematch_request'
-    ].join(',');
-
-    const LOBBY_GAMES_SELECT_FIELDS_EXTENDED = [
-        LOBBY_GAMES_SELECT_FIELDS_LEGACY,
-        'rematch_request'
+        'resign'
     ].join(',');
 
     const LOBBY_GAMES_SELECT_FIELDS_EXTENDED = [
