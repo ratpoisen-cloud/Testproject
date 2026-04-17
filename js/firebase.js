@@ -144,7 +144,7 @@
     //
     // ВАЖНО: это влияет только на initial hydrate лобби-кеша.
     // get(game)/watchGame по конкретной комнате продолжают читать select('*').
-    const LOBBY_GAMES_SELECT_FIELDS = [
+    const LOBBY_GAMES_SELECT_FIELDS_LEGACY = [
         'room_id',
         'players',
         'game_state',
@@ -154,6 +154,11 @@
         'pgn',
         'message',
         'resign',
+        'rematch_request'
+    ].join(',');
+
+    const LOBBY_GAMES_SELECT_FIELDS_EXTENDED = [
+        LOBBY_GAMES_SELECT_FIELDS_LEGACY,
         'rematch_request'
     ].join(',');
 
@@ -362,10 +367,28 @@
         }
 
         lobbyGamesCacheHydrationPromise = (async () => {
-            const { data, error } = await supabase.from('games').select(LOBBY_GAMES_SELECT_FIELDS);
+            let data = null;
+            let error = null;
+
+            ({ data, error } = await supabase.from('games').select(LOBBY_GAMES_SELECT_FIELDS_EXTENDED));
+
             if (error) {
-                console.error('watchGames initial cache hydrate error:', error);
-                throw error;
+                const message = String(error?.message || '');
+                const details = String(error?.details || '');
+                const hint = String(error?.hint || '');
+                const isMissingRematchColumn = /rematch_request/i.test(`${message} ${details} ${hint}`);
+
+                if (!isMissingRematchColumn) {
+                    console.error('watchGames initial cache hydrate error:', error);
+                    throw error;
+                }
+
+                console.warn('watchGames: rematch_request column is unavailable, fallback to legacy lobby fields');
+                ({ data, error } = await supabase.from('games').select(LOBBY_GAMES_SELECT_FIELDS_LEGACY));
+                if (error) {
+                    console.error('watchGames legacy fallback hydrate error:', error);
+                    throw error;
+                }
             }
 
             lobbyGamesCache.clear();
