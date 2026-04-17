@@ -88,3 +88,77 @@ body[data-ui-theme="pixel"] .system-select,
 body[data-ui-theme="pixel"] .input-field {
     border-radius: 9px;
 }
+
+body[data-ui-theme="pixel"] .btn {
+    --pixel-btn-depth: 3px;
+    --pixel-btn-press-hover: 1px;
+    --pixel-btn-press-active: 3px;
+    position: relative;
+    isolation: isolate;
+    overflow: visible;
+    transform: translateY(0);
+    box-shadow: none;
+    transition: transform 0.12s steps(2, end), background-color 0.12s steps(2, end), border-color 0.12s steps(2, end), color 0.12s steps(2, end), box-shadow 0.12s steps(2, end);
+}
+
+body[data-ui-theme="pixel"] .btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: -1;
+    transform: translateY(var(--pixel-btn-depth));
+    background: color-mix(in srgb, var(--surface-elevated) 74%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--border) 84%, #000);
+    transition: transform 0.12s steps(2, end), background-color 0.12s steps(2, end), border-color 0.12s steps(2, end);
+    pointer-events: none;
+}
+
+body[data-ui-theme="pixel"] .btn:hover {
+    transform: translateY(var(--pixel-btn-press-hover));
+    box-shadow: none;
+}
+
+body[data-ui-theme="pixel"] .btn:active {
+    transform: translateY(var(--pixel-btn-press-active));
+    box-shadow: none;
+}
+
+body[data-ui-theme="pixel"] .btn:active::before {
+    transform: translateY(0);
+}
+
+body[data-ui-theme="pixel"] .btn.btn-primary::before {
+    background: color-mix(in srgb, var(--accent-dark) 78%, #17241f);
+    border-color: color-mix(in srgb, var(--accent-dark) 70%, #000);
+}
+
+body[data-ui-theme="pixel"] .btn.btn-outline::before {
+    background: color-mix(in srgb, var(--surface) 68%, var(--border));
+    border-color: color-mix(in srgb, var(--border) 88%, #000);
+}
+
+body[data-ui-theme="pixel"] .btn.btn-danger::before {
+    background: color-mix(in srgb, var(--danger) 62%, #351d23);
+    border-color: color-mix(in srgb, var(--danger) 68%, #000);
+}
+
+body[data-ui-theme="pixel"] .btn.btn-success::before {
+    background: color-mix(in srgb, var(--success) 62%, #1d2f22);
+    border-color: color-mix(in srgb, var(--success) 66%, #000);
+}
+
+body[data-ui-theme="pixel"] .btn.btn-draw::before {
+    background: color-mix(in srgb, var(--draw-border) 62%, #0f1520);
+    border-color: color-mix(in srgb, var(--draw-border) 68%, #000);
+}
+
+body[data-ui-theme="pixel"] .btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+@media (max-width: 600px) {
+    body[data-ui-theme="pixel"] .btn:hover {
+        transform: translateY(0);
+    }
+}
