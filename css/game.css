@@ -595,6 +595,33 @@
     justify-content: center;
 }
 
+.promotion-choice-card {
+    min-width: 300px;
+}
+
+.promotion-choice-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.promotion-choice-btn {
+    min-height: 64px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 88%, var(--accent-soft));
+    color: var(--text);
+    font-size: 2rem;
+    cursor: pointer;
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.18s ease;
+}
+
+.promotion-choice-btn:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+    box-shadow: 0 10px 16px color-mix(in srgb, #000 14%, transparent);
+}
+
 .btn-round {
     width: 56px;
     height: 56px;

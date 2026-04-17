@@ -13,6 +13,8 @@ window.botLevel = 'medium';
 window.botEngine = null;
 window.isBotThinking = false;
 window.pendingTakeback = null;
+window.pendingDraw = null;
+window.pendingRematch = null;
 window.dragSourceSquare = null; // Добавляем переменную для drag-and-drop
 window.lobbyCurrentScreen = 'hub';
 window.lobbyShowFinished = false;
@@ -33,8 +35,10 @@ window.QUICK_PHRASE_TTL_MS = 5000;
 window.playersExpandedResultFilter = {};
 window.pendingDirectChallengeOpponent = null;
 window.lobbyNotifiedDirectChallenges = new Set();
+window.lobbyNotifiedRematchInvites = new Set();
 window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
 window.DIRECT_INVITE_HANDLED_STORAGE_KEY = 'chess_direct_invite_handled_v1';
+window.REMATCH_INVITE_SEEN_STORAGE_KEY = 'chess_rematch_invite_seen_v1';
 window.BOT_GAMES_HISTORY_STORAGE_KEY = 'chess_bot_games_history_v1';
 window.lobbyLastSnapshotByGame = new Map();
 window.lobbyLastEventSnapshotByGame = new Map();
@@ -95,30 +99,181 @@ window.getQuickPhraseCycleKey = function() {
     return `${window.game.turn()}_${window.game.history().length}`;
 };
 
-window.createRematchGameFromRoom = async function(roomId) {
+window.resolveRematchStatus = function(rematchRequest) {
+    const rawStatus = rematchRequest?.status ?? rematchRequest?.state;
+    if (rawStatus === undefined || rawStatus === null) return '';
+    return String(rawStatus).trim().toLowerCase();
+};
+
+window.isRematchRequestRelevant = function(rematchRequest) {
+    if (!rematchRequest || typeof rematchRequest !== 'object') return false;
+    const status = window.resolveRematchStatus(rematchRequest);
+    if (!status) return false;
+    return status === 'pending' || status === 'accepted';
+};
+
+window.getRematchInvitationForUser = function(roomId, gameData, userId) {
+    if (!roomId || !gameData || !userId || gameData.gameState !== 'game_over') return null;
+    const players = gameData.players || {};
+    const rematchRequest = gameData.rematchRequest || null;
+    if (!players.white || !players.black || !window.isRematchRequestRelevant(rematchRequest)) return null;
+    if (rematchRequest.createdByUid === userId) return null;
+    if (rematchRequest.targetUid !== userId) return null;
+    if (Number.isFinite(rematchRequest.expiresAt) && rematchRequest.expiresAt <= Date.now()) return null;
+    const userColor = players.white === userId ? 'w' : (players.black === userId ? 'b' : null);
+    if (!userColor) return null;
+    if (rematchRequest.confirmedBy?.[userColor]) return null;
+    return rematchRequest;
+};
+
+window.finalizeRematchIfReady = async function(roomId, snapshot = null) {
     if (!roomId) return null;
+    const gameRef = window.getGameRef(roomId);
+    const gameData = snapshot || (await get(gameRef)).val();
+    if (!gameData || gameData.gameState !== 'game_over') return null;
 
-    const playersData = (await get(window.getPlayersRef(roomId))).val();
-    if (!playersData?.white || !playersData?.black) {
-        window.notify("Не удалось создать реванш: данные игроков недоступны", "error");
-        return null;
-    }
+    const players = gameData.players || {};
+    const rematch = gameData.rematchRequest || null;
+    if (!window.isRematchRequestRelevant(rematch)) return null;
+    if (rematch.startedRoomId) return rematch.startedRoomId;
 
-    const newId = window.generateRoomId();
-    await set(window.getGameRef(newId), {
+    const confirmedBy = rematch.confirmedBy || {};
+    const bothConfirmed = Boolean(confirmedBy.w && confirmedBy.b);
+    if (!bothConfirmed) return null;
+
+    const now = Date.now();
+    const startedRoomId = rematch.proposedRoomId || window.generateRoomId();
+
+    await set(window.getGameRef(startedRoomId), {
         players: {
-            white: playersData.black,
-            whiteName: playersData.blackName,
-            black: playersData.white,
-            blackName: playersData.whiteName
+            white: players.black,
+            whiteName: players.blackName,
+            whitePhotoURL: players.blackPhotoURL || '',
+            black: players.white,
+            blackName: players.whiteName,
+            blackPhotoURL: players.whitePhotoURL || ''
         },
         pgn: new Chess().pgn(),
         fen: 'start',
         gameState: 'active',
-        createdAt: Date.now()
+        createdAt: now,
+        lastMoveTime: now
     });
 
-    return newId;
+    await window.updateGame(gameRef, {
+        rematchRequest: {
+            ...rematch,
+            confirmedBy,
+            status: 'resolved',
+            resolvedAt: now,
+            startedRoomId,
+            updatedAt: now
+        }
+    });
+
+    return startedRoomId;
+};
+
+window.requestRematchFromRoom = async function(roomId, requesterUid) {
+    if (!roomId || !requesterUid) return null;
+    const gameSnap = await get(window.getGameRef(roomId));
+    const gameData = gameSnap.val();
+    if (!gameData || gameData.gameState !== 'game_over') return null;
+
+    const players = gameData.players || {};
+    const requesterColor = players.white === requesterUid ? 'w' : (players.black === requesterUid ? 'b' : null);
+    if (!requesterColor) return null;
+    const targetUid = requesterColor === 'w' ? players.black : players.white;
+    if (!targetUid) return null;
+
+    const existing = gameData.rematchRequest || null;
+    const existingStatus = window.resolveRematchStatus(existing);
+    if (existing && (existingStatus === 'pending' || existingStatus === 'accepted')) {
+        const nextConfirmedBy = { ...(existing.confirmedBy || {}), [requesterColor]: true };
+        const now = Date.now();
+        const nextRequest = {
+            ...existing,
+            status: 'pending',
+            confirmedBy: nextConfirmedBy,
+            updatedAt: now
+        };
+        await window.updateGame(window.getGameRef(roomId), {
+            rematchRequest: nextRequest
+        });
+        const startedRoomId = await window.finalizeRematchIfReady(roomId, {
+            ...gameData,
+            rematchRequest: nextRequest
+        });
+        return { roomId, rematchRequestId: existing.id || '', startedRoomId: startedRoomId || null };
+    }
+
+    const now = Date.now();
+    const request = {
+        id: `${roomId}_${now}`,
+        type: 'rematch_invite',
+        createdAt: now,
+        updatedAt: now,
+        expiresAt: now + (1000 * 60 * 60 * 12),
+        createdByUid: requesterUid,
+        createdByName: window.currentUser?.displayName || window.currentUser?.email?.split('@')[0] || 'Игрок',
+        targetUid,
+        status: 'pending',
+        confirmedBy: {
+            [requesterColor]: true
+        },
+        proposedRoomId: window.generateRoomId()
+    };
+
+    await window.updateGame(window.getGameRef(roomId), { rematchRequest: request });
+    return { roomId, rematchRequestId: request.id, startedRoomId: null };
+};
+
+window.confirmRematchForRoom = async function(roomId, confirmerUid) {
+    if (!roomId || !confirmerUid) return null;
+    const gameRef = window.getGameRef(roomId);
+    const gameSnap = await get(gameRef);
+    const gameData = gameSnap.val();
+    const players = gameData?.players || {};
+    const rematch = gameData?.rematchRequest || null;
+    if (!window.isRematchRequestRelevant(rematch)) return null;
+
+    const confirmerColor = players.white === confirmerUid ? 'w' : (players.black === confirmerUid ? 'b' : null);
+    if (!confirmerColor) return null;
+    const nextConfirmedBy = { ...(rematch.confirmedBy || {}), [confirmerColor]: true };
+    const now = Date.now();
+    const nextRequest = {
+        ...rematch,
+        confirmedBy: nextConfirmedBy,
+        status: 'pending',
+        updatedAt: now
+    };
+
+    await window.updateGame(gameRef, {
+        rematchRequest: nextRequest
+    });
+
+    return window.finalizeRematchIfReady(roomId, {
+        ...gameData,
+        rematchRequest: nextRequest
+    });
+};
+
+window.declineRematchForRoom = async function(roomId, declinerUid) {
+    if (!roomId || !declinerUid) return;
+    const gameRef = window.getGameRef(roomId);
+    const gameSnap = await get(gameRef);
+    const gameData = gameSnap.val();
+    const rematch = gameData?.rematchRequest || null;
+    if (!rematch) return;
+    await window.updateGame(gameRef, {
+        rematchRequest: {
+            ...rematch,
+            status: 'declined',
+            declinedByUid: declinerUid,
+            declinedAt: Date.now(),
+            updatedAt: Date.now()
+        }
+    });
 };
 
 window.canSendBoardReaction = function() {
@@ -1368,6 +1523,43 @@ function persistHandledDirectInviteIds(idsSet) {
     }
 }
 
+function getSeenRematchInviteIds() {
+    try {
+        const raw = localStorage.getItem(window.REMATCH_INVITE_SEEN_STORAGE_KEY);
+        if (!raw) return new Set();
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return new Set();
+        return new Set(parsed.filter((id) => typeof id === 'string'));
+    } catch (error) {
+        console.warn('Не удалось восстановить seen rematch invites из localStorage:', error);
+        return new Set();
+    }
+}
+
+function persistSeenRematchInviteIds(idsSet) {
+    try {
+        const compact = Array.from(idsSet).slice(-300);
+        localStorage.setItem(window.REMATCH_INVITE_SEEN_STORAGE_KEY, JSON.stringify(compact));
+    } catch (error) {
+        console.warn('Не удалось сохранить seen rematch invites в localStorage:', error);
+    }
+}
+
+function buildRematchInviteSeenKey(roomId, rematchRequest) {
+    const requestId = String(rematchRequest?.id || '').trim();
+    if (!roomId || !requestId) return '';
+    return `${roomId}:${requestId}`;
+}
+
+function markRematchInviteAsSeen(roomId, rematchRequest) {
+    const inviteKey = buildRematchInviteSeenKey(roomId, rematchRequest);
+    if (!inviteKey) return;
+    window.lobbyNotifiedRematchInvites = window.lobbyNotifiedRematchInvites || getSeenRematchInviteIds();
+    if (window.lobbyNotifiedRematchInvites.has(inviteKey)) return;
+    window.lobbyNotifiedRematchInvites.add(inviteKey);
+    persistSeenRematchInviteIds(window.lobbyNotifiedRematchInvites);
+}
+
 function markDirectInviteAsHandled(roomId) {
     if (!roomId) return;
     window.lobbyHandledDirectInvites = window.lobbyHandledDirectInvites || getHandledDirectInviteIds();
@@ -1466,10 +1658,14 @@ function buildLobbyGameCardData(id, data, userId) {
         : (players.whitePhotoURL || players.whiteAvatar || '');
     const resultState = isOver ? window.getFinishedGamePerspective(data, userId) : null;
     const invite = players.invite && players.invite.type === 'direct_challenge' ? players.invite : null;
+    const rematchInvite = window.getRematchInvitationForUser(id, data, userId);
     const isDirectInvite = Boolean(invite);
     const hasStarted = isGameStarted(data);
-    const isInviteForMe = isDirectInvitePendingForRoom(id, data, userId);
-    const showInviteStatus = isInviteForMe || (isDirectInvite && !isOver && !hasStarted && isWaitingForOpponent);
+    const isDirectInviteForMe = isDirectInvitePendingForRoom(id, data, userId);
+    const isRematchInviteForMe = Boolean(rematchInvite);
+    const isInviteForMe = isDirectInviteForMe || isRematchInviteForMe;
+    const showInviteStatus = isDirectInviteForMe || (isDirectInvite && !isOver && !hasStarted && isWaitingForOpponent);
+    const showRematchInviteStatus = isRematchInviteForMe && isOver;
     const statusText = isOver
         ? resultState.label
         : (isWaitingForOpponent
@@ -1477,6 +1673,7 @@ function buildLobbyGameCardData(id, data, userId) {
             : (showInviteStatus
                 ? (isInviteForMe ? 'Приглашение' : 'Приглашение отправлено')
                 : ''));
+    const effectiveStatusText = showRematchInviteStatus ? 'Реванш' : statusText;
     const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
     const resultComment = isOver ? window.getFinishedGameTerminationLabel(data) : '';
     const presenceSnapshot = getLobbyPresenceSnapshot(opponentUid, { isWaitingForOpponent });
@@ -1493,8 +1690,11 @@ function buildLobbyGameCardData(id, data, userId) {
         opponentAvatar,
         opponentPresenceText: presenceSnapshot.text,
         opponentPresenceVariant: presenceSnapshot.variant,
-        statusText,
+        statusText: effectiveStatusText,
         isInviteForMe,
+        isDirectInviteForMe,
+        isRematchInviteForMe,
+        rematchInviteId: rematchInvite?.id || '',
         resultComment,
         resultClass: resultState?.className || '',
         turnLabel: !isOver && !isWaitingForOpponent ? (isMyTurn ? 'Ваш ход' : 'Ход соперника') : '',
@@ -1575,7 +1775,11 @@ function createLobbyGameElement(cardData, userId) {
 
     item.querySelector('.play-btn').onclick = (event) => {
         event.stopPropagation();
-        if (cardData.isInviteForMe) markDirectInviteAsHandled(cardData.id);
+        if (cardData.isDirectInviteForMe) {
+            markDirectInviteAsHandled(cardData.id);
+        } else if (cardData.isRematchInviteForMe && cardData.rematchInviteId) {
+            markRematchInviteAsSeen(cardData.id, { id: cardData.rematchInviteId });
+        }
         const viewParam = cardData.isOver ? '&view=finished' : '';
         location.href = `${location.origin}${location.pathname}?room=${cardData.id}${viewParam}`;
     };
@@ -1584,9 +1788,14 @@ function createLobbyGameElement(cardData, userId) {
     if (rematchBtn && cardData.isOver) {
         rematchBtn.onclick = async (event) => {
             event.stopPropagation();
-            const newId = await window.createRematchGameFromRoom(cardData.id);
-            if (!newId) return;
-            location.href = `${location.origin}${location.pathname}?room=${newId}`;
+            const requesterUid = window.currentUser?.uid;
+            if (!requesterUid) return;
+            const result = await window.requestRematchFromRoom(cardData.id, requesterUid);
+            if (!result) {
+                window.notify('Не удалось отправить запрос реванша', 'error', 2800);
+                return;
+            }
+            window.notify('Запрос реванша отправлен', 'success', 2600);
         };
     }
 
@@ -2179,6 +2388,7 @@ window.loadLobby = function(user) {
     window.setAppAuthView?.(true);
     window.renderBotGamesLobby?.();
     window.lobbyNotifiedDirectChallenges = getSeenDirectChallengeIds();
+    window.lobbyNotifiedRematchInvites = getSeenRematchInviteIds();
     window.lobbyHandledDirectInvites = getHandledDirectInviteIds();
     window.lobbyLastSnapshotByGame = new Map();
     window.lobbyLastEventSnapshotByGame = new Map();
@@ -2201,6 +2411,7 @@ window.loadLobby = function(user) {
         const wasFirstSnapshot = !window.lobbyHasProcessedFirstSnapshot;
         const nextSnapshotByGame = new Map();
         let shouldPersistSeenIds = false;
+        let shouldPersistRematchSeenIds = false;
 
         Object.entries(games || {}).forEach(([id, data]) => {
             const previousData = window.lobbyLastEventSnapshotByGame.get(id) || null;
@@ -2208,9 +2419,18 @@ window.loadLobby = function(user) {
             const cardData = buildLobbyGameCardData(id, data, user.uid);
             if (!cardData) return;
 
+            const rematchInvite = window.getRematchInvitationForUser(id, data, user.uid);
+            const previousRematchInvite = window.getRematchInvitationForUser(id, previousData, user.uid);
+            const rematchInviteKey = rematchInvite?.id ? `${id}:${rematchInvite.id}` : '';
+
             if (wasFirstSnapshot && isDirectInvitePendingForRoom(id, data, user.uid) && !window.lobbyNotifiedDirectChallenges.has(id)) {
                 window.lobbyNotifiedDirectChallenges.add(id);
                 shouldPersistSeenIds = true;
+            }
+
+            if (wasFirstSnapshot && rematchInviteKey && !window.lobbyNotifiedRematchInvites.has(rematchInviteKey)) {
+                window.lobbyNotifiedRematchInvites.add(rematchInviteKey);
+                shouldPersistRematchSeenIds = true;
             }
 
             const isNewDirectInviteAfterInit = !wasFirstSnapshot
@@ -2221,6 +2441,17 @@ window.loadLobby = function(user) {
                 window.lobbyNotifiedDirectChallenges.add(id);
                 shouldPersistSeenIds = true;
                 window.notify(`${invite.createdByName || 'Игрок'} приглашает вас в новую партию`, 'info', 4200);
+                window.SoundManager?.play?.('modal_open');
+            }
+
+            const isNewRematchInviteAfterInit = !wasFirstSnapshot
+                && Boolean(rematchInvite)
+                && !previousRematchInvite;
+            if (isNewRematchInviteAfterInit && rematchInviteKey && !window.lobbyNotifiedRematchInvites.has(rematchInviteKey)) {
+                window.lobbyNotifiedRematchInvites.add(rematchInviteKey);
+                shouldPersistRematchSeenIds = true;
+                window.notify(`${cardData.opponent} приглашает на реванш`, 'info', 4200);
+                window.SoundManager?.play?.('modal_open');
             }
 
             if (!wasFirstSnapshot && hasRoomBecameActiveForUser(previousData, data, user.uid)) {
@@ -2229,6 +2460,9 @@ window.loadLobby = function(user) {
         });
         if (shouldPersistSeenIds) {
             persistSeenDirectChallengeIds(window.lobbyNotifiedDirectChallenges);
+        }
+        if (shouldPersistRematchSeenIds) {
+            persistSeenRematchInviteIds(window.lobbyNotifiedRematchInvites);
         }
         window.lobbyLastEventSnapshotByGame = nextSnapshotByGame;
 
@@ -2369,6 +2603,9 @@ function initLocalGameState() {
     window.isArchivedFinishedView = false;
     window.pendingDraw = null;
     window.pendingTakeback = null;
+    window.pendingRematch = null;
+    document.getElementById('rematch-request-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
     window.playerColor = null;
     // Для каждой новой/переоткрытой партии первый remote PGN sync должен считаться initial (без звука).
     window.hasInitializedRemotePgnSync = false;
@@ -2415,6 +2652,15 @@ function subscribeToGameUpdates(gameRef) {
         window.setActiveQuickPhraseFromState(data.quickPhrase || null);
         window.applyRemotePgnUpdate(data.pgn);
         window.updateUI(data);
+        const startedRematchRoomId = data?.rematchRequest?.startedRoomId;
+        if (
+            startedRematchRoomId &&
+            window.resolveRematchStatus?.(data.rematchRequest) === 'resolved' &&
+            startedRematchRoomId !== window.currentRoomId
+        ) {
+            location.href = `${location.origin}${location.pathname}?room=${startedRematchRoomId}`;
+            return;
+        }
         if (data.gameState === 'game_over') {
             window.playGameOverSoundForCurrentClient?.(data);
         }
@@ -2475,6 +2721,8 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     document.getElementById('game-modal')?.classList.add('hidden');
     document.getElementById('takeback-request-box')?.classList.add('hidden');
     document.getElementById('draw-request-box')?.classList.add('hidden');
+    document.getElementById('rematch-request-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
 
     window.setupGameControls(null, null);
     window.syncReviewStateFromCurrentGame();
