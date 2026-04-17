@@ -56,6 +56,7 @@ window.gameSoundFlags = {
     rookVoicePlayed: false,
     queenVoicePlayed: false
 };
+window.lastPlayedGameOverSoundKey = null;
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -75,6 +76,7 @@ window.applyImmediateGameOverState = function(partialData = {}) {
     window.lastKnownGameState = 'game_over';
     window.updateUI?.(nextSnapshot);
     window.applyGameEndBoardEffects?.(window.game?.fen?.());
+    window.playGameOverSoundForCurrentClient?.(nextSnapshot);
 };
 
 window.canUseBoardReactions = function(gameData = null) {
@@ -558,16 +560,92 @@ window.resetGameSoundFlags = function() {
     };
 };
 
-window.resolveGameWinSoundEvent = function(gameInstance = window.game) {
-    if (!gameInstance?.game_over?.()) return null;
-    if (!gameInstance?.in_checkmate?.()) return null;
+window.resolveEndgameSoundEventForCurrentClient = function({
+    game = window.game,
+    gameData = window.lastGameUiSnapshot || null
+} = {}) {
+    const summary = window.getGameOverSummary?.(game, gameData);
+    if (!summary?.isFinished) return null;
 
-    const loserColor = gameInstance.turn?.();
-    const winnerColor = loserColor === 'w' ? 'b' : (loserColor === 'b' ? 'w' : null);
+    if (summary.termination === 'draw' || summary.termination === 'stalemate' || summary.resultCode === '1/2-1/2') {
+        return 'draw';
+    }
 
-    if (winnerColor === 'w') return 'win_white';
-    if (winnerColor === 'b') return 'win_black';
+    const currentClientColor = window.playerColor === 'w' || window.playerColor === 'b'
+        ? window.playerColor
+        : null;
+
+    if (!currentClientColor) {
+        return null;
+    }
+
+    if (summary.winnerColor === currentClientColor) {
+        return currentClientColor === 'w' ? 'win_white' : 'win_black';
+    }
+
+    if (summary.loserColor === currentClientColor) {
+        return 'defeat';
+    }
+
     return null;
+};
+
+window.resolveGameOverSoundKey = function({
+    game = window.game,
+    gameData = window.lastGameUiSnapshot || null
+} = {}) {
+    const summary = window.getGameOverSummary?.(game, gameData);
+    if (!summary?.isFinished) return null;
+
+    const pgn = gameData?.pgn || game?.pgn?.() || '';
+    const message = gameData?.message || '';
+    const resignColor = gameData?.resign === 'w' || gameData?.resign === 'b' ? gameData.resign : '';
+    return [
+        summary.termination,
+        summary.resultCode,
+        summary.winnerColor || '-',
+        summary.loserColor || '-',
+        resignColor || '-',
+        message,
+        pgn
+    ].join('|');
+};
+
+window.playGameOverSoundForCurrentClient = function(gameData = window.lastGameUiSnapshot || null) {
+    const summary = window.getGameOverSummary?.(window.game, gameData);
+    if (!summary?.isFinished) return Promise.resolve();
+
+    const key = window.resolveGameOverSoundKey?.({ game: window.game, gameData });
+    if (key && window.lastPlayedGameOverSoundKey === key) {
+        return Promise.resolve();
+    }
+
+    const finalSoundEvent = window.resolveEndgameSoundEventForCurrentClient?.({
+        game: window.game,
+        gameData
+    });
+
+    const queue = [];
+    if (summary.termination === 'checkmate') {
+        queue.push('checkmate');
+    }
+    if (finalSoundEvent) {
+        queue.push(finalSoundEvent);
+    }
+
+    if (queue.length === 0) {
+        if (key) window.lastPlayedGameOverSoundKey = key;
+        return Promise.resolve();
+    }
+
+    if (key) window.lastPlayedGameOverSoundKey = key;
+
+    if (window.SoundManager?.playSequence) {
+        return window.SoundManager.playSequence(queue);
+    }
+
+    queue.forEach((eventName) => window.SoundManager?.play?.(eventName));
+    return Promise.resolve();
 };
 
 window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
@@ -575,6 +653,8 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
 
     const { allowVoiceLine = false } = options;
     const events = [];
+    const summary = window.getGameOverSummary?.(window.game, window.lastGameUiSnapshot);
+    const isFinishedGame = Boolean(summary?.isFinished);
     const isCheckmate = Boolean(window.game.in_checkmate?.());
     const isCheck = !isCheckmate && Boolean(window.game.in_check?.());
     const isCheckForCurrentClient = Boolean(
@@ -590,9 +670,20 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
 
     if (isCheckmate) {
         events.push('checkmate');
-        const winSoundEvent = window.resolveGameWinSoundEvent?.(window.game);
-        if (winSoundEvent) {
-            events.push(winSoundEvent);
+        const finalEvent = window.resolveEndgameSoundEventForCurrentClient?.({
+            game: window.game,
+            gameData: window.lastGameUiSnapshot
+        });
+        if (finalEvent) {
+            events.push(finalEvent);
+        }
+    } else if (isFinishedGame) {
+        const finalEvent = window.resolveEndgameSoundEventForCurrentClient?.({
+            game: window.game,
+            gameData: window.lastGameUiSnapshot
+        });
+        if (finalEvent) {
+            events.push(finalEvent);
         }
     } else if (isCheckForCurrentClient) {
         events.push('check');
@@ -606,6 +697,16 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
         } else if (movingPiece === 'q' && !window.gameSoundFlags?.queenVoicePlayed) {
             events.push('queen_first_move_voice');
             window.gameSoundFlags.queenVoicePlayed = true;
+        }
+    }
+
+    if (events.length > 0 && isFinishedGame) {
+        const key = window.resolveGameOverSoundKey?.({
+            game: window.game,
+            gameData: window.lastGameUiSnapshot
+        });
+        if (key) {
+            window.lastPlayedGameOverSoundKey = key;
         }
     }
 
@@ -2272,6 +2373,7 @@ function initLocalGameState() {
     // Для каждой новой/переоткрытой партии первый remote PGN sync должен считаться initial (без звука).
     window.hasInitializedRemotePgnSync = false;
     window.lastKnownGameState = null;
+    window.lastPlayedGameOverSoundKey = null;
     window.lastRenderedMoveHistoryLength = 0;
     window.resetGameSoundFlags?.();
     window.syncReviewStateFromCurrentGame();
@@ -2313,6 +2415,9 @@ function subscribeToGameUpdates(gameRef) {
         window.setActiveQuickPhraseFromState(data.quickPhrase || null);
         window.applyRemotePgnUpdate(data.pgn);
         window.updateUI(data);
+        if (data.gameState === 'game_over') {
+            window.playGameOverSoundForCurrentClient?.(data);
+        }
         if (window.shouldAutoEnterFinishedReview && data.gameState === 'game_over' && typeof window.enterReviewMode === 'function') {
             const maxPly = window.game?.history?.().length || 0;
             window.enterReviewMode(maxPly);

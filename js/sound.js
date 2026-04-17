@@ -1,6 +1,6 @@
 // ==================== SOUND MANAGER ====================
 // Единый глобальный модуль звуков приложения.
-// Активные события: piece_select, move, capture_default, capture_ranged, promotion, check, checkmate, win_white, win_black, rook_first_move_voice, queen_first_move_voice.
+// Активные события: piece_select, move, capture_default, capture_ranged, promotion, check, checkmate, win_white, win_black, defeat, draw, rook_first_move_voice, queen_first_move_voice.
 // Зарезервированные события: castle, game_start, game_end, enemy_move, your_turn.
 
 (function initSoundManager(global) {
@@ -88,6 +88,18 @@
         },
         win_black: {
             src: 'assets/sounds/win-black-1.mp3',
+            volume: 1,
+            category: 'gameplay',
+            cooldown: 0
+        },
+        defeat: {
+            src: 'assets/sounds/defeat-1.mp3',
+            volume: 1,
+            category: 'gameplay',
+            cooldown: 0
+        },
+        draw: {
+            src: 'assets/sounds/draw-1.mp3',
             volume: 1,
             category: 'gameplay',
             cooldown: 0

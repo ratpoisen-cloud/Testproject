@@ -22,6 +22,8 @@
 - `checkmate-1.mp3`, `checkmate-2.mp3` → `checkmate`
 - `win-white-1.mp3` → `win_white`
 - `win-black-1.mp3` → `win_black`
+- `defeat-1.mp3` → `defeat`
+- `draw-1.mp3` → `draw`
 - `rook-first-move-1.mp3`, `rook-first-move-2.mp3` → `rook_first_move_voice`
 - `queen-first-move-1.mp3`, `queen-first-move-2.mp3` → `queen_first_move_voice`
 
@@ -44,13 +46,27 @@
 
 3. **Последовательность без наложения**
    - Игровые события одного хода проигрываются **очередью** через `SoundManager.playSequence([...])`.
-   - Пример: `capture -> checkmate -> win_*`.
+   - Примеры:
+     - `capture -> checkmate -> win_*` (для победителя при мате),
+     - `capture -> checkmate -> defeat` (для проигравшего при мате),
+     - `move/capture -> draw` (при пате/ничьей после хода).
    - При мате отдельный `check` не добавляется.
 
-4. **Promotion только по факту превращения**
+4. **Финальный звук зависит от результата для текущего клиента**
+   - Победитель слышит `victory`-звук:
+     - `win_white`, если победил белыми,
+     - `win_black`, если победил чёрными.
+   - Проигравший слышит `defeat`.
+   - При ничьей (`draw`, `stalemate` и другие ничейные исходы) оба игрока слышат `draw`.
+   - При мате сначала проигрывается `checkmate`, затем:
+     - победителю — `win_white`/`win_black`,
+     - проигравшему — `defeat`.
+   - Наблюдатели (без `playerColor`) не получают клиент-специфичный `victory/defeat`; для ничьей могут услышать `draw`.
+
+5. **Promotion только по факту превращения**
    - `promotion` добавляется только если успешный ход реально содержит превращение пешки.
 
-5. **Voice lines ладьи/ферзя**
+6. **Voice lines ладьи/ферзя**
    - Только после подтверждённого хода (не при выборе фигуры и не в preview).
    - Только один раз за партию для типа фигуры:
      - первый реальный ход ладьёй → `rook_first_move_voice`
@@ -75,5 +91,7 @@
 5. Проверьте в партии ключевые сценарии:
    - обычный ход,
    - взятие,
-   - `capture -> checkmate -> win_*`,
+   - `capture -> checkmate -> win_* / defeat`,
+   - сдача: `win_*` для победителя и `defeat` для проигравшего,
+   - ничья/пат: `draw` для обоих,
    - `move/capture -> promotion -> check/checkmate`.
