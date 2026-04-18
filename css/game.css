@@ -611,8 +611,10 @@
     border: 1px solid var(--border);
     background: color-mix(in srgb, var(--surface) 88%, var(--accent-soft));
     color: var(--text);
-    font-size: 2rem;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.18s ease;
 }
 
@@ -620,6 +622,19 @@
     transform: translateY(-1px);
     border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
     box-shadow: 0 10px 16px color-mix(in srgb, #000 14%, transparent);
+}
+
+.promotion-choice-piece {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+}
+
+.promotion-choice-fallback {
+    font-size: 0.9rem;
+    font-weight: 600;
 }
 
 .btn-round {

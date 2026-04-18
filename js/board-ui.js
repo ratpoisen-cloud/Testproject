@@ -29,9 +29,17 @@ window.__boardResizeSyncTimeoutId = null;
 window.pendingPromotionSelection = null;
 
 const PROMOTION_PIECE_ORDER = ['q', 'r', 'b', 'n'];
-const PROMOTION_GLYPHS = {
-    w: { q: '♕', r: '♖', b: '♗', n: '♘' },
-    b: { q: '♛', r: '♜', b: '♝', n: '♞' }
+const PROMOTION_PIECE_TO_BOARD_SUFFIX = {
+    q: 'Q',
+    r: 'R',
+    b: 'B',
+    n: 'N'
+};
+const PROMOTION_PIECE_LABELS = {
+    q: 'Ферзь',
+    r: 'Ладья',
+    b: 'Слон',
+    n: 'Конь'
 };
 
 window.syncBoardSizeWithLayout = function() {
@@ -139,6 +147,13 @@ window.getCurrentPieceTheme = function() {
     }
 
     return window.PIECE_SETS[window.DEFAULT_PIECE_SET].theme;
+};
+
+window.getPieceAssetPath = function(pieceType, pieceColor, pieceTheme = window.getCurrentPieceTheme()) {
+    const suffix = PROMOTION_PIECE_TO_BOARD_SUFFIX[pieceType];
+    const colorCode = pieceColor === 'b' ? 'b' : 'w';
+    if (!suffix || typeof pieceTheme !== 'string') return '';
+    return pieceTheme.replace('{piece}', `${colorCode}${suffix}`);
 };
 
 window.getBoardConfig = function() {
@@ -786,7 +801,14 @@ window.openPromotionChoice = function(from, to) {
     const color = window.playerColor === 'b' ? 'b' : 'w';
     options.querySelectorAll('[data-promotion-piece]').forEach((button) => {
         const piece = button.dataset.promotionPiece;
-        button.textContent = PROMOTION_GLYPHS[color]?.[piece] || '♛';
+        const assetPath = window.getPieceAssetPath(piece, color);
+        const pieceLabel = PROMOTION_PIECE_LABELS[piece] || 'Фигура';
+        const colorLabel = color === 'w' ? 'белый' : 'чёрный';
+        button.setAttribute('aria-label', `${pieceLabel} (${colorLabel})`);
+        button.setAttribute('title', pieceLabel);
+        button.innerHTML = assetPath
+            ? `<img class="promotion-choice-piece" src="${assetPath}" alt="${pieceLabel}" loading="lazy">`
+            : `<span class="promotion-choice-fallback">${pieceLabel}</span>`;
     });
 
     box.classList.remove('hidden');
