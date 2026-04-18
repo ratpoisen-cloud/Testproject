@@ -29,6 +29,10 @@ window.setupGameControls = function(gameRef, roomId) {
             window.notify('Не удалось отправить запрос реванша', 'error', 2800);
             return;
         }
+        if (result.startedRoomId) {
+            location.href = `${location.origin}${location.pathname}?room=${result.startedRoomId}`;
+            return;
+        }
         window.notify('Запрос реванша отправлен', 'success', 2600);
     };
 
