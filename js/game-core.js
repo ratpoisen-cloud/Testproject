@@ -127,104 +127,53 @@ window.getRematchInvitationForUser = function(roomId, gameData, userId) {
     return rematchRequest;
 };
 
-window.requestRematchFromRoom = async function(roomId, requesterUid) {
-    if (!roomId || !requesterUid) return null;
-    const gameSnap = await get(window.getGameRef(roomId));
-    const gameData = gameSnap.val();
-    if (!gameData || gameData.gameState !== 'game_over') return null;
+window.finalizeRematchIfReady = async function(roomId, gameData) {
+    if (!roomId || !gameData) return null;
 
     const players = gameData.players || {};
-    const requesterColor = players.white === requesterUid ? 'w' : (players.black === requesterUid ? 'b' : null);
-    if (!requesterColor) return null;
-    const targetUid = requesterColor === 'w' ? players.black : players.white;
-    if (!targetUid) return null;
-
-    const existing = gameData.rematchRequest || null;
-    const existingStatus = window.resolveRematchStatus(existing);
-    if (existing && (existingStatus === 'pending' || existingStatus === 'accepted')) {
-        const nextConfirmedBy = { ...(existing.confirmedBy || {}), [requesterColor]: true };
-        await window.updateGame(window.getGameRef(roomId), {
-            rematchRequest: {
-                ...existing,
-                status: (nextConfirmedBy.w && nextConfirmedBy.b) ? 'accepted' : 'pending',
-                confirmedBy: nextConfirmedBy,
-                updatedAt: Date.now()
-            }
-        });
-        return { roomId, rematchRequestId: existing.id || '' };
-    }
-
-    const now = Date.now();
-    const request = {
-        id: `${roomId}_${now}`,
-        type: 'rematch_invite',
-        createdAt: now,
-        updatedAt: now,
-        expiresAt: now + (1000 * 60 * 60 * 12),
-        createdByUid: requesterUid,
-        createdByName: window.currentUser?.displayName || window.currentUser?.email?.split('@')[0] || 'Игрок',
-        targetUid,
-        status: 'pending',
-        confirmedBy: {
-            [requesterColor]: true
-        },
-        proposedRoomId: window.generateRoomId()
-    };
-
-    await window.updateGame(window.getGameRef(roomId), { rematchRequest: request });
-    return { roomId, rematchRequestId: request.id };
-};
-
-window.confirmRematchForRoom = async function(roomId, confirmerUid) {
-    if (!roomId || !confirmerUid) return null;
-    const gameRef = window.getGameRef(roomId);
-    const gameSnap = await get(gameRef);
-    const gameData = gameSnap.val();
-    const players = gameData?.players || {};
-    const rematch = gameData?.rematchRequest || null;
+    const rematch = gameData.rematchRequest || null;
     if (!window.isRematchRequestRelevant(rematch)) return null;
+    if (rematch.startedRoomId) return rematch.startedRoomId;
 
-    const confirmerColor = players.white === confirmerUid ? 'w' : (players.black === confirmerUid ? 'b' : null);
-    if (!confirmerColor) return null;
-    const nextConfirmedBy = { ...(rematch.confirmedBy || {}), [confirmerColor]: true };
-    const bothConfirmed = Boolean(nextConfirmedBy.w && nextConfirmedBy.b);
-    const now = Date.now();
-
-    await window.updateGame(gameRef, {
-        rematchRequest: {
-            ...rematch,
-            confirmedBy: nextConfirmedBy,
-            status: bothConfirmed ? 'accepted' : 'pending',
-            updatedAt: now
-        }
-    });
-
+    const confirmedBy = rematch.confirmedBy || {};
+    const bothConfirmed = Boolean(confirmedBy.w && confirmedBy.b);
     if (!bothConfirmed) return null;
 
-    const newId = rematch.proposedRoomId || window.generateRoomId();
-    await set(window.getGameRef(newId), {
-        players: {
-            white: players.black,
-            whiteName: players.blackName,
-            whitePhotoURL: players.blackPhotoURL || '',
-            black: players.white,
-            blackName: players.whiteName,
-            blackPhotoURL: players.whitePhotoURL || ''
-        },
-        pgn: new Chess().pgn(),
-        fen: 'start',
-        gameState: 'active',
-        createdAt: now,
-        lastMoveTime: now
-    });
+    if (!players.white || !players.black) return null;
 
-    await window.updateGame(gameRef, {
+    const startedRoomId = rematch.proposedRoomId || window.generateRoomId();
+    const now = Date.now();
+
+    const startedRoomSnap = await get(window.getGameRef(startedRoomId));
+    if (!startedRoomSnap.exists()) {
+        await set(window.getGameRef(startedRoomId), {
+            players: {
+                white: players.black,
+                whiteName: players.blackName,
+                whitePhotoURL: players.blackPhotoURL || '',
+                black: players.white,
+                blackName: players.whiteName,
+                blackPhotoURL: players.whitePhotoURL || ''
+            },
+            pgn: new Chess().pgn(),
+            fen: 'start',
+            gameState: 'active',
+            createdAt: now,
+            lastMoveTime: now
+        });
+    }
+
+    await window.updateGame(window.getGameRef(roomId), {
         rematchRequest: {
             ...rematch,
-            confirmedBy: nextConfirmedBy,
+            confirmedBy: {
+                ...confirmedBy,
+                w: true,
+                b: true
+            },
             status: 'resolved',
             resolvedAt: now,
-            startedRoomId: newId,
+            startedRoomId,
             updatedAt: now
         }
     });
@@ -313,24 +262,6 @@ window.confirmRematchForRoom = async function(roomId, confirmerUid) {
     return window.finalizeRematchIfReady(roomId, {
         ...gameData,
         rematchRequest: nextRequest
-    });
-};
-
-window.declineRematchForRoom = async function(roomId, declinerUid) {
-    if (!roomId || !declinerUid) return;
-    const gameRef = window.getGameRef(roomId);
-    const gameSnap = await get(gameRef);
-    const gameData = gameSnap.val();
-    const rematch = gameData?.rematchRequest || null;
-    if (!rematch) return;
-    await window.updateGame(gameRef, {
-        rematchRequest: {
-            ...rematch,
-            status: 'declined',
-            declinedByUid: declinerUid,
-            declinedAt: Date.now(),
-            updatedAt: Date.now()
-        }
     });
 };
 
