@@ -1469,26 +1469,16 @@ function sortLobbyGames(games) {
         .sort((a, b) => {
             const aData = a.entry[1];
             const bData = b.entry[1];
-            const userId = window.currentUser?.uid || '';
-            const aActionableRematchInvite = userId
-                ? Boolean(window.getRematchInvitationForUser?.(a.entry[0], aData, userId))
-                : false;
-            const bActionableRematchInvite = userId
-                ? Boolean(window.getRematchInvitationForUser?.(b.entry[0], bData, userId))
-                : false;
-            const aOver = aData.gameState === 'game_over' && !aActionableRematchInvite;
-            const bOver = bData.gameState === 'game_over' && !bActionableRematchInvite;
+            const aOver = aData.gameState === 'game_over';
+            const bOver = bData.gameState === 'game_over';
 
             if (aOver !== bOver) return aOver ? 1 : -1;
 
+            const userId = window.currentUser?.uid || '';
             if (!aOver && !bOver && userId) {
                 const aIsInvite = isDirectInvitePendingForRoom(a.entry[0], aData, userId);
                 const bIsInvite = isDirectInvitePendingForRoom(b.entry[0], bData, userId);
                 if (aIsInvite !== bIsInvite) return aIsInvite ? -1 : 1;
-
-                if (aActionableRematchInvite !== bActionableRematchInvite) {
-                    return aActionableRematchInvite ? -1 : 1;
-                }
 
                 const aIsMyTurn = isMyTurnForLobbyGame(aData, userId);
                 const bIsMyTurn = isMyTurnForLobbyGame(bData, userId);
@@ -1760,9 +1750,7 @@ function buildLobbyGameCardData(id, data, userId) {
                 ? (isInviteForMe ? 'Приглашение' : 'Приглашение отправлено')
                 : ''));
     const effectiveStatusText = showRematchInviteStatus ? 'Реванш' : statusText;
-    const stateClass = shouldSurfaceRematchInActive
-        ? 'active'
-        : (isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active'));
+    const stateClass = isOver ? 'finished' : (isWaitingForOpponent ? 'waiting' : 'active');
     const displaySection = shouldSurfaceRematchInActive ? 'active' : (isOver ? 'finished' : 'active');
     const resultComment = isOver ? window.getFinishedGameTerminationLabel(data) : '';
     const presenceSnapshot = getLobbyPresenceSnapshot(opponentUid, { isWaitingForOpponent });
