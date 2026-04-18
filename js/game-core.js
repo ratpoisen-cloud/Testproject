@@ -61,6 +61,7 @@ window.gameSoundFlags = {
     queenVoicePlayed: false
 };
 window.lastPlayedGameOverSoundKey = null;
+window.lastMoveSequenceEndgameMarker = null;
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -827,17 +828,22 @@ window.resolveGameOverSoundKey = function({
     const summary = window.getGameOverSummary?.(game, gameData);
     if (!summary?.isFinished) return null;
 
-    const pgn = gameData?.pgn || game?.pgn?.() || '';
-    const message = gameData?.message || '';
+    const finalSoundEvent = window.resolveEndgameSoundEventForCurrentClient?.({
+        game,
+        gameData
+    }) || '-';
     const resignColor = gameData?.resign === 'w' || gameData?.resign === 'b' ? gameData.resign : '';
+    const plyCount = Array.isArray(game?.history?.()) ? game.history().length : 0;
+    const roomId = window.currentRoomId || '-';
     return [
+        roomId,
+        plyCount,
         summary.termination,
         summary.resultCode,
         summary.winnerColor || '-',
         summary.loserColor || '-',
         resignColor || '-',
-        message,
-        pgn
+        finalSoundEvent
     ].join('|');
 };
 
@@ -950,11 +956,38 @@ window.resolveMoveSoundSequence = function(moveResult, options = {}) {
     return [primarySoundEvent, ...tailEvents].filter((eventName) => typeof eventName === 'string' && eventName);
 };
 
+window.isEndgameSoundEvent = function(eventName) {
+    return eventName === 'checkmate'
+        || eventName === 'win_white'
+        || eventName === 'win_black'
+        || eventName === 'defeat'
+        || eventName === 'draw';
+};
+
+window.markMoveSequenceEndgameIfNeeded = function(queue = []) {
+    if (!Array.isArray(queue) || queue.length === 0) return;
+    if (!queue.some((eventName) => window.isEndgameSoundEvent?.(eventName))) return;
+    const plyCount = window.game?.history?.().length || 0;
+    window.lastMoveSequenceEndgameMarker = {
+        roomId: window.currentRoomId || '-',
+        plyCount
+    };
+};
+
+window.wasCurrentEndgameHandledByMoveSequence = function() {
+    const marker = window.lastMoveSequenceEndgameMarker;
+    if (!marker) return false;
+    const currentPly = window.game?.history?.().length || 0;
+    const currentRoom = window.currentRoomId || '-';
+    return marker.roomId === currentRoom && marker.plyCount === currentPly;
+};
+
 window.playMoveSoundSequence = function(moveResult, options = {}) {
     const queue = window.resolveMoveSoundSequence?.(moveResult, options) || [];
     if (queue.length === 0) {
         return Promise.resolve();
     }
+    window.markMoveSequenceEndgameIfNeeded?.(queue);
 
     if (window.SoundManager?.playSequence) {
         return window.SoundManager.playSequence(queue);
@@ -2694,6 +2727,7 @@ function initLocalGameState() {
     window.hasInitializedRemotePgnSync = false;
     window.lastKnownGameState = null;
     window.lastPlayedGameOverSoundKey = null;
+    window.lastMoveSequenceEndgameMarker = null;
     window.lastRenderedMoveHistoryLength = 0;
     window.resetGameSoundFlags?.();
     window.syncReviewStateFromCurrentGame();
@@ -2745,7 +2779,10 @@ function subscribeToGameUpdates(gameRef) {
             return;
         }
         if (data.gameState === 'game_over') {
-            window.playGameOverSoundForCurrentClient?.(data);
+            const alreadyHandledByMoveSequence = window.wasCurrentEndgameHandledByMoveSequence?.();
+            if (!alreadyHandledByMoveSequence) {
+                window.playGameOverSoundForCurrentClient?.(data);
+            }
         }
         if (window.shouldAutoEnterFinishedReview && data.gameState === 'game_over' && typeof window.enterReviewMode === 'function') {
             const maxPly = window.game?.history?.().length || 0;
