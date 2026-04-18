@@ -1716,6 +1716,7 @@ function hasRoomBecameActiveForUser(previousData, currentData, userId) {
 }
 
 function buildLobbyGameCardData(id, data, userId) {
+    if (!data || typeof data !== 'object') return null;
     const players = data.players;
     if (!players || typeof players !== 'object') return null;
     if (players.white !== userId && players.black !== userId) return null;
@@ -2251,71 +2252,74 @@ function flushLobbyDomUpdate() {
         nextSnapshotByGame
     } = payload;
 
-    if (!games) {
-        window.lobbyLastSnapshotByGame = new Map();
-        clearLobbyGameCardState();
-        clearLobbyPlayerCardState();
-        const empty = buildLobbyEmptyState();
-        gamesList.innerHTML = empty.activeGames;
-        bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
-        if (finishedGamesList) finishedGamesList.innerHTML = empty.finishedGames;
-        playersList.innerHTML = empty.players;
-        window.lobbyLastPlayersAggregate = [];
-        updateGamesHubInviteIndicator(nodes, 0);
-        if (!window.lobbyHasProcessedFirstSnapshot) {
-            window.markLobbyReady?.();
-        }
-        window.lobbyHasProcessedFirstSnapshot = true;
-        return;
-    }
-
-    const sortedGames = sortLobbyGames(games);
-    let pendingInvitesCount = 0;
     try {
-        const updateResult = wasFirstSnapshot
-            ? fullRebuildLobbyGames({
-                sortedGames,
-                userId,
-                gamesList,
-                finishedGamesList,
-                createGameBtn: nodes.createGameBtn
-            })
-            : incrementalUpdateLobbyGames({
+        if (!games) {
+            window.lobbyLastSnapshotByGame = new Map();
+            clearLobbyGameCardState();
+            clearLobbyPlayerCardState();
+            const empty = buildLobbyEmptyState();
+            if (gamesList) {
+                gamesList.innerHTML = empty.activeGames;
+                bindLobbyEmptyStateActions(gamesList, nodes.createGameBtn);
+            }
+            if (finishedGamesList) finishedGamesList.innerHTML = empty.finishedGames;
+            if (playersList) playersList.innerHTML = empty.players;
+            window.lobbyLastPlayersAggregate = [];
+            updateGamesHubInviteIndicator(nodes, 0);
+            return;
+        }
+
+        const sortedGames = sortLobbyGames(games);
+        let pendingInvitesCount = 0;
+        try {
+            const updateResult = wasFirstSnapshot
+                ? fullRebuildLobbyGames({
+                    sortedGames,
+                    userId,
+                    gamesList,
+                    finishedGamesList,
+                    createGameBtn: nodes.createGameBtn
+                })
+                : incrementalUpdateLobbyGames({
+                    sortedGames,
+                    userId,
+                    gamesList,
+                    finishedGamesList,
+                    createGameBtn: nodes.createGameBtn
+                });
+
+            pendingInvitesCount = updateResult.pendingInvitesCount || 0;
+        } catch (error) {
+            console.error('Ошибка точечного обновления DOM лобби, выполняем fallback rebuild:', error);
+            const rebuildResult = fullRebuildLobbyGames({
                 sortedGames,
                 userId,
                 gamesList,
                 finishedGamesList,
                 createGameBtn: nodes.createGameBtn
             });
+            pendingInvitesCount = rebuildResult.pendingInvitesCount || 0;
+        }
 
-        pendingInvitesCount = updateResult.pendingInvitesCount || 0;
+        syncLobbyGamesFilterVisibility(nodes, gamesList, finishedGamesList);
+        updateGamesHubInviteIndicator(nodes, pendingInvitesCount);
+
+        const playersAggregate = window.buildPlayersAggregate(sortedGames, userId);
+        window.lobbyLastPlayersAggregate = playersAggregate;
+        incrementalUpdatePlayersLobby(playersList, playersAggregate);
+        const visiblePresenceUids = window.collectVisiblePresenceUids?.() || [];
+        window.setTrackedPresenceUids?.(visiblePresenceUids);
+        window.ensurePresenceForUsers?.(visiblePresenceUids);
+        window.refreshLobbyPresenceLabels?.();
+        window.lobbyLastSnapshotByGame = nextSnapshotByGame;
     } catch (error) {
-        console.error('Ошибка точечного обновления DOM лобби, выполняем fallback rebuild:', error);
-        const rebuildResult = fullRebuildLobbyGames({
-            sortedGames,
-            userId,
-            gamesList,
-            finishedGamesList,
-            createGameBtn: nodes.createGameBtn
-        });
-        pendingInvitesCount = rebuildResult.pendingInvitesCount || 0;
+        console.error('flushLobbyDomUpdate: критическая ошибка рендера лобби', error);
+    } finally {
+        if (!window.lobbyHasProcessedFirstSnapshot) {
+            window.markLobbyReady?.();
+        }
+        window.lobbyHasProcessedFirstSnapshot = true;
     }
-
-    syncLobbyGamesFilterVisibility(nodes, gamesList, finishedGamesList);
-    updateGamesHubInviteIndicator(nodes, pendingInvitesCount);
-
-    const playersAggregate = window.buildPlayersAggregate(sortedGames, userId);
-    window.lobbyLastPlayersAggregate = playersAggregate;
-    incrementalUpdatePlayersLobby(playersList, playersAggregate);
-    const visiblePresenceUids = window.collectVisiblePresenceUids?.() || [];
-    window.setTrackedPresenceUids?.(visiblePresenceUids);
-    window.ensurePresenceForUsers?.(visiblePresenceUids);
-    window.refreshLobbyPresenceLabels?.();
-    if (!window.lobbyHasProcessedFirstSnapshot) {
-        window.markLobbyReady?.();
-    }
-    window.lobbyHasProcessedFirstSnapshot = true;
-    window.lobbyLastSnapshotByGame = nextSnapshotByGame;
 }
 
 function scheduleLobbyDomUpdate(payload) {
@@ -2575,6 +2579,7 @@ window.buildPlayersAggregate = function(sortedGames, userId) {
     const opponentsMap = new Map();
 
     sortedGames.forEach(([gameId, data]) => {
+        if (!data || typeof data !== 'object') return;
         const players = data.players;
         if (!players) return;
 
