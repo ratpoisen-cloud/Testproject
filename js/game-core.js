@@ -840,12 +840,6 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
     const isFinishedGame = Boolean(summary?.isFinished);
     const isCheckmate = Boolean(window.game.in_checkmate?.());
     const isCheck = !isCheckmate && Boolean(window.game.in_check?.());
-    const isCheckForCurrentClient = Boolean(
-        isCheck &&
-        window.playerColor &&
-        typeof window.game.turn === 'function' &&
-        window.playerColor === window.game.turn()
-    );
 
     if (moveResult.promotion) {
         events.push('promotion');
@@ -868,7 +862,7 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
         if (finalEvent) {
             events.push(finalEvent);
         }
-    } else if (isCheckForCurrentClient) {
+    } else if (isCheck) {
         events.push('check');
     }
 
@@ -2924,6 +2918,7 @@ window.syncPassAndPlayBoardOrientation = function() {
     if (!window.isPassAndPlayStandardMode?.() || !window.board || !window.game) return;
     const orientation = window.game.turn() === 'b' ? 'black' : 'white';
     window.board.orientation(orientation);
+    window.reapplyPersistentBoardHighlights?.(window.game.fen());
 };
 
 window.initPassAndPlayGame = function({ variant = 'standard' } = {}) {
