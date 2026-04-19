@@ -349,12 +349,114 @@ window.updateGameStatus = function(data) {
     return data;
 };
 
+window.CAPTURED_PIECE_ORDER = ['p', 'n', 'b', 'r', 'q'];
+window.CAPTURED_PIECE_START_COUNTS = { p: 8, n: 2, b: 2, r: 2, q: 1 };
+window.CAPTURED_PIECE_UNICODE = {
+    w: { p: '♙', n: '♘', b: '♗', r: '♖', q: '♕' },
+    b: { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛' }
+};
+
+window.getCapturedPiecesBySide = function(fen) {
+    const normalizedFen = typeof fen === 'string' && fen.trim() ? fen : 'start';
+    const positionGame = new Chess(normalizedFen);
+    const board = positionGame.board();
+    const currentCounts = {
+        w: { p: 0, n: 0, b: 0, r: 0, q: 0 },
+        b: { p: 0, n: 0, b: 0, r: 0, q: 0 }
+    };
+
+    board.forEach((rank) => {
+        rank.forEach((piece) => {
+            if (!piece) return;
+            if (piece.type === 'k') return;
+            if (!currentCounts[piece.color] || !Object.prototype.hasOwnProperty.call(currentCounts[piece.color], piece.type)) {
+                return;
+            }
+            currentCounts[piece.color][piece.type] += 1;
+        });
+    });
+
+    const missingByColor = { w: {}, b: {} };
+    ['w', 'b'].forEach((color) => {
+        window.CAPTURED_PIECE_ORDER.forEach((type) => {
+            const startCount = window.CAPTURED_PIECE_START_COUNTS[type] || 0;
+            missingByColor[color][type] = Math.max(0, startCount - (currentCounts[color][type] || 0));
+        });
+    });
+
+    return {
+        byWhite: missingByColor.b,
+        byBlack: missingByColor.w
+    };
+};
+
+window.renderCapturedPieces = function() {
+    const container = document.getElementById('captured-pieces');
+    if (!container) return;
+
+    const leftSide = container.querySelector('[data-captured-by="white"]');
+    const rightSide = container.querySelector('[data-captured-by="black"]');
+    if (!leftSide || !rightSide) return;
+
+    const displayedFen = window.getDisplayedBoardContext?.()?.fen || window.game?.fen?.() || 'start';
+    const captured = window.getCapturedPiecesBySide(displayedFen);
+
+    const renderSide = (sideNode, capturedMap, capturedPieceColor) => {
+        sideNode.replaceChildren();
+        const fragment = document.createDocumentFragment();
+        let hasAny = false;
+
+        window.CAPTURED_PIECE_ORDER.forEach((type) => {
+            const count = capturedMap?.[type] || 0;
+            if (count <= 0) return;
+            hasAny = true;
+
+            const item = document.createElement('span');
+            item.className = 'captured-piece-item';
+
+            const iconPath = window.getPieceAssetPath?.(type, capturedPieceColor);
+            if (iconPath) {
+                const icon = document.createElement('img');
+                icon.className = 'captured-piece-icon';
+                icon.src = iconPath;
+                icon.alt = '';
+                icon.loading = 'lazy';
+                item.appendChild(icon);
+            } else {
+                const iconFallback = document.createElement('span');
+                iconFallback.className = 'captured-piece-icon captured-piece-icon--fallback';
+                iconFallback.textContent = window.CAPTURED_PIECE_UNICODE[capturedPieceColor]?.[type] || '';
+                item.appendChild(iconFallback);
+            }
+
+            const countNode = document.createElement('span');
+            countNode.className = 'captured-piece-count';
+            countNode.textContent = `×${count}`;
+            item.appendChild(countNode);
+            fragment.appendChild(item);
+        });
+
+        if (!hasAny) {
+            const empty = document.createElement('span');
+            empty.className = 'captured-pieces-empty';
+            empty.textContent = '—';
+            fragment.appendChild(empty);
+        }
+
+        sideNode.appendChild(fragment);
+    };
+
+    renderSide(leftSide, captured.byWhite, 'b');
+    renderSide(rightSide, captured.byBlack, 'w');
+};
+
 // Обновление истории ходов
 window.updateMoveHistory = function() {
     const history = window.game.history({ verbose: true });
     const moveListDiv = document.getElementById('move-list');
 
     if (!moveListDiv) return;
+    window.renderCapturedPieces?.();
 
     const previousHistoryLength = Number.isInteger(window.lastRenderedMoveHistoryLength)
         ? window.lastRenderedMoveHistoryLength
