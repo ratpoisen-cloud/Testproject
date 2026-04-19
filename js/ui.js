@@ -196,7 +196,7 @@ window.updateTurnIndicator = function(isMyTurn) {
         return;
     }
     
-    if (window.isSelfTrainingMode?.()) {
+    if (window.isSelfTrainingMode?.() || window.isPassAndPlayStandardMode?.()) {
         const sideLabel = window.game?.turn?.() === 'b' ? 'Чёрных' : 'Белых';
         turnStatus.className = 'turn-status my-turn';
         turnText.innerHTML = `Ход ${sideLabel}`;
@@ -224,6 +224,7 @@ window.updateOpponentHeader = function(data) {
     const isViewer = !isWhitePlayer && !isBlackPlayer;
     const isBotMode = Boolean(window.isBotMode || data?.mode === 'bot');
     const isSelfTrainingMode = Boolean(window.isSelfTrainingMode?.() || (window.isTrainingMode && window.trainingModeType === 'self'));
+    const isPassAndPlayMode = Boolean(window.isPassAndPlayStandardMode?.() || (window.isPassAndPlayMode && window.passAndPlayVariant === 'standard'));
 
     let opponentName = 'Соперник';
     let opponentAvatar = '';
@@ -232,6 +233,8 @@ window.updateOpponentHeader = function(data) {
 
     if (isSelfTrainingMode) {
         opponentName = 'Сам с собой';
+    } else if (isPassAndPlayMode) {
+        opponentName = 'Локальная партия (Вдвоём)';
     } else if (isBotMode) {
         const levelMap = { easy: 'Лёгкий', medium: 'Средний', hard: 'Сильный' };
         opponentName = `Бот (${levelMap[window.botLevel] || 'Средний'})`;
@@ -256,7 +259,7 @@ window.updateOpponentHeader = function(data) {
         presenceText = 'Режим наблюдения';
         indicatorVariant = 'offline';
         isInteractivePresence = false;
-    } else if (isSelfTrainingMode) {
+    } else if (isSelfTrainingMode || isPassAndPlayMode) {
         window.__lastEnsuredOpponentUid = null;
         presenceText = 'Локальный режим';
         indicatorVariant = 'offline';
@@ -507,27 +510,36 @@ window.updateFinishedGameActions = function(data) {
     const takebackRequestBox = document.getElementById('takeback-request-box');
     const drawRequestBox = document.getElementById('draw-request-box');
     const shareBox = document.querySelector('.game-share-box');
+    const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
+    const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
     const isSelfTrainingMode = Boolean(window.isSelfTrainingMode?.());
-    const isLocalMode = isBotMode || isSelfTrainingMode;
+    const isPassAndPlayMode = Boolean(window.isPassAndPlayStandardMode?.());
+    const isLocalMode = isBotMode || isSelfTrainingMode || isPassAndPlayMode;
+    const shouldShowFinishedLayout = isFinishedGame && !isPassAndPlayMode;
 
-    gameSection?.classList.toggle('finished-viewer-mode', isFinishedGame);
+    gameSection?.classList.toggle('finished-viewer-mode', shouldShowFinishedLayout);
 
-    liveTopActions?.classList.toggle('hidden', isFinishedGame);
-    liveBottomActions?.classList.toggle('hidden', isFinishedGame);
+    liveTopActions?.classList.toggle('hidden', shouldShowFinishedLayout);
+    liveBottomActions?.classList.toggle('hidden', shouldShowFinishedLayout);
 
     if (finishedActions) {
-        finishedActions.classList.toggle('hidden', !isFinishedGame);
+        finishedActions.classList.toggle('hidden', !shouldShowFinishedLayout);
     }
 
     drawBtn?.classList.toggle('hidden', isFinishedGame || isLocalMode);
     drawBtn && (drawBtn.disabled = isFinishedGame || isLocalMode);
-    resignBtn?.classList.toggle('hidden', isFinishedGame);
+    resignBtn?.classList.toggle('hidden', isFinishedGame || isPassAndPlayMode);
+    quickPhrasesToggle?.classList.toggle('hidden', isFinishedGame || isLocalMode);
+    if (isFinishedGame || isLocalMode) {
+        quickPhrasesMenu?.classList.add('hidden');
+    }
     if (takebackBtn) {
-        takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode);
-        takebackBtn.disabled = isFinishedGame || isBotMode;
+        const shouldHideTakeback = isBotMode || (isFinishedGame && !isPassAndPlayMode);
+        takebackBtn.classList.toggle('hidden', shouldHideTakeback);
+        takebackBtn.disabled = shouldHideTakeback;
     }
     if (isFinishedGame) {
         confirmMoveBox?.classList.add('hidden');

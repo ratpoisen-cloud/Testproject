@@ -166,6 +166,10 @@
                         <span class="hub-tile-icon" aria-hidden="true">🎯</span>
                         <span class="hub-tile-title">Тренировка</span>
                     </button>
+                    <button id="hub-open-pass-and-play" class="hub-tile hub-tile-secondary" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">🤝</span>
+                        <span class="hub-tile-title">Вдвоём</span>
+                    </button>
                 </div>
             </div>
 
@@ -270,6 +274,18 @@
                     <button class="btn btn-outline" type="button" disabled>Студия — скоро</button>
                     <button class="btn btn-outline" type="button" disabled>Дебюты — скоро</button>
                     <button id="training-mode-cancel" class="btn btn-outline" type="button">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pass-and-play-mode-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pass-and-play-mode-modal-title">
+            <div class="modal-content create-game-modal-content bot-game-modal-content">
+                <h3 id="pass-and-play-mode-modal-title" class="modal-title-reset">Вдвоём</h3>
+                <p class="modal-desc-secondary">Выберите режим</p>
+                <div class="create-game-modal-actions bot-game-modal-actions">
+                    <button id="pass-and-play-mode-standard" class="btn btn-primary" type="button">Обычный</button>
+                    <button class="btn btn-outline" type="button" disabled>Напротив — скоро</button>
+                    <button id="pass-and-play-mode-cancel" class="btn btn-outline" type="button">Отмена</button>
                 </div>
             </div>
         </div>
