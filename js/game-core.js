@@ -10,6 +10,8 @@ window.currentRoomId = null;
 window.isBotMode = false;
 window.isTrainingMode = false;
 window.trainingModeType = null;
+window.isPassAndPlayMode = false;
+window.passAndPlayVariant = null;
 window.botColor = null;
 window.botLevel = 'medium';
 window.botEngine = null;
@@ -69,8 +71,12 @@ window.isSelfTrainingMode = function() {
     return Boolean(window.isTrainingMode && window.trainingModeType === 'self');
 };
 
+window.isPassAndPlayStandardMode = function() {
+    return Boolean(window.isPassAndPlayMode && window.passAndPlayVariant === 'standard');
+};
+
 window.isLocalGameMode = function() {
-    return Boolean(window.isBotMode || window.isTrainingMode);
+    return Boolean(window.isBotMode || window.isTrainingMode || window.isPassAndPlayMode);
 };
 
 window.isGameFinished = function(gameData = null) {
@@ -1019,6 +1025,7 @@ function getLobbyNodes() {
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
         hubOpenBotGamesBtn: document.getElementById('hub-open-bot-games'),
         hubOpenTrainingBtn: document.getElementById('hub-open-training'),
+        hubOpenPassAndPlayBtn: document.getElementById('hub-open-pass-and-play'),
         hubGamesInviteDot: document.getElementById('hub-games-invite-dot'),
         hubGamesInviteLabel: document.getElementById('hub-games-invite-label'),
         createGameBtn: document.getElementById('create-game-btn'),
@@ -1032,6 +1039,9 @@ function getLobbyNodes() {
         trainingModeModal: document.getElementById('training-mode-modal'),
         trainingModeSelfBtn: document.getElementById('training-mode-self'),
         trainingModeCancelBtn: document.getElementById('training-mode-cancel'),
+        passAndPlayModeModal: document.getElementById('pass-and-play-mode-modal'),
+        passAndPlayModeStandardBtn: document.getElementById('pass-and-play-mode-standard'),
+        passAndPlayModeCancelBtn: document.getElementById('pass-and-play-mode-cancel'),
         botColorSelect: document.getElementById('bot-color-select'),
         botLevelSelect: document.getElementById('bot-level-select'),
         colorButtons: document.querySelectorAll('[data-create-color]'),
@@ -1128,6 +1138,10 @@ function closeBotGameModal(modal) {
 }
 
 function closeTrainingModeModal(modal) {
+    modal?.classList.add('hidden');
+}
+
+function closePassAndPlayModeModal(modal) {
     modal?.classList.add('hidden');
 }
 
@@ -2353,6 +2367,11 @@ window.initLobby = function() {
             nodes.trainingModeModal?.classList.remove('hidden');
         };
     }
+    if (nodes.hubOpenPassAndPlayBtn) {
+        nodes.hubOpenPassAndPlayBtn.onclick = () => {
+            nodes.passAndPlayModeModal?.classList.remove('hidden');
+        };
+    }
     nodes.backButtons.forEach((button) => {
         button.onclick = () => window.setLobbyScreen('hub');
     });
@@ -2394,6 +2413,9 @@ window.initLobby = function() {
     if (nodes.trainingModeCancelBtn) {
         nodes.trainingModeCancelBtn.onclick = () => closeTrainingModeModal(nodes.trainingModeModal);
     }
+    if (nodes.passAndPlayModeCancelBtn) {
+        nodes.passAndPlayModeCancelBtn.onclick = () => closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+    }
     if (nodes.botGameStartBtn) {
         nodes.botGameStartBtn.onclick = () => {
             const color = nodes.botColorSelect?.value || 'random';
@@ -2408,6 +2430,12 @@ window.initLobby = function() {
             window.initTrainingGame({ mode: 'self' });
         };
     }
+    if (nodes.passAndPlayModeStandardBtn) {
+        nodes.passAndPlayModeStandardBtn.onclick = () => {
+            closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+            window.initPassAndPlayGame({ variant: 'standard' });
+        };
+    }
     nodes.createGameModal.onclick = (event) => {
         if (event.target === nodes.createGameModal) closeCreateGameModal(nodes.createGameModal);
     };
@@ -2419,6 +2447,11 @@ window.initLobby = function() {
     if (nodes.trainingModeModal) {
         nodes.trainingModeModal.onclick = (event) => {
             if (event.target === nodes.trainingModeModal) closeTrainingModeModal(nodes.trainingModeModal);
+        };
+    }
+    if (nodes.passAndPlayModeModal) {
+        nodes.passAndPlayModeModal.onclick = (event) => {
+            if (event.target === nodes.passAndPlayModeModal) closePassAndPlayModeModal(nodes.passAndPlayModeModal);
         };
     }
     window.lobbyShowFinished = false;
@@ -2680,6 +2713,8 @@ function initLocalGameState() {
     window.isBotMode = false;
     window.isTrainingMode = false;
     window.trainingModeType = null;
+    window.isPassAndPlayMode = false;
+    window.passAndPlayVariant = null;
     window.botColor = null;
     window.botLevel = 'medium';
     window.botEngine = null;
@@ -2799,6 +2834,8 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     params.set('color', normalizedColor);
     params.set('level', normalizedLevel);
     params.delete('training');
+    params.delete('local');
+    params.delete('variant');
     params.delete('mode');
     params.delete('room');
     params.delete('view');
@@ -2856,6 +2893,8 @@ window.initTrainingGame = function({ mode = 'self' } = {}) {
     const params = new URLSearchParams(window.location.search);
     params.set('training', '1');
     params.set('mode', normalizedMode);
+    params.delete('local');
+    params.delete('variant');
     params.delete('room');
     params.delete('bot');
     params.delete('color');
@@ -2877,6 +2916,60 @@ window.initTrainingGame = function({ mode = 'self' } = {}) {
     window.syncReviewStateFromCurrentGame();
     window.lastKnownGameState = 'active';
     window.updateUI({ gameState: 'active', mode: 'training', trainingMode: normalizedMode });
+    window.refreshPresenceUI?.();
+    window.markGameReady?.();
+};
+
+window.syncPassAndPlayBoardOrientation = function() {
+    if (!window.isPassAndPlayStandardMode?.() || !window.board || !window.game) return;
+    const orientation = window.game.turn() === 'b' ? 'black' : 'white';
+    window.board.orientation(orientation);
+};
+
+window.initPassAndPlayGame = function({ variant = 'standard' } = {}) {
+    const normalizedVariant = variant === 'standard' ? 'standard' : 'standard';
+
+    window.stopBotGame();
+    initLocalGameState();
+
+    window.isPassAndPlayMode = true;
+    window.passAndPlayVariant = normalizedVariant;
+    window.playerColor = 'w';
+
+    window.setGameSectionVisibility();
+    window.currentRoomId = null;
+
+    const roomLink = document.getElementById('room-link');
+    if (roomLink) {
+        roomLink.value = '';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('local', '1');
+    params.set('mode', 'pass');
+    params.set('variant', normalizedVariant);
+    params.delete('room');
+    params.delete('bot');
+    params.delete('color');
+    params.delete('level');
+    params.delete('training');
+    params.delete('view');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+    window.updatePlayerBadge();
+    window.initBoard(window.playerColor);
+    window.syncPassAndPlayBoardOrientation?.();
+
+    document.getElementById('game-modal')?.classList.add('hidden');
+    document.getElementById('takeback-request-box')?.classList.add('hidden');
+    document.getElementById('draw-request-box')?.classList.add('hidden');
+    document.getElementById('rematch-request-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
+
+    window.setupGameControls(null, null);
+    window.syncReviewStateFromCurrentGame();
+    window.lastKnownGameState = 'active';
+    window.updateUI({ gameState: 'active', mode: 'pass', variant: normalizedVariant });
     window.refreshPresenceUI?.();
     window.markGameReady?.();
 };

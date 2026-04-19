@@ -18,6 +18,10 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const runRematch = async () => {
         hideElement('game-modal');
+        if (isPassAndPlayMode()) {
+            window.initPassAndPlayGame({ variant: 'standard' });
+            return;
+        }
         if (window.isSelfTrainingMode?.()) {
             window.initTrainingGame({ mode: 'self' });
             return;
@@ -80,6 +84,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const isBotMode = () => Boolean(window.isBotMode);
     const isSelfTrainingMode = () => Boolean(window.isSelfTrainingMode?.());
+    const isPassAndPlayMode = () => Boolean(window.isPassAndPlayStandardMode?.());
     const isLocalMode = () => Boolean(window.isLocalGameMode?.());
 
     window.requestBotMove = async function() {
@@ -186,13 +191,17 @@ window.setupGameControls = function(gameRef, roomId) {
                 lastMoveTime: now // Добавляем время последнего хода для сортировки
             };
 
-            if (isBotMode() || isSelfTrainingMode()) {
+            if (isBotMode() || isSelfTrainingMode() || isPassAndPlayMode()) {
                 window.syncReviewStateFromCurrentGame?.();
                 resetPendingMoveUI();
+                if (isPassAndPlayMode()) {
+                    window.syncPassAndPlayBoardOrientation?.();
+                }
                 window.updateUI({
                     gameState: window.game.game_over() ? 'game_over' : 'active',
-                    mode: isBotMode() ? 'bot' : 'training',
-                    trainingMode: isSelfTrainingMode() ? 'self' : null
+                    mode: isBotMode() ? 'bot' : (isPassAndPlayMode() ? 'pass' : 'training'),
+                    trainingMode: isSelfTrainingMode() ? 'self' : null,
+                    variant: isPassAndPlayMode() ? 'standard' : null
                 });
 
                 if (window.game.game_over()) {
@@ -300,7 +309,9 @@ window.setupGameControls = function(gameRef, roomId) {
         const goBackToLobby = async () => {
             const shouldExit = await window.confirmAction({
                 title: "Выйти в лобби?",
-                message: "Текущая партия останется сохранённой.",
+                message: isPassAndPlayMode()
+                    ? "Текущая локальная партия не сохранится."
+                    : "Текущая партия останется сохранённой.",
                 confirmText: "Выйти",
                 cancelText: "Остаться"
             });
@@ -400,6 +411,31 @@ window.setupGameControls = function(gameRef, roomId) {
                 window.updateBoardPosition(window.game.fen(), true);
                 window.syncReviewStateFromCurrentGame?.();
                 window.updateUI({ gameState: 'active', mode: 'training', trainingMode: 'self' });
+            });
+            return;
+        }
+        if (isPassAndPlayMode()) {
+            setClickHandler('takeback-btn', () => {
+                const undoneMove = window.game?.undo?.();
+                if (!undoneMove) {
+                    window.notify("Нет ходов для отмены", "warning");
+                    return;
+                }
+                resetPendingMoveUI();
+                window.clearSelection();
+                window.updateBoardPosition(window.game.fen(), true);
+                window.syncPassAndPlayBoardOrientation?.();
+                window.syncReviewStateFromCurrentGame?.();
+                document.getElementById('game-modal')?.classList.add('hidden');
+                const isStillFinished = Boolean(window.game?.game_over?.());
+                if (!isStillFinished) {
+                    window.lastKnownGameState = 'active';
+                }
+                window.updateUI({
+                    gameState: isStillFinished ? 'game_over' : 'active',
+                    mode: 'pass',
+                    variant: 'standard'
+                });
             });
             return;
         }

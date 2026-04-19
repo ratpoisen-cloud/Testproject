@@ -185,6 +185,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const isBotMode = urlParams.get('bot') === '1';
     const isTrainingMode = urlParams.get('training') === '1';
     const trainingModeType = urlParams.get('mode');
+    const isLocalMode = urlParams.get('local') === '1';
+    const localModeType = urlParams.get('mode');
+    const localVariant = urlParams.get('variant');
 
     if (roomId) {
         window.setAppLoadingFlag('lobby', true);
@@ -200,6 +203,10 @@ window.addEventListener('DOMContentLoaded', () => {
         window.setAppLoadingFlag('lobby', true);
         window.initLobby();
         window.initTrainingGame({ mode: 'self' });
+    } else if (isLocalMode && localModeType === 'pass') {
+        window.setAppLoadingFlag('lobby', true);
+        window.initLobby();
+        window.initPassAndPlayGame({ variant: localVariant || 'standard' });
     } else {
         window.initLobby();
     }

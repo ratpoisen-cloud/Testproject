@@ -174,7 +174,7 @@ window.isReviewInteractionLocked = function() {
 };
 
 window.getBoardInteractionColor = function() {
-    if (window.isSelfTrainingMode?.()) {
+    if (window.isSelfTrainingMode?.() || window.isPassAndPlayStandardMode?.()) {
         return window.game?.turn?.() || null;
     }
     return window.playerColor || null;
