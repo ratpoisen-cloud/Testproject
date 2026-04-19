@@ -509,9 +509,13 @@ window.handleDragStart = function(source, piece, position, orientation) {
         return false;
     }
     
+    const availableMoves = window.game.moves({ square: source, verbose: true });
+
     window.dragSourceSquare = source;
-    window.showPossibleMoves(source);
-    window.SoundManager?.play?.('piece_select');
+    window.showPossibleMoves(source, availableMoves);
+    if (availableMoves.length > 0) {
+        window.SoundManager?.play?.('piece_select');
+    }
     
     return true;
 };
@@ -543,13 +547,15 @@ window.handleMouseoutSquare = function(square, piece) {
 };
 
 // Показ возможных ходов для фигуры
-window.showPossibleMoves = function(square) {
+window.showPossibleMoves = function(square, precomputedMoves = null) {
     if (window.isReviewInteractionLocked()) return;
 
     window.removeTemporaryHighlights();
     window.highlightSquare(square, 'highlight-drag-source');
     
-    const moves = window.game.moves({ square: square, verbose: true });
+    const moves = Array.isArray(precomputedMoves)
+        ? precomputedMoves
+        : window.game.moves({ square: square, verbose: true });
     moves.forEach(move => {
         if (move.captured) {
             window.highlightSquare(move.to, 'highlight-capture');
@@ -557,6 +563,8 @@ window.showPossibleMoves = function(square) {
             window.highlightSquare(move.to, 'highlight-possible');
         }
     });
+
+    return moves;
 };
 
 // Убираем временную подсветку
@@ -687,9 +695,12 @@ window.selectSquare = function(square) {
     window.clearSelection();
     window.selectedSquare = square;
     window.highlightSquare(square, 'highlight-selected');
-    window.SoundManager?.play?.('piece_select');
-    
+
     const moves = window.game.moves({ square: square, verbose: true });
+    if (moves.length > 0) {
+        window.SoundManager?.play?.('piece_select');
+    }
+
     moves.forEach(move => {
         if (move.captured) {
             window.highlightSquare(move.to, 'highlight-capture');

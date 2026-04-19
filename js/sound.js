@@ -675,10 +675,26 @@
                 '.piece-417db',
                 '.piece-417db *'
             ].join(', ');
+            const noUISoundAttribute = options.noUISoundAttribute || 'data-no-ui-sound';
             const canHover = window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches ?? false;
             const activePressTargets = new Map();
             let lastRolloverElement = null;
             let lastRolloverAt = 0;
+
+            const hasNoUISoundOptOut = (node) => {
+                if (!node || !noUISoundAttribute) {
+                    return false;
+                }
+
+                const attrSelector = `[${noUISoundAttribute}]`;
+                const markedNode = node.matches(attrSelector) ? node : node.closest(attrSelector);
+                if (!markedNode) {
+                    return false;
+                }
+
+                const rawValue = `${markedNode.getAttribute(noUISoundAttribute) ?? ''}`.trim().toLowerCase();
+                return rawValue !== 'false';
+            };
 
             const resolveInteractiveTarget = (eventTarget) => {
                 if (!(eventTarget instanceof Element)) {
@@ -694,6 +710,10 @@
                 }
 
                 if (excludedSelector && candidate.closest(excludedSelector)) {
+                    return null;
+                }
+
+                if (hasNoUISoundOptOut(candidate)) {
                     return null;
                 }
 
