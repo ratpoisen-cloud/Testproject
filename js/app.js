@@ -206,7 +206,10 @@ window.addEventListener('DOMContentLoaded', () => {
     } else if (isLocalMode && localModeType === 'pass') {
         window.setAppLoadingFlag('lobby', true);
         window.initLobby();
-        window.initPassAndPlayGame({ variant: localVariant || 'standard' });
+        const hasResumed = window.resumePassAndPlayGame?.();
+        if (!hasResumed) {
+            window.initPassAndPlayGame({ variant: localVariant || 'standard' });
+        }
     } else {
         window.initLobby();
     }

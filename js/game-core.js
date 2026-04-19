@@ -44,6 +44,7 @@ window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
 window.DIRECT_INVITE_HANDLED_STORAGE_KEY = 'chess_direct_invite_handled_v1';
 window.REMATCH_INVITE_SEEN_STORAGE_KEY = 'chess_rematch_invite_seen_v1';
 window.BOT_GAMES_HISTORY_STORAGE_KEY = 'chess_bot_games_history_v1';
+window.PASS_AND_PLAY_SAVED_GAME_STORAGE_KEY = 'go_chess_pass_and_play_saved_game_v1';
 window.lobbyLastSnapshotByGame = new Map();
 window.lobbyLastEventSnapshotByGame = new Map();
 window.lobbyGameCardRegistry = new Map();
@@ -1035,6 +1036,8 @@ function getLobbyNodes() {
         trainingModeCancelBtn: document.getElementById('training-mode-cancel'),
         passAndPlayModeModal: document.getElementById('pass-and-play-mode-modal'),
         passAndPlayModeStandardBtn: document.getElementById('pass-and-play-mode-standard'),
+        passAndPlayModeResumeBtn: document.getElementById('pass-and-play-mode-resume'),
+        passAndPlayModeNewGameBtn: document.getElementById('pass-and-play-mode-new-game'),
         passAndPlayModeCancelBtn: document.getElementById('pass-and-play-mode-cancel'),
         botColorSelect: document.getElementById('bot-color-select'),
         botLevelSelect: document.getElementById('bot-level-select'),
@@ -1138,6 +1141,82 @@ function closeTrainingModeModal(modal) {
 function closePassAndPlayModeModal(modal) {
     modal?.classList.add('hidden');
 }
+
+function syncPassAndPlayModeModalState(nodes) {
+    const hasSavedGame = Boolean(window.hasSavedPassAndPlayGame?.());
+    const standardBtn = nodes.passAndPlayModeStandardBtn;
+    const resumeBtn = nodes.passAndPlayModeResumeBtn;
+    const newGameBtn = nodes.passAndPlayModeNewGameBtn;
+
+    if (standardBtn) {
+        standardBtn.classList.toggle('hidden', hasSavedGame);
+    }
+    if (resumeBtn) {
+        resumeBtn.classList.toggle('hidden', !hasSavedGame);
+    }
+    if (newGameBtn) {
+        newGameBtn.classList.toggle('hidden', !hasSavedGame);
+    }
+}
+
+function getPassAndPlaySnapshotGameState(snapshot, gameInstance = null) {
+    if (snapshot?.gameState === 'game_over') return 'game_over';
+    if (gameInstance?.game_over?.()) return 'game_over';
+    return 'active';
+}
+
+window.loadPassAndPlayGameSnapshot = function() {
+    try {
+        const raw = localStorage.getItem(window.PASS_AND_PLAY_SAVED_GAME_STORAGE_KEY);
+        if (!raw) return null;
+        const snapshot = JSON.parse(raw);
+        if (!snapshot || typeof snapshot !== 'object') return null;
+        if (snapshot.mode !== 'pass-and-play') return null;
+        if (snapshot.variant !== 'standard') return null;
+        if (!snapshot.pgn && !snapshot.fen) return null;
+        return snapshot;
+    } catch (error) {
+        console.warn('Не удалось загрузить локальное сохранение pass-and-play:', error);
+        return null;
+    }
+};
+
+window.clearPassAndPlayGameSnapshot = function() {
+    try {
+        localStorage.removeItem(window.PASS_AND_PLAY_SAVED_GAME_STORAGE_KEY);
+    } catch (error) {
+        console.warn('Не удалось очистить локальное сохранение pass-and-play:', error);
+    }
+};
+
+window.savePassAndPlayGameSnapshot = function(extra = {}) {
+    if (!window.isPassAndPlayStandardMode?.() || !window.game) return null;
+    try {
+        const history = window.game.history?.() || [];
+        const snapshot = {
+            mode: 'pass-and-play',
+            variant: 'standard',
+            pgn: window.game.pgn(),
+            fen: window.game.fen(),
+            history,
+            turn: window.game.turn(),
+            orientation: window.board?.orientation?.() || (window.game.turn() === 'b' ? 'black' : 'white'),
+            gameState: getPassAndPlaySnapshotGameState(extra, window.game),
+            updatedAt: Date.now(),
+            ...extra
+        };
+        localStorage.setItem(window.PASS_AND_PLAY_SAVED_GAME_STORAGE_KEY, JSON.stringify(snapshot));
+        return snapshot;
+    } catch (error) {
+        console.warn('Не удалось сохранить локальную партию pass-and-play:', error);
+        return null;
+    }
+};
+
+window.hasSavedPassAndPlayGame = function() {
+    const snapshot = window.loadPassAndPlayGameSnapshot?.();
+    return Boolean(snapshot);
+};
 
 function getBotLevelLabel(level) {
     if (level === 'easy') return 'Лёгкий';
@@ -2363,6 +2442,7 @@ window.initLobby = function() {
     }
     if (nodes.hubOpenPassAndPlayBtn) {
         nodes.hubOpenPassAndPlayBtn.onclick = () => {
+            syncPassAndPlayModeModalState(nodes);
             nodes.passAndPlayModeModal?.classList.remove('hidden');
         };
     }
@@ -2427,6 +2507,25 @@ window.initLobby = function() {
     if (nodes.passAndPlayModeStandardBtn) {
         nodes.passAndPlayModeStandardBtn.onclick = () => {
             closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+            window.clearPassAndPlayGameSnapshot?.();
+            window.initPassAndPlayGame({ variant: 'standard' });
+        };
+    }
+    if (nodes.passAndPlayModeResumeBtn) {
+        nodes.passAndPlayModeResumeBtn.onclick = () => {
+            closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+            const hasResumed = window.resumePassAndPlayGame?.();
+            if (!hasResumed) {
+                window.notify('Не удалось загрузить сохранённую партию. Запускаю новую.', 'warning', 2600);
+                window.clearPassAndPlayGameSnapshot?.();
+                window.initPassAndPlayGame({ variant: 'standard' });
+            }
+        };
+    }
+    if (nodes.passAndPlayModeNewGameBtn) {
+        nodes.passAndPlayModeNewGameBtn.onclick = () => {
+            closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+            window.clearPassAndPlayGameSnapshot?.();
             window.initPassAndPlayGame({ variant: 'standard' });
         };
     }
@@ -2921,6 +3020,80 @@ window.syncPassAndPlayBoardOrientation = function() {
     window.reapplyPersistentBoardHighlights?.(window.game.fen());
 };
 
+function applyPassAndPlayCommonUi(normalizedVariant) {
+    window.updatePlayerBadge();
+    window.initBoard(window.playerColor);
+    window.syncPassAndPlayBoardOrientation?.();
+
+    document.getElementById('game-modal')?.classList.add('hidden');
+    document.getElementById('takeback-request-box')?.classList.add('hidden');
+    document.getElementById('draw-request-box')?.classList.add('hidden');
+    document.getElementById('rematch-request-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
+
+    window.setupGameControls(null, null);
+    window.syncReviewStateFromCurrentGame();
+    const nextState = window.game?.game_over?.() ? 'game_over' : 'active';
+    window.lastKnownGameState = nextState;
+    window.updateUI({ gameState: nextState, mode: 'pass', variant: normalizedVariant });
+    window.refreshPresenceUI?.();
+    window.markGameReady?.();
+}
+
+window.resumePassAndPlayGame = function() {
+    const snapshot = window.loadPassAndPlayGameSnapshot?.();
+    if (!snapshot) return false;
+
+    const normalizedVariant = 'standard';
+    window.stopBotGame();
+    initLocalGameState();
+
+    window.isPassAndPlayMode = true;
+    window.passAndPlayVariant = normalizedVariant;
+    window.currentRoomId = null;
+
+    const restoredGame = new Chess();
+    let restored = false;
+    if (typeof snapshot.pgn === 'string' && snapshot.pgn.trim()) {
+        restored = restoredGame.load_pgn(snapshot.pgn);
+    }
+    if (!restored && Array.isArray(snapshot.history) && snapshot.history.length > 0) {
+        restored = snapshot.history.every((sanMove) => restoredGame.move(sanMove));
+    }
+    if (!restored && typeof snapshot.fen === 'string' && snapshot.fen.trim()) {
+        restored = restoredGame.load(snapshot.fen);
+    }
+    if (!restored) return false;
+
+    window.game = restoredGame;
+    window.playerColor = window.game.turn();
+    window.setGameSectionVisibility();
+
+    const roomLink = document.getElementById('room-link');
+    if (roomLink) {
+        roomLink.value = '';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('local', '1');
+    params.set('mode', 'pass');
+    params.set('variant', normalizedVariant);
+    params.delete('room');
+    params.delete('bot');
+    params.delete('color');
+    params.delete('level');
+    params.delete('training');
+    params.delete('view');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+    applyPassAndPlayCommonUi(normalizedVariant);
+    window.savePassAndPlayGameSnapshot?.({
+        gameState: getPassAndPlaySnapshotGameState(snapshot, window.game),
+        orientation: snapshot.orientation || (window.game.turn() === 'b' ? 'black' : 'white')
+    });
+    return true;
+};
+
 window.initPassAndPlayGame = function({ variant = 'standard' } = {}) {
     const normalizedVariant = variant === 'standard' ? 'standard' : 'standard';
 
@@ -2951,22 +3124,8 @@ window.initPassAndPlayGame = function({ variant = 'standard' } = {}) {
     params.delete('view');
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
 
-    window.updatePlayerBadge();
-    window.initBoard(window.playerColor);
-    window.syncPassAndPlayBoardOrientation?.();
-
-    document.getElementById('game-modal')?.classList.add('hidden');
-    document.getElementById('takeback-request-box')?.classList.add('hidden');
-    document.getElementById('draw-request-box')?.classList.add('hidden');
-    document.getElementById('rematch-request-box')?.classList.add('hidden');
-    document.getElementById('promotion-choice-box')?.classList.add('hidden');
-
-    window.setupGameControls(null, null);
-    window.syncReviewStateFromCurrentGame();
-    window.lastKnownGameState = 'active';
-    window.updateUI({ gameState: 'active', mode: 'pass', variant: normalizedVariant });
-    window.refreshPresenceUI?.();
-    window.markGameReady?.();
+    applyPassAndPlayCommonUi(normalizedVariant);
+    window.savePassAndPlayGameSnapshot?.({ gameState: 'active' });
 };
 
 

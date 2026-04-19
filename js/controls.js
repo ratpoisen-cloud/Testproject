@@ -203,6 +203,11 @@ window.setupGameControls = function(gameRef, roomId) {
                     trainingMode: isSelfTrainingMode() ? 'self' : null,
                     variant: isPassAndPlayMode() ? 'standard' : null
                 });
+                if (isPassAndPlayMode()) {
+                    window.savePassAndPlayGameSnapshot?.({
+                        gameState: window.game.game_over() ? 'game_over' : 'active'
+                    });
+                }
 
                 if (window.game.game_over()) {
                     const metadata = window.applyGameHeaders(window.game, {
@@ -435,6 +440,9 @@ window.setupGameControls = function(gameRef, roomId) {
                     gameState: isStillFinished ? 'game_over' : 'active',
                     mode: 'pass',
                     variant: 'standard'
+                });
+                window.savePassAndPlayGameSnapshot?.({
+                    gameState: isStillFinished ? 'game_over' : 'active'
                 });
             });
             return;
