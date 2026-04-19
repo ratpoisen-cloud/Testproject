@@ -35,6 +35,14 @@ const PROMOTION_PIECE_TO_BOARD_SUFFIX = {
     b: 'B',
     n: 'N'
 };
+const PIECE_TO_BOARD_SUFFIX = {
+    p: 'P',
+    n: 'N',
+    b: 'B',
+    r: 'R',
+    q: 'Q',
+    k: 'K'
+};
 const PROMOTION_PIECE_LABELS = {
     q: 'Ферзь',
     r: 'Ладья',
@@ -150,7 +158,7 @@ window.getCurrentPieceTheme = function() {
 };
 
 window.getPieceAssetPath = function(pieceType, pieceColor, pieceTheme = window.getCurrentPieceTheme()) {
-    const suffix = PROMOTION_PIECE_TO_BOARD_SUFFIX[pieceType];
+    const suffix = PIECE_TO_BOARD_SUFFIX[pieceType];
     const colorCode = pieceColor === 'b' ? 'b' : 'w';
     if (!suffix || typeof pieceTheme !== 'string') return '';
     return pieceTheme.replace('{piece}', `${colorCode}${suffix}`);
