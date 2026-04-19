@@ -83,7 +83,7 @@ window.initBoardSettingsControls = function() {
                 const emoji = item.dataset.emoji || '⚡';
                 quickPhrasesMenu.classList.add('hidden');
 
-                if (window.isBotMode) {
+                if (window.isLocalGameMode?.()) {
                     window.notify('Быстрые фразы доступны только в онлайн-партии', 'info', 2200);
                     return;
                 }
@@ -183,6 +183,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
     const isBotMode = urlParams.get('bot') === '1';
+    const isTrainingMode = urlParams.get('training') === '1';
+    const trainingModeType = urlParams.get('mode');
 
     if (roomId) {
         window.setAppLoadingFlag('lobby', true);
@@ -194,6 +196,10 @@ window.addEventListener('DOMContentLoaded', () => {
             color: urlParams.get('color') || 'random',
             level: urlParams.get('level') || 'medium'
         });
+    } else if (isTrainingMode && trainingModeType === 'self') {
+        window.setAppLoadingFlag('lobby', true);
+        window.initLobby();
+        window.initTrainingGame({ mode: 'self' });
     } else {
         window.initLobby();
     }
