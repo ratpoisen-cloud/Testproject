@@ -67,6 +67,17 @@ window.gameSoundFlags = {
 };
 window.lastPlayedGameOverSoundKey = null;
 window.lastMoveSequenceEndgameMarker = null;
+window.postGameAdvice = {
+    ready: false,
+    loading: false,
+    error: null,
+    analyzedColor: null,
+    strongMove: null,
+    weakMove: null,
+    activeMode: 'strong',
+    visible: false,
+    supportedMode: false
+};
 
 window.isSelfTrainingMode = function() {
     return Boolean(window.isTrainingMode && window.trainingModeType === 'self');
@@ -78,6 +89,208 @@ window.isPassAndPlayStandardMode = function() {
 
 window.isLocalGameMode = function() {
     return Boolean(window.isBotMode || window.isTrainingMode || window.isPassAndPlayMode);
+};
+
+window.isPostGameAdviceSupportedMode = function() {
+    return Boolean(window.isBotMode || window.isSelfTrainingMode?.());
+};
+
+window.resetPostGameAdviceState = function(options = {}) {
+    const supportedMode = Object.prototype.hasOwnProperty.call(options, 'supportedMode')
+        ? Boolean(options.supportedMode)
+        : Boolean(window.isPostGameAdviceSupportedMode?.());
+    const keepAnalysis = Boolean(options.keepAnalysis);
+    const keepVisible = Boolean(options.keepVisible);
+    const keepMode = Boolean(options.keepMode);
+    const previous = window.postGameAdvice || {};
+
+    window.postGameAdvice = {
+        ready: keepAnalysis ? Boolean(previous.ready) : false,
+        loading: false,
+        error: null,
+        analyzedColor: keepAnalysis ? (previous.analyzedColor || null) : null,
+        strongMove: keepAnalysis ? (previous.strongMove || null) : null,
+        weakMove: keepAnalysis ? (previous.weakMove || null) : null,
+        activeMode: keepMode && (previous.activeMode === 'weak' || previous.activeMode === 'strong')
+            ? previous.activeMode
+            : 'strong',
+        visible: keepVisible ? Boolean(previous.visible) : false,
+        supportedMode
+    };
+};
+
+window.getPostGameAdviceMoveByMode = function(mode = null) {
+    const advice = window.postGameAdvice || {};
+    const targetMode = mode || advice.activeMode || 'strong';
+    return targetMode === 'weak' ? (advice.weakMove || null) : (advice.strongMove || null);
+};
+
+window.closePostGameAdvice = function() {
+    if (!window.postGameAdvice) return;
+    window.postGameAdvice.visible = false;
+    window.clearAdviceHighlights?.();
+    window.updatePostGameAdviceUI?.();
+    window.reapplyPersistentBoardHighlights?.();
+};
+
+window.switchPostGameAdviceMode = function(mode = 'strong') {
+    if (!window.postGameAdvice?.ready || !window.postGameAdvice?.visible) return false;
+    const targetMode = mode === 'weak' ? 'weak' : 'strong';
+    const targetMove = window.getPostGameAdviceMoveByMode(targetMode);
+    if (!targetMove) {
+        window.notify('Явного совета не найдено', 'info', 2200);
+        return false;
+    }
+
+    window.postGameAdvice.activeMode = targetMode;
+    window.enterReviewMode(targetMove.plyIndex);
+    window.updatePostGameAdviceUI?.();
+    window.reapplyPersistentBoardHighlights?.();
+    return true;
+};
+
+window.runPostGameAdviceAnalysis = async function() {
+    if (!window.postGameAdvice?.supportedMode || !window.game) return false;
+
+    if (window.postGameAdvice.loading) return false;
+    if (window.postGameAdvice.ready) return true;
+
+    if (!window.botEngine && typeof window.createBotEngine === 'function') {
+        window.botEngine = window.createBotEngine(window.botLevel || 'medium');
+    }
+    if (!window.botEngine?.analyzePositionForAdvice) {
+        window.postGameAdvice.error = 'bot_engine_unavailable';
+        return false;
+    }
+
+    window.postGameAdvice.loading = true;
+    window.postGameAdvice.error = null;
+    window.updatePostGameAdviceUI?.();
+
+    try {
+        const history = window.game.history({ verbose: true }) || [];
+        const replay = new Chess();
+        const adviceCandidates = [];
+        const playerColor = window.isBotMode ? window.playerColor : 'both';
+
+        for (let plyIndex = 0; plyIndex < history.length; plyIndex++) {
+            const move = history[plyIndex];
+            const fenBefore = replay.fen();
+            const isEarlyGame = plyIndex < 4;
+            const isHumanMove = window.isBotMode
+                ? move?.color === window.playerColor
+                // В self-training игрок управляет обеими сторонами, поэтому анализируем все ходы.
+                : Boolean(window.isSelfTrainingMode?.());
+
+            if (!isEarlyGame && isHumanMove) {
+                const analysis = await window.botEngine.analyzePositionForAdvice(
+                    fenBefore,
+                    move,
+                    { depth: 10, movetime: 320 }
+                );
+
+                const bestMoveUci = analysis?.bestMove || '';
+                const bestMove = bestMoveUci && bestMoveUci !== '(none)'
+                    ? {
+                        from: bestMoveUci.slice(0, 2),
+                        to: bestMoveUci.slice(2, 4),
+                        promotion: bestMoveUci.slice(4, 5) || undefined
+                    }
+                    : null;
+
+                const playedMove = {
+                    from: move.from,
+                    to: move.to,
+                    promotion: move.promotion || undefined,
+                    san: move.san
+                };
+
+                if (bestMove?.from && bestMove?.to) {
+                    adviceCandidates.push({
+                        plyIndex,
+                        fenBefore,
+                        playedMove,
+                        bestMove: {
+                            ...bestMove,
+                            san: null
+                        },
+                        playedEval: Number.isFinite(analysis?.playedEval) ? analysis.playedEval : 0,
+                        bestEval: Number.isFinite(analysis?.bestEval) ? analysis.bestEval : 0,
+                        delta: Number.isFinite(analysis?.delta) ? analysis.delta : 0,
+                        moveColor: move.color
+                    });
+                }
+            }
+
+            replay.move({
+                from: move.from,
+                to: move.to,
+                promotion: move.promotion || 'q'
+            });
+        }
+
+        const sorted = adviceCandidates.sort((a, b) => b.delta - a.delta);
+        const weakest = sorted.find((item) => item.delta >= 1.0) || null;
+        const strongestDistinct = sorted.find((item) => item.delta >= 0.8 && item.plyIndex !== weakest?.plyIndex) || null;
+        const strongest = strongestDistinct || (sorted.find((item) => item.delta >= 0.8) || null);
+
+        window.postGameAdvice.ready = true;
+        window.postGameAdvice.loading = false;
+        window.postGameAdvice.analyzedColor = playerColor;
+        window.postGameAdvice.strongMove = strongest
+            ? { ...strongest, message: 'Здесь был ход сильнее' }
+            : null;
+        window.postGameAdvice.weakMove = weakest
+            ? { ...weakest, message: 'Этот ход ослабил позицию' }
+            : null;
+        return true;
+    } catch (error) {
+        console.error('Ошибка post-game advice анализа:', error);
+        window.postGameAdvice.loading = false;
+        window.postGameAdvice.error = 'analysis_failed';
+        return false;
+    } finally {
+        window.updatePostGameAdviceUI?.();
+    }
+};
+
+window.openPostGameAdvice = async function(preferredMode = 'strong') {
+    if (!window.postGameAdvice?.supportedMode) return false;
+    if (!window.game || !window.isGameFinished?.()) return false;
+
+    window.postGameAdvice.visible = true;
+    window.postGameAdvice.activeMode = preferredMode === 'weak' ? 'weak' : 'strong';
+    window.updatePostGameAdviceUI?.();
+
+    if (!window.postGameAdvice.ready) {
+        const ok = await window.runPostGameAdviceAnalysis();
+        if (!ok) {
+            window.postGameAdvice.visible = false;
+            window.updatePostGameAdviceUI?.();
+            window.notify('Не удалось подготовить совет', 'error', 2600);
+            return false;
+        }
+    }
+
+    const activeMove = window.getPostGameAdviceMoveByMode(window.postGameAdvice.activeMode)
+        || window.getPostGameAdviceMoveByMode('strong')
+        || window.getPostGameAdviceMoveByMode('weak');
+
+    if (!activeMove) {
+        window.notify('Партия сыграна ровно — явных советов нет', 'info', 2600);
+        window.postGameAdvice.visible = false;
+        window.updatePostGameAdviceUI?.();
+        return false;
+    }
+
+    if (!window.getPostGameAdviceMoveByMode(window.postGameAdvice.activeMode)) {
+        window.postGameAdvice.activeMode = activeMove === window.postGameAdvice.weakMove ? 'weak' : 'strong';
+    }
+
+    window.enterReviewMode(activeMove.plyIndex);
+    window.updatePostGameAdviceUI?.();
+    window.reapplyPersistentBoardHighlights?.();
+    return true;
 };
 
 window.isGameFinished = function(gameData = null) {
@@ -526,6 +739,11 @@ window.exitReviewMode = function() {
     window.reviewMode = false;
     window.reviewPlyIndex = null;
     window.reviewGame = null;
+    if (window.postGameAdvice?.visible) {
+        window.postGameAdvice.visible = false;
+        window.updatePostGameAdviceUI?.();
+    }
+    window.clearAdviceHighlights?.();
 
     if (!window.game) return;
 
@@ -1334,6 +1552,7 @@ window.openBotHistoryViewer = function(gameId) {
     window.playerColor = entry.userColor === 'b' ? 'b' : 'w';
     window.botColor = window.playerColor === 'w' ? 'b' : 'w';
     window.botLevel = window.BOT_LEVELS?.[entry.botLevel] ? entry.botLevel : 'medium';
+    window.resetPostGameAdviceState?.({ supportedMode: true });
     window.game = new Chess();
     const loaded = window.game.load_pgn(entry.pgn);
     if (!loaded) {
@@ -2827,6 +3046,7 @@ function initLocalGameState() {
     window.lastPlayedGameOverSoundKey = null;
     window.lastMoveSequenceEndgameMarker = null;
     window.lastRenderedMoveHistoryLength = 0;
+    window.resetPostGameAdviceState?.({ supportedMode: false });
     window.resetGameSoundFlags?.();
     window.syncReviewStateFromCurrentGame();
     window.activeReactions = [];
@@ -2913,6 +3133,7 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     window.playerColor = normalizedColor;
     window.botColor = normalizedColor === 'w' ? 'b' : 'w';
     window.botLevel = normalizedLevel;
+    window.resetPostGameAdviceState?.({ supportedMode: true });
 
     window.setGameSectionVisibility();
     window.currentRoomId = null;
@@ -2974,6 +3195,7 @@ window.initTrainingGame = function({ mode = 'self' } = {}) {
     window.isTrainingMode = true;
     window.trainingModeType = normalizedMode;
     window.playerColor = 'w';
+    window.resetPostGameAdviceState?.({ supportedMode: normalizedMode === 'self' });
 
     window.setGameSectionVisibility();
     window.currentRoomId = null;

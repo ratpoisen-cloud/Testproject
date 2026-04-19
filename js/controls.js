@@ -705,6 +705,26 @@ window.setupGameControls = function(gameRef, roomId) {
             window.enterReviewMode(maxPly);
         });
 
+        setClickHandler('modal-advice-btn', async () => {
+            if (!window.postGameAdvice?.supportedMode) return;
+            const opened = await window.openPostGameAdvice?.('strong');
+            if (opened) {
+                document.getElementById('game-modal')?.classList.add('hidden');
+            }
+        });
+
+        setClickHandler('advice-strong-btn', () => {
+            window.switchPostGameAdviceMode?.('strong');
+        });
+
+        setClickHandler('advice-weak-btn', () => {
+            window.switchPostGameAdviceMode?.('weak');
+        });
+
+        setClickHandler('advice-close-btn', () => {
+            window.closePostGameAdvice?.();
+        });
+
         bindPgnCopyButton('modal-copy-pgn');
         bindPgnCopyButton('inline-copy-pgn');
     };

@@ -770,6 +770,7 @@ window.reapplyPersistentBoardHighlights = function(forcedFen = null) {
     }
 
     window.applyGameEndBoardEffects?.(effectiveFen);
+    window.applyAdviceHighlights?.();
 };
 
 // Создание безопасного предпросмотра хода без изменения основной партии
@@ -854,6 +855,26 @@ window.BOARD_PIECE_SELECTOR = '#myBoard .piece-417db';
 
 window.removeHighlights = function() {
     $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-selected highlight-drag-source highlight-possible highlight-capture');
+};
+
+window.clearAdviceHighlights = function() {
+    $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-advice-from highlight-advice-to');
+};
+
+window.applyAdviceHighlights = function() {
+    window.clearAdviceHighlights();
+    const advice = window.postGameAdvice || {};
+    if (!advice.visible || !advice.ready || !window.reviewMode) return;
+
+    const adviceMove = window.getPostGameAdviceMoveByMode?.(advice.activeMode);
+    if (!Number.isInteger(adviceMove?.plyIndex)) return;
+    if (!Number.isInteger(window.reviewPlyIndex) || window.reviewPlyIndex !== adviceMove.plyIndex) return;
+
+    const moveToHighlight = advice.activeMode === 'weak' ? adviceMove.playedMove : adviceMove.bestMove;
+    if (!moveToHighlight?.from || !moveToHighlight?.to) return;
+
+    window.highlightSquare(moveToHighlight.from, 'highlight-advice-from');
+    window.highlightSquare(moveToHighlight.to, 'highlight-advice-to');
 };
 
 // Подсветка клетки
