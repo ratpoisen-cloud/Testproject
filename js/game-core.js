@@ -8,8 +8,6 @@ window.pendingMove = null;
 window.selectedSquare = null;
 window.currentRoomId = null;
 window.isBotMode = false;
-window.isPassAndPlayMode = false;
-window.passAndPlayVariant = null;
 window.botColor = null;
 window.botLevel = 'medium';
 window.botEngine = null;
@@ -64,20 +62,6 @@ window.gameSoundFlags = {
 };
 window.lastPlayedGameOverSoundKey = null;
 window.lastMoveSequenceEndgameMarker = null;
-
-window.isPassAndPlayStandardMode = function() {
-    return Boolean(window.isPassAndPlayMode && window.passAndPlayVariant === 'standard');
-};
-
-window.syncPassAndPlayOrientation = function() {
-    if (!window.isPassAndPlayStandardMode?.() || !window.board || !window.game) return;
-    const nextTurn = window.game.turn?.();
-    if (nextTurn === 'b') {
-        window.board.orientation('black');
-        return;
-    }
-    window.board.orientation('white');
-};
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -1024,7 +1008,6 @@ function getLobbyNodes() {
         hubOpenGamesBtn: document.getElementById('hub-open-games'),
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
         hubOpenBotGamesBtn: document.getElementById('hub-open-bot-games'),
-        hubOpenPassPlayBtn: document.getElementById('hub-open-pass-play'),
         hubGamesInviteDot: document.getElementById('hub-games-invite-dot'),
         hubGamesInviteLabel: document.getElementById('hub-games-invite-label'),
         createGameBtn: document.getElementById('create-game-btn'),
@@ -1037,9 +1020,6 @@ function getLobbyNodes() {
         botGameCancelBtn: document.getElementById('bot-game-cancel'),
         botColorSelect: document.getElementById('bot-color-select'),
         botLevelSelect: document.getElementById('bot-level-select'),
-        passPlayModal: document.getElementById('pass-play-modal'),
-        passPlayStandardBtn: document.getElementById('pass-play-standard-btn'),
-        passPlayCancelBtn: document.getElementById('pass-play-cancel-btn'),
         colorButtons: document.querySelectorAll('[data-create-color]'),
         backButtons: document.querySelectorAll('[data-lobby-back]'),
         finishedGamesList: document.getElementById('finished-games-list'),
@@ -1130,10 +1110,6 @@ function closeCreateGameModal(modal) {
 
 
 function closeBotGameModal(modal) {
-    modal?.classList.add('hidden');
-}
-
-function closePassPlayModal(modal) {
     modal?.classList.add('hidden');
 }
 
@@ -2354,11 +2330,6 @@ window.initLobby = function() {
             window.renderBotGamesLobby?.();
         };
     }
-    if (nodes.hubOpenPassPlayBtn) {
-        nodes.hubOpenPassPlayBtn.onclick = () => {
-            nodes.passPlayModal?.classList.remove('hidden');
-        };
-    }
     nodes.backButtons.forEach((button) => {
         button.onclick = () => window.setLobbyScreen('hub');
     });
@@ -2405,26 +2376,12 @@ window.initLobby = function() {
             window.initBotGame({ color, level });
         };
     }
-    if (nodes.passPlayCancelBtn) {
-        nodes.passPlayCancelBtn.onclick = () => closePassPlayModal(nodes.passPlayModal);
-    }
-    if (nodes.passPlayStandardBtn) {
-        nodes.passPlayStandardBtn.onclick = () => {
-            closePassPlayModal(nodes.passPlayModal);
-            window.initPassAndPlayGame({ variant: 'standard' });
-        };
-    }
     nodes.createGameModal.onclick = (event) => {
         if (event.target === nodes.createGameModal) closeCreateGameModal(nodes.createGameModal);
     };
     if (nodes.botGameModal) {
         nodes.botGameModal.onclick = (event) => {
             if (event.target === nodes.botGameModal) closeBotGameModal(nodes.botGameModal);
-        };
-    }
-    if (nodes.passPlayModal) {
-        nodes.passPlayModal.onclick = (event) => {
-            if (event.target === nodes.passPlayModal) closePassPlayModal(nodes.passPlayModal);
         };
     }
     window.lobbyShowFinished = false;
@@ -2684,8 +2641,6 @@ function initLocalGameState() {
     window.game = new Chess();
     window.currentRoomId = null;
     window.isBotMode = false;
-    window.isPassAndPlayMode = false;
-    window.passAndPlayVariant = null;
     window.botColor = null;
     window.botLevel = 'medium';
     window.botEngine = null;
@@ -2836,50 +2791,6 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
         window.requestBotMove?.();
     }
 
-    window.markGameReady?.();
-};
-
-window.initPassAndPlayGame = function({ variant = 'standard' } = {}) {
-    const normalizedVariant = variant === 'standard' ? 'standard' : 'standard';
-    initLocalGameState();
-    window.isPassAndPlayMode = true;
-    window.passAndPlayVariant = normalizedVariant;
-    window.playerColor = window.game.turn();
-
-    window.setGameSectionVisibility();
-    window.currentRoomId = null;
-
-    const roomLink = document.getElementById('room-link');
-    if (roomLink) {
-        roomLink.value = '';
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    params.set('local', '1');
-    params.set('mode', 'pass');
-    params.set('variant', normalizedVariant);
-    params.delete('room');
-    params.delete('view');
-    params.delete('bot');
-    params.delete('color');
-    params.delete('level');
-    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
-
-    window.updatePlayerBadge();
-    window.initBoard(window.playerColor);
-    window.syncPassAndPlayOrientation?.();
-
-    document.getElementById('game-modal')?.classList.add('hidden');
-    document.getElementById('takeback-request-box')?.classList.add('hidden');
-    document.getElementById('draw-request-box')?.classList.add('hidden');
-    document.getElementById('rematch-request-box')?.classList.add('hidden');
-    document.getElementById('promotion-choice-box')?.classList.add('hidden');
-
-    window.setupGameControls(null, null);
-    window.syncReviewStateFromCurrentGame();
-    window.lastKnownGameState = 'active';
-    window.updateUI({ gameState: 'active', mode: 'pass-and-play' });
-    window.refreshPresenceUI?.();
     window.markGameReady?.();
 };
 
