@@ -196,7 +196,11 @@ window.updateTurnIndicator = function(isMyTurn) {
         return;
     }
     
-    if (isMyTurn) {
+    if (window.isPassAndPlayStandardMode?.()) {
+        const currentTurn = window.game?.turn?.() === 'b' ? 'чёрных' : 'белых';
+        turnStatus.className = 'turn-status my-turn';
+        turnText.innerHTML = `Ход ${currentTurn}`;
+    } else if (isMyTurn) {
         turnStatus.className = 'turn-status my-turn';
         turnText.innerHTML = 'Ваш ход';
     } else {
@@ -225,7 +229,9 @@ window.updateOpponentHeader = function(data) {
     let opponentUid = null;
     const isBotGame = isBotMode;
 
-    if (isBotMode) {
+    if (window.isPassAndPlayStandardMode?.()) {
+        opponentName = 'Локальная партия';
+    } else if (isBotMode) {
         const levelMap = { easy: 'Лёгкий', medium: 'Средний', hard: 'Сильный' };
         opponentName = `Бот (${levelMap[window.botLevel] || 'Средний'})`;
     } else if (isWhitePlayer) {
@@ -244,7 +250,12 @@ window.updateOpponentHeader = function(data) {
     let presenceText = 'не в сети';
     let isInteractivePresence = true;
     let indicatorVariant = 'offline';
-    if (isViewer) {
+    if (window.isPassAndPlayStandardMode?.()) {
+        window.__lastEnsuredOpponentUid = null;
+        presenceText = 'На одном устройстве';
+        indicatorVariant = 'offline';
+        isInteractivePresence = false;
+    } else if (isViewer) {
         window.__lastEnsuredOpponentUid = null;
         presenceText = 'Режим наблюдения';
         indicatorVariant = 'offline';
@@ -495,9 +506,12 @@ window.updateFinishedGameActions = function(data) {
     const takebackRequestBox = document.getElementById('takeback-request-box');
     const drawRequestBox = document.getElementById('draw-request-box');
     const shareBox = document.querySelector('.game-share-box');
+    const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
+    const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
+    const isPassAndPlayMode = Boolean(window.isPassAndPlayStandardMode?.());
 
     gameSection?.classList.toggle('finished-viewer-mode', isFinishedGame);
 
@@ -508,9 +522,9 @@ window.updateFinishedGameActions = function(data) {
         finishedActions.classList.toggle('hidden', !isFinishedGame);
     }
 
-    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode);
-    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode);
-    resignBtn?.classList.toggle('hidden', isFinishedGame);
+    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode || isPassAndPlayMode);
+    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode || isPassAndPlayMode);
+    resignBtn?.classList.toggle('hidden', isFinishedGame || isPassAndPlayMode);
     if (takebackBtn) {
         takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode);
         takebackBtn.disabled = isFinishedGame || isBotMode;
@@ -520,7 +534,9 @@ window.updateFinishedGameActions = function(data) {
         takebackRequestBox?.classList.add('hidden');
         drawRequestBox?.classList.add('hidden');
     }
-    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode);
+    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode || isPassAndPlayMode);
+    quickPhrasesToggle?.classList.toggle('hidden', isPassAndPlayMode);
+    quickPhrasesMenu?.classList.add('hidden');
 };
 
 // Обновление модального окна окончания игры
