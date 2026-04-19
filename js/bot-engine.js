@@ -27,22 +27,52 @@ window.BOT_LEVELS = {
 window.createBotEngine = function(level = 'medium') {
     const profile = window.BOT_LEVELS[level] || window.BOT_LEVELS.medium;
     let worker = null;
-    let activeResolver = null;
-    let activeRejector = null;
+    let activeRequest = null;
+
+    const MATE_SCORE_PAWNS = 100;
 
     const clearPendingRequest = () => {
-        activeResolver = null;
-        activeRejector = null;
+        activeRequest = null;
+    };
+
+    const parseScoreFromInfoLine = (line) => {
+        const match = line.match(/\bscore\s+(cp|mate)\s+(-?\d+)/i);
+        if (!match) return null;
+
+        const scoreType = match[1]?.toLowerCase();
+        const rawValue = Number(match[2]);
+        if (!Number.isFinite(rawValue)) return null;
+
+        if (scoreType === 'cp') {
+            return rawValue / 100;
+        }
+
+        if (scoreType === 'mate') {
+            if (rawValue === 0) return 0;
+            return rawValue > 0 ? MATE_SCORE_PAWNS : -MATE_SCORE_PAWNS;
+        }
+
+        return null;
     };
 
     const onWorkerMessage = (event) => {
         const line = String(event?.data || '').trim();
         if (!line) return;
 
+        if (activeRequest && line.startsWith('info')) {
+            const score = parseScoreFromInfoLine(line);
+            if (score !== null) {
+                activeRequest.lastScore = score;
+            }
+        }
+
         if (line.startsWith('bestmove')) {
             const bestMove = line.split(/\s+/)[1] || null;
-            if (activeResolver) {
-                activeResolver(bestMove);
+            if (activeRequest?.resolve) {
+                activeRequest.resolve({
+                    bestMove,
+                    score: Number.isFinite(activeRequest.lastScore) ? activeRequest.lastScore : 0
+                });
             }
             clearPendingRequest();
         }
@@ -59,8 +89,8 @@ window.createBotEngine = function(level = 'medium') {
         worker.onmessage = onWorkerMessage;
         worker.onerror = (error) => {
             console.error('Stockfish worker error:', error);
-            if (activeRejector) {
-                activeRejector(error);
+            if (activeRequest?.reject) {
+                activeRequest.reject(error);
             }
             clearPendingRequest();
         };
@@ -73,23 +103,73 @@ window.createBotEngine = function(level = 'medium') {
     return {
         level,
         profile,
-        async getBestMove(fen) {
+        async getBestMoveWithEval(fen, options = {}) {
             ensureInitialized();
-            if (!fen) return null;
+            if (!fen) return { bestMove: null, score: 0 };
 
-            if (activeRejector) {
-                activeRejector(new Error('Bot search interrupted by newer request'));
+            if (activeRequest?.reject) {
+                activeRequest.reject(new Error('Bot search interrupted by newer request'));
                 clearPendingRequest();
             }
 
+            const depth = Number.isFinite(options.depth) ? options.depth : profile.depth;
+            const movetime = Number.isFinite(options.movetime) ? options.movetime : profile.movetime;
+
             return new Promise((resolve, reject) => {
-                activeResolver = resolve;
-                activeRejector = reject;
+                activeRequest = {
+                    resolve,
+                    reject,
+                    lastScore: null
+                };
 
                 send('stop');
                 send(`position fen ${fen}`);
-                send(`go depth ${profile.depth} movetime ${profile.movetime}`);
+                send(`go depth ${depth} movetime ${movetime}`);
             });
+        },
+        async getBestMove(fen) {
+            const result = await this.getBestMoveWithEval(fen);
+            return result?.bestMove || null;
+        },
+        async analyzePositionForAdvice(fen, playedMove, options = {}) {
+            if (!fen || !playedMove?.from || !playedMove?.to) {
+                return {
+                    bestMove: null,
+                    bestEval: 0,
+                    playedEval: 0,
+                    delta: 0
+                };
+            }
+
+            const beforeResult = await this.getBestMoveWithEval(fen, options);
+            const bestEval = Number.isFinite(beforeResult?.score) ? beforeResult.score : 0;
+            const bestMove = beforeResult?.bestMove || null;
+
+            const previewGame = new Chess(fen);
+            const applied = previewGame.move({
+                from: playedMove.from,
+                to: playedMove.to,
+                promotion: playedMove.promotion || 'q'
+            });
+            if (!applied) {
+                return {
+                    bestMove,
+                    bestEval,
+                    playedEval: bestEval,
+                    delta: 0
+                };
+            }
+
+            const afterResult = await this.getBestMoveWithEval(previewGame.fen(), options);
+            const playedEval = Number.isFinite(afterResult?.score) ? -afterResult.score : bestEval;
+            const delta = Math.max(0, bestEval - playedEval);
+
+            return {
+                bestMove,
+                bestEval,
+                playedEval,
+                delta
+            };
         },
         destroy() {
             try {

@@ -66,6 +66,7 @@ window.updateUI = function(data) {
     window.updateMoveHistory();
     window.updateFinishedGameActions(data);
     window.updateGameModal(data);
+    window.updatePostGameAdviceUI?.();
     window.applyGameEndBoardEffects?.(window.game?.fen?.());
     if (window.isBotMode && data.gameState === 'game_over') {
         window.persistFinishedBotGame?.(data);
@@ -598,6 +599,7 @@ window.updateReviewControlsState = function() {
     if (liveBtn) {
         liveBtn.disabled = !window.reviewMode || isFinishedGame;
     }
+    window.updatePostGameAdviceUI?.();
 };
 
 window.updateFinishedGameActions = function(data) {
@@ -614,6 +616,7 @@ window.updateFinishedGameActions = function(data) {
     const shareBox = document.querySelector('.game-share-box');
     const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
     const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
+    const modalAdviceBtn = document.getElementById('modal-advice-btn');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
@@ -649,6 +652,70 @@ window.updateFinishedGameActions = function(data) {
         drawRequestBox?.classList.add('hidden');
     }
     shareBox?.classList.toggle('hidden', isFinishedGame || isLocalMode);
+
+    const supportedAdviceMode = Boolean(window.isPostGameAdviceSupportedMode?.());
+    modalAdviceBtn?.classList.toggle('hidden', !isFinishedGame || !supportedAdviceMode);
+};
+
+window.updatePostGameAdviceUI = function() {
+    const advice = window.postGameAdvice || {};
+    const panel = document.getElementById('review-advice-panel');
+    const text = document.getElementById('review-advice-text');
+    const strongBtn = document.getElementById('advice-strong-btn');
+    const weakBtn = document.getElementById('advice-weak-btn');
+    const closeBtn = document.getElementById('advice-close-btn');
+    const modalAdviceBtn = document.getElementById('modal-advice-btn');
+
+    if (modalAdviceBtn) {
+        if (advice.loading) {
+            modalAdviceBtn.textContent = 'Готовим совет...';
+            modalAdviceBtn.disabled = true;
+        } else {
+            modalAdviceBtn.textContent = 'Показать совет';
+            modalAdviceBtn.disabled = !advice.supportedMode || !window.isGameFinished?.();
+        }
+    }
+
+    if (!panel) return;
+    const shouldShowPanel = Boolean(
+        advice.supportedMode
+        && advice.visible
+        && window.reviewMode
+    );
+    panel.classList.toggle('hidden', !shouldShowPanel);
+    if (!shouldShowPanel) {
+        if (text) text.textContent = 'Совет готов';
+        return;
+    }
+
+    const hasStrong = Boolean(advice.strongMove);
+    const hasWeak = Boolean(advice.weakMove);
+
+    strongBtn && (strongBtn.disabled = !hasStrong || advice.loading);
+    weakBtn && (weakBtn.disabled = !hasWeak || advice.loading);
+    closeBtn && (closeBtn.disabled = false);
+
+    strongBtn?.classList.toggle('is-active', advice.activeMode === 'strong');
+    weakBtn?.classList.toggle('is-active', advice.activeMode === 'weak');
+
+    if (advice.loading) {
+        if (text) text.textContent = 'Анализируем завершённую партию...';
+        return;
+    }
+    if (advice.error) {
+        if (text) text.textContent = 'Не удалось подготовить совет';
+        return;
+    }
+
+    const activeMove = window.getPostGameAdviceMoveByMode?.(advice.activeMode);
+    if (!activeMove) {
+        if (text) text.textContent = 'Явного совета не найдено';
+        return;
+    }
+
+    if (text) {
+        text.textContent = activeMove.message || 'Совет готов';
+    }
 };
 
 // Обновление модального окна окончания игры
