@@ -429,7 +429,7 @@
         const summaryText = document.getElementById('user-presence-text');
         const changedUidSafe = typeof changedUid === 'string' && changedUid.trim() ? changedUid : null;
         if (trigger) {
-            const isAvailable = Boolean(window.currentUser && !window.isBotMode);
+            const isAvailable = Boolean(window.currentUser && !window.isLocalGameMode?.());
             if (!changedUidSafe || changedUidSafe === activeUserId) {
                 const effective = window.getEffectivePresence?.(activeUserId) || { text: 'не в сети', tone: 'offline' };
                 const text = effective.text || window.getCurrentPresenceStatusText();

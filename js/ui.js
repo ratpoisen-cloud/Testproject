@@ -105,7 +105,7 @@ window.updateTurnIndicator = function(isMyTurn) {
         : null;
     const isOnlineHumanGame = Boolean(
         window.currentRoomId
-        && !window.isBotMode
+        && !window.isLocalGameMode?.()
         && (window.playerColor === 'w' || window.playerColor === 'b')
     );
     const shouldShowCenterQuickPhrase = Boolean(
@@ -196,7 +196,11 @@ window.updateTurnIndicator = function(isMyTurn) {
         return;
     }
     
-    if (isMyTurn) {
+    if (window.isSelfTrainingMode?.()) {
+        const sideLabel = window.game?.turn?.() === 'b' ? 'Чёрных' : 'Белых';
+        turnStatus.className = 'turn-status my-turn';
+        turnText.innerHTML = `Ход ${sideLabel}`;
+    } else if (isMyTurn) {
         turnStatus.className = 'turn-status my-turn';
         turnText.innerHTML = 'Ваш ход';
     } else {
@@ -219,13 +223,16 @@ window.updateOpponentHeader = function(data) {
     const isBlackPlayer = window.playerColor === 'b';
     const isViewer = !isWhitePlayer && !isBlackPlayer;
     const isBotMode = Boolean(window.isBotMode || data?.mode === 'bot');
+    const isSelfTrainingMode = Boolean(window.isSelfTrainingMode?.() || (window.isTrainingMode && window.trainingModeType === 'self'));
 
     let opponentName = 'Соперник';
     let opponentAvatar = '';
     let opponentUid = null;
     const isBotGame = isBotMode;
 
-    if (isBotMode) {
+    if (isSelfTrainingMode) {
+        opponentName = 'Сам с собой';
+    } else if (isBotMode) {
         const levelMap = { easy: 'Лёгкий', medium: 'Средний', hard: 'Сильный' };
         opponentName = `Бот (${levelMap[window.botLevel] || 'Средний'})`;
     } else if (isWhitePlayer) {
@@ -247,6 +254,11 @@ window.updateOpponentHeader = function(data) {
     if (isViewer) {
         window.__lastEnsuredOpponentUid = null;
         presenceText = 'Режим наблюдения';
+        indicatorVariant = 'offline';
+        isInteractivePresence = false;
+    } else if (isSelfTrainingMode) {
+        window.__lastEnsuredOpponentUid = null;
+        presenceText = 'Локальный режим';
         indicatorVariant = 'offline';
         isInteractivePresence = false;
     } else if (isBotGame) {
@@ -498,6 +510,8 @@ window.updateFinishedGameActions = function(data) {
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
+    const isSelfTrainingMode = Boolean(window.isSelfTrainingMode?.());
+    const isLocalMode = isBotMode || isSelfTrainingMode;
 
     gameSection?.classList.toggle('finished-viewer-mode', isFinishedGame);
 
@@ -508,8 +522,8 @@ window.updateFinishedGameActions = function(data) {
         finishedActions.classList.toggle('hidden', !isFinishedGame);
     }
 
-    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode);
-    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode);
+    drawBtn?.classList.toggle('hidden', isFinishedGame || isLocalMode);
+    drawBtn && (drawBtn.disabled = isFinishedGame || isLocalMode);
     resignBtn?.classList.toggle('hidden', isFinishedGame);
     if (takebackBtn) {
         takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode);
@@ -520,7 +534,7 @@ window.updateFinishedGameActions = function(data) {
         takebackRequestBox?.classList.add('hidden');
         drawRequestBox?.classList.add('hidden');
     }
-    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode);
+    shareBox?.classList.toggle('hidden', isFinishedGame || isLocalMode);
 };
 
 // Обновление модального окна окончания игры

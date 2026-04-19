@@ -162,6 +162,10 @@
                         <span class="hub-tile-icon" aria-hidden="true">🐈‍⬛</span>
                         <span class="hub-tile-title">Игры с Ичи</span>
                     </button>
+                    <button id="hub-open-training" class="hub-tile hub-tile-secondary" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">🎯</span>
+                        <span class="hub-tile-title">Тренировка</span>
+                    </button>
                 </div>
             </div>
 
@@ -253,6 +257,19 @@
                 <div class="create-game-modal-actions bot-game-modal-actions">
                     <button id="bot-game-start" class="btn btn-primary" type="button">Начать игру</button>
                     <button id="bot-game-cancel" class="btn btn-outline" type="button">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="training-mode-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="training-mode-modal-title">
+            <div class="modal-content create-game-modal-content bot-game-modal-content">
+                <h3 id="training-mode-modal-title" class="modal-title-reset">Тренировка</h3>
+                <p class="modal-desc-secondary">Выберите режим тренировки</p>
+                <div class="create-game-modal-actions bot-game-modal-actions">
+                    <button id="training-mode-self" class="btn btn-primary" type="button">Сам с собой</button>
+                    <button class="btn btn-outline" type="button" disabled>Студия — скоро</button>
+                    <button class="btn btn-outline" type="button" disabled>Дебюты — скоро</button>
+                    <button id="training-mode-cancel" class="btn btn-outline" type="button">Отмена</button>
                 </div>
             </div>
         </div>

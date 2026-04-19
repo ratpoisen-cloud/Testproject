@@ -8,6 +8,8 @@ window.pendingMove = null;
 window.selectedSquare = null;
 window.currentRoomId = null;
 window.isBotMode = false;
+window.isTrainingMode = false;
+window.trainingModeType = null;
 window.botColor = null;
 window.botLevel = 'medium';
 window.botEngine = null;
@@ -62,6 +64,14 @@ window.gameSoundFlags = {
 };
 window.lastPlayedGameOverSoundKey = null;
 window.lastMoveSequenceEndgameMarker = null;
+
+window.isSelfTrainingMode = function() {
+    return Boolean(window.isTrainingMode && window.trainingModeType === 'self');
+};
+
+window.isLocalGameMode = function() {
+    return Boolean(window.isBotMode || window.isTrainingMode);
+};
 
 window.isGameFinished = function(gameData = null) {
     return Boolean(
@@ -333,7 +343,7 @@ window.setActiveQuickPhraseFromState = function(quickPhrase) {
 };
 
 window.pushQuickPhrase = async function({ text, emoji }) {
-    if (!window.currentRoomId || !window.playerColor || window.isBotMode) return false;
+    if (!window.currentRoomId || !window.playerColor || window.isLocalGameMode?.()) return false;
     if (window.playerColor !== 'w' && window.playerColor !== 'b') return false;
 
     const safeText = String(text || '').trim().slice(0, 64);
@@ -1008,6 +1018,7 @@ function getLobbyNodes() {
         hubOpenGamesBtn: document.getElementById('hub-open-games'),
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
         hubOpenBotGamesBtn: document.getElementById('hub-open-bot-games'),
+        hubOpenTrainingBtn: document.getElementById('hub-open-training'),
         hubGamesInviteDot: document.getElementById('hub-games-invite-dot'),
         hubGamesInviteLabel: document.getElementById('hub-games-invite-label'),
         createGameBtn: document.getElementById('create-game-btn'),
@@ -1018,6 +1029,9 @@ function getLobbyNodes() {
         botGameModal: document.getElementById('bot-game-modal'),
         botGameStartBtn: document.getElementById('bot-game-start'),
         botGameCancelBtn: document.getElementById('bot-game-cancel'),
+        trainingModeModal: document.getElementById('training-mode-modal'),
+        trainingModeSelfBtn: document.getElementById('training-mode-self'),
+        trainingModeCancelBtn: document.getElementById('training-mode-cancel'),
         botColorSelect: document.getElementById('bot-color-select'),
         botLevelSelect: document.getElementById('bot-level-select'),
         colorButtons: document.querySelectorAll('[data-create-color]'),
@@ -1110,6 +1124,10 @@ function closeCreateGameModal(modal) {
 
 
 function closeBotGameModal(modal) {
+    modal?.classList.add('hidden');
+}
+
+function closeTrainingModeModal(modal) {
     modal?.classList.add('hidden');
 }
 
@@ -2330,6 +2348,11 @@ window.initLobby = function() {
             window.renderBotGamesLobby?.();
         };
     }
+    if (nodes.hubOpenTrainingBtn) {
+        nodes.hubOpenTrainingBtn.onclick = () => {
+            nodes.trainingModeModal?.classList.remove('hidden');
+        };
+    }
     nodes.backButtons.forEach((button) => {
         button.onclick = () => window.setLobbyScreen('hub');
     });
@@ -2368,6 +2391,9 @@ window.initLobby = function() {
     if (nodes.botGameCancelBtn) {
         nodes.botGameCancelBtn.onclick = () => closeBotGameModal(nodes.botGameModal);
     }
+    if (nodes.trainingModeCancelBtn) {
+        nodes.trainingModeCancelBtn.onclick = () => closeTrainingModeModal(nodes.trainingModeModal);
+    }
     if (nodes.botGameStartBtn) {
         nodes.botGameStartBtn.onclick = () => {
             const color = nodes.botColorSelect?.value || 'random';
@@ -2376,12 +2402,23 @@ window.initLobby = function() {
             window.initBotGame({ color, level });
         };
     }
+    if (nodes.trainingModeSelfBtn) {
+        nodes.trainingModeSelfBtn.onclick = () => {
+            closeTrainingModeModal(nodes.trainingModeModal);
+            window.initTrainingGame({ mode: 'self' });
+        };
+    }
     nodes.createGameModal.onclick = (event) => {
         if (event.target === nodes.createGameModal) closeCreateGameModal(nodes.createGameModal);
     };
     if (nodes.botGameModal) {
         nodes.botGameModal.onclick = (event) => {
             if (event.target === nodes.botGameModal) closeBotGameModal(nodes.botGameModal);
+        };
+    }
+    if (nodes.trainingModeModal) {
+        nodes.trainingModeModal.onclick = (event) => {
+            if (event.target === nodes.trainingModeModal) closeTrainingModeModal(nodes.trainingModeModal);
         };
     }
     window.lobbyShowFinished = false;
@@ -2641,6 +2678,8 @@ function initLocalGameState() {
     window.game = new Chess();
     window.currentRoomId = null;
     window.isBotMode = false;
+    window.isTrainingMode = false;
+    window.trainingModeType = null;
     window.botColor = null;
     window.botLevel = 'medium';
     window.botEngine = null;
@@ -2759,6 +2798,8 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     params.set('bot', '1');
     params.set('color', normalizedColor);
     params.set('level', normalizedLevel);
+    params.delete('training');
+    params.delete('mode');
     params.delete('room');
     params.delete('view');
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
@@ -2791,6 +2832,52 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
         window.requestBotMove?.();
     }
 
+    window.markGameReady?.();
+};
+
+window.initTrainingGame = function({ mode = 'self' } = {}) {
+    const normalizedMode = mode === 'self' ? 'self' : 'self';
+
+    window.stopBotGame();
+    initLocalGameState();
+
+    window.isTrainingMode = true;
+    window.trainingModeType = normalizedMode;
+    window.playerColor = 'w';
+
+    window.setGameSectionVisibility();
+    window.currentRoomId = null;
+
+    const roomLink = document.getElementById('room-link');
+    if (roomLink) {
+        roomLink.value = '';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('training', '1');
+    params.set('mode', normalizedMode);
+    params.delete('room');
+    params.delete('bot');
+    params.delete('color');
+    params.delete('level');
+    params.delete('view');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+    window.updatePlayerBadge();
+    window.initBoard(window.playerColor);
+    window.board?.orientation?.('white');
+
+    document.getElementById('game-modal')?.classList.add('hidden');
+    document.getElementById('takeback-request-box')?.classList.add('hidden');
+    document.getElementById('draw-request-box')?.classList.add('hidden');
+    document.getElementById('rematch-request-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
+
+    window.setupGameControls(null, null);
+    window.syncReviewStateFromCurrentGame();
+    window.lastKnownGameState = 'active';
+    window.updateUI({ gameState: 'active', mode: 'training', trainingMode: normalizedMode });
+    window.refreshPresenceUI?.();
     window.markGameReady?.();
 };
 
