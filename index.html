@@ -162,6 +162,10 @@
                         <span class="hub-tile-icon" aria-hidden="true">🐈‍⬛</span>
                         <span class="hub-tile-title">Игры с Ичи</span>
                     </button>
+                    <button id="hub-open-pass-play" class="hub-tile hub-tile-secondary" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">🧑‍🤝‍🧑</span>
+                        <span class="hub-tile-title">Вдвоём</span>
+                    </button>
                 </div>
             </div>
 
@@ -253,6 +257,18 @@
                 <div class="create-game-modal-actions bot-game-modal-actions">
                     <button id="bot-game-start" class="btn btn-primary" type="button">Начать игру</button>
                     <button id="bot-game-cancel" class="btn btn-outline" type="button">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pass-play-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pass-play-modal-title">
+            <div class="modal-content create-game-modal-content">
+                <h3 id="pass-play-modal-title" class="modal-title-reset">Режим «Вдвоём»</h3>
+                <p class="modal-desc-secondary">Выберите формат локальной партии</p>
+                <div class="create-game-modal-actions">
+                    <button id="pass-play-standard-btn" class="btn btn-primary" type="button">Обычный</button>
+                    <button class="btn btn-outline" type="button" disabled>Напротив — скоро</button>
+                    <button id="pass-play-cancel-btn" class="btn btn-outline" type="button">Отмена</button>
                 </div>
             </div>
         </div>
