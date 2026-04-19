@@ -67,6 +67,8 @@ window.initBoardSettingsControls = function() {
         document.getElementById('ui-theme-select') ||
         document.getElementById('user-ui-theme-select');
     const pieceSetSelect = document.getElementById('piece-set-select');
+    const soundEnabledToggle = document.getElementById('sound-enabled-toggle');
+    const soundMasterVolume = document.getElementById('sound-master-volume');
     const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
     const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
 
@@ -132,6 +134,70 @@ window.initBoardSettingsControls = function() {
 
     if (pieceSetSelect && window.initPieceSetControls) {
         window.initPieceSetControls(pieceSetSelect);
+    }
+
+    if (soundEnabledToggle || soundMasterVolume) {
+        const audioBlock = document.querySelector('.user-menu-setting-audio');
+
+        const syncSoundControls = () => {
+            const settings = window.SoundManager?.getSettings?.() || window.soundSettings || {};
+            const enabled = settings.enabled !== false;
+            const master = Number.isFinite(Number(settings.master)) ? Number(settings.master) : 0.8;
+
+            if (soundEnabledToggle) {
+                soundEnabledToggle.checked = enabled;
+            }
+            if (soundMasterVolume) {
+                soundMasterVolume.value = String(Math.max(0, Math.min(1, master)));
+                soundMasterVolume.disabled = !enabled;
+            }
+            if (audioBlock) {
+                audioBlock.classList.toggle('is-muted', !enabled);
+            }
+        };
+
+        syncSoundControls();
+
+        if (soundEnabledToggle) {
+            soundEnabledToggle.addEventListener('change', (e) => {
+                const isEnabled = Boolean(e.target?.checked);
+                window.SoundManager?.setEnabled?.(isEnabled);
+                if (soundMasterVolume) {
+                    soundMasterVolume.disabled = !isEnabled;
+                }
+                if (audioBlock) {
+                    audioBlock.classList.toggle('is-muted', !isEnabled);
+                }
+                if (isEnabled) {
+                    window.SoundManager?.play?.('button_click', { volume: 0.55 });
+                }
+            });
+        }
+
+        if (soundMasterVolume) {
+            let lastPreviewAt = 0;
+            let lastPreviewValue = Number(soundMasterVolume.value) || 0.8;
+            soundMasterVolume.addEventListener('input', (e) => {
+                const value = Number(e.target?.value);
+                window.SoundManager?.setMasterVolume?.(value);
+                if (!window.SoundManager?.enabled) {
+                    return;
+                }
+                const now = Date.now();
+                const delta = Math.abs(value - lastPreviewValue);
+                if (delta > 0.02 && now - lastPreviewAt > 180) {
+                    lastPreviewAt = now;
+                    lastPreviewValue = value;
+                    window.SoundManager?.play?.('button_rollover', { volume: 0.45 });
+                }
+            });
+
+            soundMasterVolume.addEventListener('change', () => {
+                if (window.SoundManager?.enabled) {
+                    window.SoundManager?.play?.('button_click_release', { volume: 0.8 });
+                }
+            });
+        }
     }
 
     window.initPresenceStatusControls?.();

@@ -8,35 +8,65 @@
         return;
     }
 
+    const SOUND_STORAGE_KEY = 'gochess-sound-settings-v1';
+
+    const DEFAULT_SOUND_SETTINGS = {
+        enabled: true,
+        master: 0.8,
+        categories: {
+            moves: 0.7,
+            captures: 0.85,
+            system: 0.95,
+            ui: 0.7,
+            voice: 0.9
+        },
+        gains: {
+            move: 0.5,
+            capture: 0.6,
+            captureMajor: 0.72,
+            queen: 0.45,
+            castle: 0.58,
+            check: 0.85,
+            mate: 0.95,
+            promote: 0.65,
+            click: 0.45
+        }
+    };
+
     const SOUND_DEFINITIONS = {
         piece_select: {
             src: 'assets/sounds/select.mp3',
-            volume: 1,
+            gain: 1,
+            type: 'click',
             category: 'ui',
             cooldown: 90
         },
         button_rollover: {
             src: 'assets/sounds/buttonrollover.wav',
-            volume: 0.42,
+            gain: 1,
+            type: 'click',
             category: 'ui',
             cooldown: 140
         },
         button_click: {
             src: 'assets/sounds/buttonclick.wav',
-            volume: 0.5,
+            gain: 1,
+            type: 'click',
             category: 'ui',
             cooldown: 70
         },
         button_click_release: {
             src: 'assets/sounds/buttonclickrelease.wav',
-            volume: 0.5,
+            gain: 1,
+            type: 'click',
             category: 'ui',
             cooldown: 70
         },
         modal_open: {
             src: 'assets/sounds/modal.mp3',
-            volume: 0.42,
-            category: 'alert',
+            gain: 1,
+            type: 'click',
+            category: 'system',
             cooldown: 1200
         },
         move: {
@@ -46,8 +76,9 @@
                 'assets/sounds/move-3.mp3',
                 'assets/sounds/move-4.mp3'
             ],
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'move',
+            category: 'moves',
             cooldown: 0
         },
         capture_default: {
@@ -55,8 +86,9 @@
                 'assets/sounds/capture-default-1.mp3',
                 'assets/sounds/capture-default-2.mp3'
             ],
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'capture',
+            category: 'captures',
             cooldown: 0
         },
         capture_ranged: {
@@ -64,16 +96,18 @@
                 'assets/sounds/capture-ranged-1.mp3',
                 'assets/sounds/capture-ranged-2.mp3'
             ],
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'captureMajor',
+            category: 'captures',
             cooldown: 0
         },
 
         // Зарезервировано для будущего расширения
         castle: {
             src: null,
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'castle',
+            category: 'moves',
             cooldown: 0
         },
         check: {
@@ -82,8 +116,9 @@
                 'assets/sounds/check-2.mp3',
                 'assets/sounds/check-3.mp3'
             ],
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'check',
+            category: 'system',
             cooldown: 0
         },
         promotion: {
@@ -91,8 +126,9 @@
                 'assets/sounds/promotion-1.mp3',
                 'assets/sounds/promotion-2.mp3'
             ],
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'promote',
+            category: 'system',
             cooldown: 0
         },
         checkmate: {
@@ -100,32 +136,37 @@
                 'assets/sounds/checkmate-1.mp3',
                 'assets/sounds/checkmate-2.mp3'
             ],
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'mate',
+            category: 'system',
             cooldown: 0
         },
         win_white: {
             src: 'assets/sounds/win-white-1.mp3',
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'mate',
+            category: 'system',
             cooldown: 0
         },
         win_black: {
             src: 'assets/sounds/win-black-1.mp3',
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'mate',
+            category: 'system',
             cooldown: 0
         },
         defeat: {
             src: 'assets/sounds/defeat-1.mp3',
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'mate',
+            category: 'system',
             cooldown: 0
         },
         draw: {
             src: 'assets/sounds/draw-1.mp3',
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'mate',
+            category: 'system',
             cooldown: 0
         },
         rook_first_move_voice: {
@@ -133,7 +174,8 @@
                 'assets/sounds/rook-first-move-1.mp3',
                 'assets/sounds/rook-first-move-2.mp3'
             ],
-            volume: 1,
+            gain: 1,
+            type: 'castle',
             category: 'voice',
             cooldown: 0
         },
@@ -142,35 +184,74 @@
                 'assets/sounds/queen-first-move-1.mp3',
                 'assets/sounds/queen-first-move-2.mp3'
             ],
-            volume: 1,
+            gain: 1,
+            type: 'queen',
             category: 'voice',
             cooldown: 0
         },
         game_start: {
             src: null,
-            volume: 1,
+            gain: 1,
+            type: 'check',
             category: 'system',
             cooldown: 0
         },
         game_end: {
             src: null,
-            volume: 1,
+            gain: 1,
+            type: 'mate',
             category: 'system',
             cooldown: 0
         },
         enemy_move: {
             src: null,
-            volume: 1,
-            category: 'gameplay',
+            gain: 1,
+            type: 'move',
+            category: 'moves',
             cooldown: 0
         },
         your_turn: {
             src: null,
-            volume: 1,
+            gain: 1,
+            type: 'check',
             category: 'system',
             cooldown: 0
         }
     };
+
+    function clamp01(value, fallback = 1) {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed)) {
+            return fallback;
+        }
+        return Math.max(0, Math.min(1, parsed));
+    }
+
+    function normalizeSoundSettings(rawSettings) {
+        const settings = rawSettings && typeof rawSettings === 'object' ? rawSettings : {};
+        const normalized = {
+            enabled: settings.enabled !== false,
+            master: clamp01(settings.master, DEFAULT_SOUND_SETTINGS.master),
+            categories: { ...DEFAULT_SOUND_SETTINGS.categories },
+            gains: { ...DEFAULT_SOUND_SETTINGS.gains }
+        };
+
+        Object.keys(normalized.categories).forEach((category) => {
+            normalized.categories[category] = clamp01(
+                settings.categories?.[category],
+                DEFAULT_SOUND_SETTINGS.categories[category]
+            );
+        });
+
+        Object.keys(normalized.gains).forEach((gainKey) => {
+            normalized.gains[gainKey] = clamp01(
+                settings.gains?.[gainKey],
+                DEFAULT_SOUND_SETTINGS.gains[gainKey]
+            );
+        });
+
+        return normalized;
+    }
 
     function normalizeSoundConfig(configValue) {
         const normalizeSources = (srcValue) => {
@@ -191,7 +272,8 @@
             // Обратная совместимость со старым форматом: event: 'path/to/file.mp3'
             return {
                 sources: normalizeSources(configValue),
-                volume: 1,
+                gain: 1,
+                type: 'move',
                 category: 'default',
                 cooldown: 0
             };
@@ -200,7 +282,8 @@
         if (!configValue || typeof configValue !== 'object') {
             return {
                 sources: [],
-                volume: 1,
+                gain: 1,
+                type: 'move',
                 category: 'default',
                 cooldown: 0
             };
@@ -208,8 +291,15 @@
 
         return {
             sources: normalizeSources(configValue.src),
-            volume: Number.isFinite(Number(configValue.volume)) ? Number(configValue.volume) : 1,
-            category: typeof configValue.category === 'string' ? configValue.category : 'default',
+            gain: Number.isFinite(Number(configValue.gain))
+                ? Number(configValue.gain)
+                : (Number.isFinite(Number(configValue.volume)) ? Number(configValue.volume) : 1),
+            type: typeof configValue.type === 'string' && configValue.type.trim()
+                ? configValue.type.trim()
+                : 'move',
+            category: typeof configValue.category === 'string' && configValue.category.trim()
+                ? configValue.category.trim()
+                : 'system',
             cooldown: Number.isFinite(Number(configValue.cooldown))
                 ? Math.max(0, Number(configValue.cooldown))
                 : 0
@@ -218,7 +308,8 @@
 
     const manager = {
         enabled: true,
-        masterVolume: 0.55,
+        masterVolume: DEFAULT_SOUND_SETTINGS.master,
+        settings: normalizeSoundSettings(DEFAULT_SOUND_SETTINGS),
         initialized: false,
         sounds: {},
         soundMeta: {},
@@ -232,6 +323,7 @@
             if (this.initialized) {
                 return;
             }
+            this.loadSettings();
 
             Object.entries(SOUND_DEFINITIONS).forEach(([eventName, rawConfig]) => {
                 const config = normalizeSoundConfig(rawConfig);
@@ -244,7 +336,7 @@
                 const variants = config.sources.map((src) => {
                     const audio = new Audio(src);
                     audio.preload = 'auto';
-                    audio.volume = this.masterVolume * config.volume;
+                    audio.volume = this.computeFinalVolume(eventName, 1);
 
                     return {
                         src,
@@ -260,21 +352,110 @@
 
         setEnabled(value) {
             this.enabled = Boolean(value);
+            this.settings.enabled = this.enabled;
+            this.saveSettings();
+            this.applyAllVolumes();
+            if (!this.enabled) {
+                this.stopAll();
+            }
         },
 
         setMasterVolume(value) {
-            const parsed = Number(value);
-            if (!Number.isFinite(parsed)) {
+            this.masterVolume = clamp01(value, this.masterVolume);
+            this.settings.master = this.masterVolume;
+            this.saveSettings();
+            this.applyAllVolumes();
+        },
+
+        setCategoryVolume(category, value) {
+            if (!category || !Object.prototype.hasOwnProperty.call(this.settings.categories, category)) {
                 return;
             }
+            this.settings.categories[category] = clamp01(value, this.settings.categories[category]);
+            this.saveSettings();
+            this.applyAllVolumes();
+        },
 
-            this.masterVolume = Math.max(0, Math.min(1, parsed));
+        setSoundGain(gainName, value) {
+            if (!gainName || !Object.prototype.hasOwnProperty.call(this.settings.gains, gainName)) {
+                return;
+            }
+            this.settings.gains[gainName] = clamp01(value, this.settings.gains[gainName]);
+            this.saveSettings();
+            this.applyAllVolumes();
+        },
+
+        updateSettings(nextSettings = {}) {
+            this.settings = normalizeSoundSettings({
+                ...this.settings,
+                ...nextSettings,
+                categories: {
+                    ...this.settings.categories,
+                    ...(nextSettings.categories || {})
+                },
+                gains: {
+                    ...this.settings.gains,
+                    ...(nextSettings.gains || {})
+                }
+            });
+            this.enabled = this.settings.enabled;
+            this.masterVolume = this.settings.master;
+            this.saveSettings();
+            this.applyAllVolumes();
+        },
+
+        getSettings() {
+            return {
+                enabled: this.settings.enabled,
+                master: this.settings.master,
+                categories: { ...this.settings.categories },
+                gains: { ...this.settings.gains }
+            };
+        },
+
+        loadSettings() {
+            let parsedSettings = null;
+            try {
+                const raw = global.localStorage?.getItem(SOUND_STORAGE_KEY);
+                parsedSettings = raw ? JSON.parse(raw) : null;
+            } catch (error) {
+                console.warn('[SoundManager] Не удалось загрузить настройки звука', error);
+            }
+            this.settings = normalizeSoundSettings(parsedSettings || DEFAULT_SOUND_SETTINGS);
+            this.enabled = this.settings.enabled;
+            this.masterVolume = this.settings.master;
+            global.soundSettings = this.getSettings();
+        },
+
+        saveSettings() {
+            global.soundSettings = this.getSettings();
+            try {
+                global.localStorage?.setItem(SOUND_STORAGE_KEY, JSON.stringify(this.settings));
+            } catch (error) {
+                console.warn('[SoundManager] Не удалось сохранить настройки звука', error);
+            }
+        },
+
+        computeFinalVolume(eventName, runtimeVolume = 1) {
+            const meta = this.soundMeta[eventName] || {};
+            const categoryKey = meta.category && this.settings.categories[meta.category] !== undefined
+                ? meta.category
+                : 'system';
+            const soundType = meta.type && this.settings.gains[meta.type] !== undefined
+                ? meta.type
+                : 'move';
+            const categoryVolume = this.settings.categories[categoryKey] ?? 1;
+            const soundGain = (this.settings.gains[soundType] ?? 1) * clamp01(meta.gain, 1);
+            const baseVolume = this.enabled ? this.masterVolume * categoryVolume * soundGain : 0;
+            return Math.max(0, Math.min(1, baseVolume * clamp01(runtimeVolume, 1)));
+        },
+
+        applyAllVolumes() {
             Object.entries(this.sounds).forEach(([eventName, audio]) => {
-                const config = this.soundMeta[eventName] || { volume: 1 };
                 const variants = Array.isArray(audio) ? audio : [];
                 variants.forEach((variant) => {
                     if (variant?.audio) {
-                        variant.audio.volume = this.masterVolume * config.volume;
+                        variant.audio.volume = this.computeFinalVolume(eventName, 1);
                     }
                 });
             });
@@ -283,9 +464,7 @@
                 if (!audioNode || typeof audioNode.dataset?.eventName !== 'string') {
                     return;
                 }
-
-                const config = this.soundMeta[audioNode.dataset.eventName] || { volume: 1 };
-                audioNode.volume = this.masterVolume * config.volume;
+                audioNode.volume = this.computeFinalVolume(audioNode.dataset.eventName, 1);
             });
         },
 
@@ -359,12 +538,10 @@
                 return Promise.resolve(false);
             }
 
-            const soundConfig = this.soundMeta[eventName] || { volume: 1 };
             const runtimeVolume = Number.isFinite(Number(options.volume))
                 ? Number(options.volume)
                 : 1;
-
-            const effectiveVolume = Math.max(0, Math.min(1, this.masterVolume * soundConfig.volume * runtimeVolume));
+            const effectiveVolume = this.computeFinalVolume(eventName, runtimeVolume);
 
             return new Promise((resolve) => {
                 try {
@@ -664,4 +841,8 @@
         manager.bindUIButtonSounds();
     }
     global.SoundManager = manager;
+    global.soundSettings = manager.getSettings();
+    global.playSound = function playSound(eventName, options) {
+        return manager.play(eventName, options);
+    };
 })(window);

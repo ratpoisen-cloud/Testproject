@@ -93,6 +93,14 @@
                         <label for="piece-set-select">Фигурки</label>
                         <select id="piece-set-select" class="board-settings-select system-select"></select>
                     </div>
+                    <div class="user-menu-setting user-menu-setting-audio">
+                        <label class="user-menu-audio-toggle" for="sound-enabled-toggle">
+                            <input id="sound-enabled-toggle" type="checkbox" checked>
+                            <span>Включить звук</span>
+                        </label>
+                        <label for="sound-master-volume">Общая громкость</label>
+                        <input id="sound-master-volume" type="range" min="0" max="1" step="0.01" value="0.8">
+                    </div>
                     <button id="user-menu-lobby-btn" class="user-menu-item" type="button" role="menuitem">В лобби</button>
                     <button id="logout-btn" class="user-menu-item user-menu-item-danger" type="button" role="menuitem">Выйти</button>
                 </div>
