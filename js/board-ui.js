@@ -808,7 +808,10 @@ window.openPromotionChoice = function(from, to) {
     window.ensurePromotionChoiceBindings();
     window.pendingPromotionSelection = { from, to };
 
-    const color = window.playerColor === 'b' ? 'b' : 'w';
+    const movingPiece = window.game?.get?.(from);
+    const color = movingPiece?.type === 'p'
+        ? movingPiece.color
+        : (window.game?.turn?.() === 'b' ? 'b' : 'w');
     options.querySelectorAll('[data-promotion-piece]').forEach((button) => {
         const piece = button.dataset.promotionPiece;
         const assetPath = window.getPieceAssetPath(piece, color);
