@@ -224,6 +224,7 @@ window.applyPieceSet = function(setName) {
     if (window.board) {
         window.rebuildBoardWithCurrentState();
     }
+    window.renderCapturedPieces?.();
 
     return safeSetName;
 };
