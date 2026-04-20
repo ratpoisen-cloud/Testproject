@@ -713,6 +713,11 @@ window.setupGameControls = function(gameRef, roomId) {
             }
         });
 
+        setClickHandler('inline-advice-btn', async () => {
+            if (!window.postGameAdvice?.supportedMode) return;
+            await window.openPostGameAdvice?.('strong');
+        });
+
         setClickHandler('advice-strong-btn', () => {
             window.switchPostGameAdviceMode?.('strong');
         });
