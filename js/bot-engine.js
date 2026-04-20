@@ -183,6 +183,19 @@ window.createBotEngine = function(level = 'medium') {
                 };
             }
 
+            if (previewGame.in_checkmate?.()) {
+                return {
+                    bestMove,
+                    bestEval,
+                    playedEval: bestEval,
+                    delta: 0,
+                    bestScoreType,
+                    bestMateIn,
+                    playedScoreType: 'mate',
+                    playedMateIn: 0
+                };
+            }
+
             const afterResult = await this.getBestMoveWithEval(previewGame.fen(), options);
             const playedEval = Number.isFinite(afterResult?.score) ? -afterResult.score : bestEval;
             const delta = Math.max(0, bestEval - playedEval);
