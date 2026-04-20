@@ -272,6 +272,53 @@ body[data-ui-theme] .brand-wordmark-asset-dark {
     transition: transform 0.16s ease, background 0.22s ease, box-shadow 0.22s ease;
 }
 
+
+.hub-icon-svg {
+    display: none;
+}
+
+.hub-icon-emoji {
+    display: block;
+}
+
+
+body[data-ui-theme="pixel"] .hub-tile-icon {
+    color: #BFFB4F;
+}
+
+body[data-ui-theme="pixel"] .hub-tile:hover .hub-tile-icon {
+    color: #d8ff7a;
+}
+
+body[data-ui-icons="svg"] .hub-icon-emoji {
+    display: none !important;
+}
+
+body[data-ui-icons="svg"] .hub-icon-svg {
+    display: block !important;
+}
+
+body[data-ui-theme="pixel"] .hub-icon-svg {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    opacity: 0.85;
+    pointer-events: none;
+    display: block;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+body[data-ui-theme="pixel"] .hub-icon-emoji {
+    display: none;
+}
+
+body[data-ui-theme="pixel"] .hub-tile:hover .hub-icon-svg {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
 .hub-tile:hover .hub-tile-icon,
 .hub-tile:focus-visible .hub-tile-icon {
     transform: translateY(-1px) scale(1.01);
