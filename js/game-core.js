@@ -155,6 +155,13 @@ window.runPostGameAnalysis = async function() {
         const strongReasons = ['усиливал давление', 'активизировал фигуры', 'сохранял инициативу', 'улучшал защиту', 'находил сильное продолжение'];
         const mistakeReasons = ['ослаблял позицию', 'терял темп', 'допускал более сильный ответ', 'упускал активное продолжение', 'делал позицию менее надёжной'];
         const blunderReasons = ['терял материал', 'пропускал угрозу', 'резко ухудшал позицию', 'допускал решающее давление', 'упускал важную защиту'];
+        const MATE_ATTACK_THRESHOLD = 4;
+        const FILES = 'abcdefgh';
+        const FORK_HIGH_VALUE_PIECES = new Set(['q', 'r']);
+        const PIECE_PRIORITY = { k: 0, q: 4, r: 3, b: 2, n: 2, p: 1 };
+        const FORK_MIN_GAIN = 3;
+        const FORK_PRIORITY_MIN_DELTA = 0.5;
+        const SEVERE_BLUNDER_DELTA = 2.2;
         const buildDetailReason = (classification, shortReason) => {
             if (classification === 'strong') {
                 return `Этот ход ${shortReason} и помогал удерживать качество позиции.`;
@@ -170,45 +177,238 @@ window.runPostGameAnalysis = async function() {
         const isLosingMateSignal = (scoreType, mateIn) => (
             scoreType === 'mate' && Number.isFinite(mateIn) && mateIn < 0
         );
+        const squareToCoords = (square) => {
+            if (typeof square !== 'string' || square.length !== 2) return null;
+            const file = FILES.indexOf(square[0]);
+            const rank = Number(square[1]) - 1;
+            if (file < 0 || rank < 0 || rank > 7) return null;
+            return { file, rank };
+        };
+        const getPieceAt = (gameState, square) => {
+            const coords = squareToCoords(square);
+            if (!coords) return null;
+            const board = gameState.board();
+            return board?.[7 - coords.rank]?.[coords.file] || null;
+        };
+        const isInside = (file, rank) => file >= 0 && file < 8 && rank >= 0 && rank < 8;
+        const squareFromCoords = (file, rank) => `${FILES[file]}${rank + 1}`;
+        const isPieceAttackingSquare = (gameState, fromSquare, piece, targetSquare) => {
+            const from = squareToCoords(fromSquare);
+            const to = squareToCoords(targetSquare);
+            if (!from || !to || !piece?.type) return false;
+            const df = to.file - from.file;
+            const dr = to.rank - from.rank;
+            const absDf = Math.abs(df);
+            const absDr = Math.abs(dr);
+            const board = gameState.board();
+            const squareOccupied = (file, rank) => board?.[7 - rank]?.[file] || null;
+
+            if (piece.type === 'n') return (absDf === 1 && absDr === 2) || (absDf === 2 && absDr === 1);
+            if (piece.type === 'k') return Math.max(absDf, absDr) === 1;
+            if (piece.type === 'p') {
+                const forward = piece.color === 'w' ? 1 : -1;
+                return dr === forward && absDf === 1;
+            }
+
+            const isDiagonal = absDf === absDr && absDf > 0;
+            const isStraight = (df === 0 && absDr > 0) || (dr === 0 && absDf > 0);
+            const isSlidingPiece = piece.type === 'b' || piece.type === 'r' || piece.type === 'q';
+            if (!isSlidingPiece) return false;
+            if (piece.type === 'b' && !isDiagonal) return false;
+            if (piece.type === 'r' && !isStraight) return false;
+            if (piece.type === 'q' && !(isDiagonal || isStraight)) return false;
+
+            const stepFile = df === 0 ? 0 : (df > 0 ? 1 : -1);
+            const stepRank = dr === 0 ? 0 : (dr > 0 ? 1 : -1);
+            let scanFile = from.file + stepFile;
+            let scanRank = from.rank + stepRank;
+            while (isInside(scanFile, scanRank) && (scanFile !== to.file || scanRank !== to.rank)) {
+                if (squareOccupied(scanFile, scanRank)) return false;
+                scanFile += stepFile;
+                scanRank += stepRank;
+            }
+            return true;
+        };
+        const describeForkTargets = (targets = []) => {
+            const names = targets.map((target) => {
+                if (target.type === 'q') return 'ферзя';
+                if (target.type === 'r') return 'ладью';
+                if (target.type === 'b') return 'слона';
+                if (target.type === 'n') return 'коня';
+                return 'фигуру';
+            });
+            if (names.length < 2) return null;
+            return `${names[0]} и ${names[1]}`;
+        };
+        const detectForkIdea = (fenBefore, moveCandidate) => {
+            if (!moveCandidate?.from || !moveCandidate?.to) return null;
+            const position = new Chess(fenBefore);
+            const applied = position.move({
+                from: moveCandidate.from,
+                to: moveCandidate.to,
+                promotion: moveCandidate.promotion || 'q'
+            });
+            if (!applied) return null;
+
+            const movedPiece = getPieceAt(position, moveCandidate.to);
+            if (!movedPiece) return null;
+            const movedColor = movedPiece.color;
+            const enemyColor = movedColor === 'w' ? 'b' : 'w';
+            const board = position.board();
+            const attackedTargets = [];
+
+            for (let rankIndex = 0; rankIndex < 8; rankIndex++) {
+                for (let fileIndex = 0; fileIndex < 8; fileIndex++) {
+                    const piece = board?.[rankIndex]?.[fileIndex];
+                    if (!piece || piece.color !== enemyColor) continue;
+                    const targetSquare = squareFromCoords(fileIndex, 7 - rankIndex);
+                    if (!isPieceAttackingSquare(position, moveCandidate.to, movedPiece, targetSquare)) continue;
+                    attackedTargets.push({
+                        type: piece.type,
+                        square: targetSquare,
+                        priority: PIECE_PRIORITY[piece.type] || 0
+                    });
+                }
+            }
+
+            const sortedTargets = attackedTargets.sort((a, b) => b.priority - a.priority);
+            const highValueTargets = sortedTargets.filter((target) => FORK_HIGH_VALUE_PIECES.has(target.type));
+            const minorTargets = sortedTargets.filter((target) => target.type === 'b' || target.type === 'n');
+            const hasKingCheck = attackedTargets.some((target) => target.type === 'k');
+            const topPair = sortedTargets.slice(0, 2);
+            const positiveGain = topPair.length >= 2
+                ? (topPair[0].priority + topPair[1].priority) - (PIECE_PRIORITY[movedPiece.type] || 0)
+                : 0;
+            const hasDoubleMajorFork = highValueTargets.length >= 2;
+            const hasMajorAndMinorFork = highValueTargets.length >= 1 && minorTargets.length >= 1 && positiveGain >= (FORK_MIN_GAIN + 1);
+            const hasCheckAndMajorPressure = hasKingCheck
+                && movedPiece.type === 'n'
+                && highValueTargets.some((target) => target.type === 'q')
+                && positiveGain >= FORK_MIN_GAIN;
+            const isReliableFork = hasDoubleMajorFork || hasMajorAndMinorFork || hasCheckAndMajorPressure;
+            if (!isReliableFork) return null;
+
+            const focusTargets = (highValueTargets.length >= 2 ? highValueTargets : [...highValueTargets, ...minorTargets]).slice(0, 2);
+            const targetText = describeForkTargets(focusTargets);
+            return {
+                pieceType: movedPiece.type,
+                targets: focusTargets,
+                targetText,
+                hasKingCheck
+            };
+        };
+        const resolveMatePriorityReason = (classification, context = {}) => {
+            const {
+                bestHasWinningMate,
+                playedAllowsMate,
+                bestMoveSan,
+                bestMatchesPlayed,
+                bestMateIn,
+                bestContinuationSan
+            } = context;
+            const isImmediateMate = (Number.isFinite(bestMateIn) && bestMateIn === 1)
+                || (typeof bestMoveSan === 'string' && bestMoveSan.endsWith('#'));
+            const isPreMate = Number.isFinite(bestMateIn) && bestMateIn > 1 && bestMateIn <= MATE_ATTACK_THRESHOLD;
+            const isMistakeLayer = classification === 'mistake' || classification === 'blunder';
+
+            if (classification === 'strong' && bestMatchesPlayed && bestHasWinningMate && isImmediateMate) {
+                return { priority: 1, shortReason: 'Здесь был мат', detailReason: 'Вы нашли мат' };
+            }
+            if (isMistakeLayer && bestHasWinningMate && isImmediateMate) {
+                return {
+                    priority: 2,
+                    shortReason: 'Упускался мат',
+                    detailReason: 'Находился форсированный мат'
+                };
+            }
+            if (isMistakeLayer && playedAllowsMate) {
+                return {
+                    priority: 3,
+                    shortReason: classification === 'blunder' ? 'Этот ход допускал мат' : 'Ход пропускал матовую атаку',
+                    detailReason: 'Не замечалась решающая угроза королю'
+                };
+            }
+            if ((classification === 'strong' && bestMatchesPlayed && bestHasWinningMate && isPreMate)
+                || (isMistakeLayer && bestHasWinningMate && isPreMate)) {
+                const shortReason = classification === 'strong'
+                    ? 'Здесь начиналась матовая комбинация'
+                    : 'Можно было начать форсированный мат';
+                const detailReason = bestContinuationSan
+                    ? `${shortReason}. Идея: ${bestContinuationSan}`
+                    : `${shortReason}. Этот ход запускал атаку на короля.`;
+                return { priority: 4, shortReason, detailReason };
+            }
+            return null;
+        };
+        const shouldPrioritizeForkIdea = (context = {}) => {
+            const { forkFound, delta, bestHasWinningMate, bestMateIn, playedAllowsMate } = context;
+            if (!forkFound) return false;
+            if (!Number.isFinite(delta) || delta < FORK_PRIORITY_MIN_DELTA) return false;
+            if (playedAllowsMate) return false;
+            const isMateTheme = bestHasWinningMate
+                && Number.isFinite(bestMateIn)
+                && bestMateIn > 0
+                && bestMateIn <= MATE_ATTACK_THRESHOLD;
+            if (isMateTheme) return false;
+            return true;
+        };
         const buildPriorityReason = (classification, context = {}) => {
-            const { bestHasWinningMate, playedAllowsMate, bestMoveSan, bestMatchesPlayed } = context;
-            if (classification === 'strong' && bestMatchesPlayed && bestHasWinningMate) {
-                const shortReason = typeof bestMoveSan === 'string' && bestMoveSan.endsWith('#')
-                    ? 'Здесь был мат'
-                    : 'Этот ход вёл к мату';
+            const mateReason = resolveMatePriorityReason(classification, context);
+            if (mateReason) return mateReason;
+            const isMistakeLayer = classification === 'mistake' || classification === 'blunder';
+            const { forkFound } = context;
+
+            if (shouldPrioritizeForkIdea(context)) {
+                const checkSuffix = forkFound?.hasKingCheck ? ' с шахом королю' : '';
+                if (classification === 'strong') {
+                    const shortReason = forkFound.targetText
+                        ? `Здесь была вилка на ${forkFound.targetText}${checkSuffix}`
+                        : 'Здесь была вилка';
+                    return { priority: 5, shortReason, detailReason: shortReason };
+                }
+                const shortReason = forkFound.targetText
+                    ? `Можно было вилкой напасть на ${forkFound.targetText}${checkSuffix}`
+                    : 'Можно было создать вилку';
+                return { priority: 5, shortReason, detailReason: shortReason };
+            }
+
+            if (classification === 'strong') {
                 return {
-                    shortReason,
-                    detailReason: shortReason
+                    priority: 6,
+                    shortReason: 'Аккуратный сильный ход',
+                    detailReason: 'Ход укреплял позицию и сохранял инициативу'
                 };
             }
-            if (classification === 'strong' && bestHasWinningMate) {
-                const shortReason = typeof bestMoveSan === 'string' && bestMoveSan.endsWith('#')
-                    ? 'Ход завершал атаку'
-                    : 'Этот ход вёл к мату';
+            if (isMistakeLayer) {
                 return {
-                    shortReason,
-                    detailReason: shortReason
-                };
-            }
-            if ((classification === 'mistake' || classification === 'blunder') && bestHasWinningMate) {
-                const shortReason = classification === 'blunder'
-                    ? 'Упускался мат'
-                    : 'Можно было завершить атаку';
-                return {
-                    shortReason,
-                    detailReason: shortReason
-                };
-            }
-            if ((classification === 'mistake' || classification === 'blunder') && playedAllowsMate) {
-                const shortReason = classification === 'blunder'
-                    ? 'Этот ход допускал мат'
-                    : 'Ход пропускал матовую атаку';
-                return {
-                    shortReason,
-                    detailReason: shortReason
+                    priority: 7,
+                    shortReason: classification === 'blunder' ? 'Здесь был серьёзный зевок' : 'Здесь была неточность',
+                    detailReason: 'После этого хода упускалась важная тактическая возможность'
                 };
             }
             return null;
+        };
+        const rankAnnotationBucket = (item) => {
+            const reasonPriority = Number.isFinite(item?.reasonPriority) ? item.reasonPriority : 8;
+            if (reasonPriority <= 4) return 0; // мат и предмат остаются главным приоритетом
+            if (item?.classification === 'blunder' && Number(item?.delta || 0) >= SEVERE_BLUNDER_DELTA) return 1;
+            if (reasonPriority === 5) return 2; // вилка
+            if (item?.classification === 'blunder') return 3;
+            if (item?.classification === 'mistake') return 4;
+            return 5;
+        };
+        const compareAnnotationsForFeed = (a, b) => {
+            const bucketDiff = rankAnnotationBucket(a) - rankAnnotationBucket(b);
+            if (bucketDiff !== 0) return bucketDiff;
+            const priorityDiff = (a.reasonPriority || 8) - (b.reasonPriority || 8);
+            if (priorityDiff !== 0) return priorityDiff;
+            if ((a.reasonPriority || 8) <= 4 || (b.reasonPriority || 8) <= 4) {
+                const mateA = Math.abs(Number.isFinite(a.bestMateIn) ? a.bestMateIn : 99);
+                const mateB = Math.abs(Number.isFinite(b.bestMateIn) ? b.bestMateIn : 99);
+                if (mateA !== mateB) return mateA - mateB;
+            }
+            if (b.delta !== a.delta) return b.delta - a.delta;
+            return a.plyIndex - b.plyIndex;
         };
 
         for (let plyIndex = 0; plyIndex < history.length; plyIndex++) {
@@ -275,11 +475,20 @@ window.runPostGameAnalysis = async function() {
                             analysis?.playedScoreType,
                             analysis?.playedMateIn
                         );
+                        const bestFork = detectForkIdea(fenBefore, bestMove);
+                        const playedFork = detectForkIdea(fenBefore, playedMove);
+                        const forkFound = classification === 'strong'
+                            ? (bestMatchesPlayed ? playedFork : null)
+                            : (bestFork && !playedFork ? bestFork : null);
                         const priorityReason = buildPriorityReason(classification, {
                             bestHasWinningMate,
                             playedAllowsMate,
                             bestMoveSan: bestSan,
-                            bestMatchesPlayed
+                            bestMatchesPlayed,
+                            bestMateIn: Number.isFinite(analysis?.bestMateIn) ? analysis.bestMateIn : null,
+                            forkFound,
+                            bestContinuationSan: analysis?.bestContinuationSan || null,
+                            delta
                         });
                         const reasonPool = classification === 'strong'
                             ? strongReasons
@@ -294,6 +503,7 @@ window.runPostGameAnalysis = async function() {
                             label,
                             shortReason: reason,
                             detailReason: priorityReason?.detailReason || buildDetailReason(classification, reason),
+                            reasonPriority: Number.isFinite(priorityReason?.priority) ? priorityReason.priority : 8,
                             fenBefore,
                             playedMove,
                             bestMove: { ...bestMove, san: bestSan },
@@ -301,7 +511,8 @@ window.runPostGameAnalysis = async function() {
                             bestScoreType: analysis?.bestScoreType || 'cp',
                             bestMateIn: Number.isFinite(analysis?.bestMateIn) ? analysis.bestMateIn : null,
                             playedScoreType: analysis?.playedScoreType || 'cp',
-                            playedMateIn: Number.isFinite(analysis?.playedMateIn) ? analysis.playedMateIn : null
+                            playedMateIn: Number.isFinite(analysis?.playedMateIn) ? analysis.playedMateIn : null,
+                            bestContinuationSan: analysis?.bestContinuationSan || null
                         });
                     }
                 }
@@ -314,11 +525,10 @@ window.runPostGameAnalysis = async function() {
             });
         }
 
-        const prioritized = [
-            ...annotations.filter((item) => item.classification === 'blunder').sort((a, b) => b.delta - a.delta).slice(0, 4),
-            ...annotations.filter((item) => item.classification === 'mistake').sort((a, b) => b.delta - a.delta).slice(0, 5),
-            ...annotations.filter((item) => item.classification === 'strong').slice(0, 3)
-        ].sort((a, b) => a.plyIndex - b.plyIndex);
+        const prioritized = [...annotations]
+            .sort(compareAnnotationsForFeed)
+            .slice(0, 12)
+            .sort((a, b) => a.plyIndex - b.plyIndex);
         const byPly = Object.fromEntries(prioritized.map((item) => [item.plyIndex, item]));
 
         window.postGameAnalysis.ready = true;
