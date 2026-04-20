@@ -164,6 +164,43 @@ window.runPostGameAnalysis = async function() {
             }
             return `Этот ход ${shortReason} и допускал серьёзное ухудшение позиции.`;
         };
+        const isWinningMateSignal = (scoreType, mateIn, san) => (
+            scoreType === 'mate' && Number.isFinite(mateIn) && mateIn > 0
+        ) || (typeof san === 'string' && san.endsWith('#'));
+        const isLosingMateSignal = (scoreType, mateIn) => (
+            scoreType === 'mate' && Number.isFinite(mateIn) && mateIn < 0
+        );
+        const buildPriorityReason = (classification, context = {}) => {
+            const { bestHasWinningMate, playedAllowsMate, bestMoveSan } = context;
+            if (classification === 'strong' && bestHasWinningMate) {
+                const shortReason = typeof bestMoveSan === 'string' && bestMoveSan.endsWith('#')
+                    ? 'Здесь был мат'
+                    : 'Этот ход вёл к мату';
+                return {
+                    shortReason,
+                    detailReason: shortReason
+                };
+            }
+            if ((classification === 'mistake' || classification === 'blunder') && bestHasWinningMate) {
+                const shortReason = classification === 'blunder'
+                    ? 'Упускался мат'
+                    : 'Можно было завершить атаку';
+                return {
+                    shortReason,
+                    detailReason: shortReason
+                };
+            }
+            if ((classification === 'mistake' || classification === 'blunder') && playedAllowsMate) {
+                const shortReason = classification === 'blunder'
+                    ? 'Этот ход допускал мат'
+                    : 'Ход пропускал матовую атаку';
+                return {
+                    shortReason,
+                    detailReason: shortReason
+                };
+            }
+            return null;
+        };
 
         for (let plyIndex = 0; plyIndex < history.length; plyIndex++) {
             const move = history[plyIndex];
@@ -214,10 +251,24 @@ window.runPostGameAnalysis = async function() {
                     else if (plyIndex >= 8 && legalMovesBefore >= 16 && delta <= 0.2 && bestMatchesPlayed) classification = 'strong';
 
                     if (classification) {
+                        const bestHasWinningMate = isWinningMateSignal(
+                            analysis?.bestScoreType,
+                            analysis?.bestMateIn,
+                            bestSan
+                        );
+                        const playedAllowsMate = isLosingMateSignal(
+                            analysis?.playedScoreType,
+                            analysis?.playedMateIn
+                        );
+                        const priorityReason = buildPriorityReason(classification, {
+                            bestHasWinningMate,
+                            playedAllowsMate,
+                            bestMoveSan: bestSan
+                        });
                         const reasonPool = classification === 'strong'
                             ? strongReasons
                             : (classification === 'mistake' ? mistakeReasons : blunderReasons);
-                        const reason = reasonPool[plyIndex % reasonPool.length];
+                        const reason = priorityReason?.shortReason || reasonPool[plyIndex % reasonPool.length];
                         const badge = classification === 'strong' ? '!!' : (classification === 'mistake' ? '?' : '?!');
                         const label = classification === 'strong' ? 'Сильный ход' : (classification === 'mistake' ? 'Ошибка' : 'Зевок');
                         annotations.push({
@@ -226,11 +277,15 @@ window.runPostGameAnalysis = async function() {
                             badge,
                             label,
                             shortReason: reason,
-                            detailReason: buildDetailReason(classification, reason),
+                            detailReason: priorityReason?.detailReason || buildDetailReason(classification, reason),
                             fenBefore,
                             playedMove,
                             bestMove: { ...bestMove, san: bestSan },
-                            delta
+                            delta,
+                            bestScoreType: analysis?.bestScoreType || 'cp',
+                            bestMateIn: Number.isFinite(analysis?.bestMateIn) ? analysis.bestMateIn : null,
+                            playedScoreType: analysis?.playedScoreType || 'cp',
+                            playedMateIn: Number.isFinite(analysis?.playedMateIn) ? analysis.playedMateIn : null
                         });
                     }
                 }

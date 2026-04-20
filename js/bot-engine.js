@@ -44,12 +44,19 @@ window.createBotEngine = function(level = 'medium') {
         if (!Number.isFinite(rawValue)) return null;
 
         if (scoreType === 'cp') {
-            return rawValue / 100;
+            return {
+                score: rawValue / 100,
+                scoreType: 'cp',
+                mateIn: null
+            };
         }
 
         if (scoreType === 'mate') {
-            if (rawValue === 0) return 0;
-            return rawValue > 0 ? MATE_SCORE_PAWNS : -MATE_SCORE_PAWNS;
+            return {
+                score: rawValue === 0 ? 0 : (rawValue > 0 ? MATE_SCORE_PAWNS : -MATE_SCORE_PAWNS),
+                scoreType: 'mate',
+                mateIn: rawValue
+            };
         }
 
         return null;
@@ -60,9 +67,11 @@ window.createBotEngine = function(level = 'medium') {
         if (!line) return;
 
         if (activeRequest && line.startsWith('info')) {
-            const score = parseScoreFromInfoLine(line);
-            if (score !== null) {
-                activeRequest.lastScore = score;
+            const scoreData = parseScoreFromInfoLine(line);
+            if (scoreData !== null) {
+                activeRequest.lastScore = scoreData.score;
+                activeRequest.lastScoreType = scoreData.scoreType;
+                activeRequest.lastMateIn = scoreData.mateIn;
             }
         }
 
@@ -71,7 +80,9 @@ window.createBotEngine = function(level = 'medium') {
             if (activeRequest?.resolve) {
                 activeRequest.resolve({
                     bestMove,
-                    score: Number.isFinite(activeRequest.lastScore) ? activeRequest.lastScore : 0
+                    score: Number.isFinite(activeRequest.lastScore) ? activeRequest.lastScore : 0,
+                    scoreType: activeRequest.lastScoreType || 'cp',
+                    mateIn: Number.isFinite(activeRequest.lastMateIn) ? activeRequest.lastMateIn : null
                 });
             }
             clearPendingRequest();
@@ -105,7 +116,7 @@ window.createBotEngine = function(level = 'medium') {
         profile,
         async getBestMoveWithEval(fen, options = {}) {
             ensureInitialized();
-            if (!fen) return { bestMove: null, score: 0 };
+            if (!fen) return { bestMove: null, score: 0, scoreType: 'cp', mateIn: null };
 
             if (activeRequest?.reject) {
                 activeRequest.reject(new Error('Bot search interrupted by newer request'));
@@ -119,7 +130,9 @@ window.createBotEngine = function(level = 'medium') {
                 activeRequest = {
                     resolve,
                     reject,
-                    lastScore: null
+                    lastScore: null,
+                    lastScoreType: null,
+                    lastMateIn: null
                 };
 
                 send('stop');
@@ -137,13 +150,19 @@ window.createBotEngine = function(level = 'medium') {
                     bestMove: null,
                     bestEval: 0,
                     playedEval: 0,
-                    delta: 0
+                    delta: 0,
+                    bestScoreType: 'cp',
+                    bestMateIn: null,
+                    playedScoreType: 'cp',
+                    playedMateIn: null
                 };
             }
 
             const beforeResult = await this.getBestMoveWithEval(fen, options);
             const bestEval = Number.isFinite(beforeResult?.score) ? beforeResult.score : 0;
             const bestMove = beforeResult?.bestMove || null;
+            const bestScoreType = beforeResult?.scoreType === 'mate' ? 'mate' : 'cp';
+            const bestMateIn = Number.isFinite(beforeResult?.mateIn) ? beforeResult.mateIn : null;
 
             const previewGame = new Chess(fen);
             const applied = previewGame.move({
@@ -156,19 +175,29 @@ window.createBotEngine = function(level = 'medium') {
                     bestMove,
                     bestEval,
                     playedEval: bestEval,
-                    delta: 0
+                    delta: 0,
+                    bestScoreType,
+                    bestMateIn,
+                    playedScoreType: bestScoreType,
+                    playedMateIn: bestMateIn
                 };
             }
 
             const afterResult = await this.getBestMoveWithEval(previewGame.fen(), options);
             const playedEval = Number.isFinite(afterResult?.score) ? -afterResult.score : bestEval;
             const delta = Math.max(0, bestEval - playedEval);
+            const playedScoreType = afterResult?.scoreType === 'mate' ? 'mate' : 'cp';
+            const playedMateIn = Number.isFinite(afterResult?.mateIn) ? -afterResult.mateIn : null;
 
             return {
                 bestMove,
                 bestEval,
                 playedEval,
-                delta
+                delta,
+                bestScoreType,
+                bestMateIn,
+                playedScoreType,
+                playedMateIn
             };
         },
         destroy() {
