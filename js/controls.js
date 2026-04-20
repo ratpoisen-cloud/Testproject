@@ -730,6 +730,11 @@ window.setupGameControls = function(gameRef, roomId) {
             window.closePostGameAdvice?.();
         });
 
+        setClickHandler('advice-why-btn', () => {
+            window.setAdviceDetailExpanded?.(!window.__adviceDetailExpanded);
+            window.updatePostGameAdviceUI?.();
+        });
+
         bindPgnCopyButton('modal-copy-pgn');
         bindPgnCopyButton('inline-copy-pgn');
     };

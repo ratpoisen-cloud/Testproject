@@ -661,15 +661,27 @@ window.updateFinishedGameActions = function(data) {
     inlineAdviceBtn?.classList.toggle('hidden', !showInlineAdviceEntry);
 };
 
+window.setAdviceDetailExpanded = function(expanded) {
+    window.__adviceDetailExpanded = Boolean(expanded);
+    const detailNode = document.getElementById('review-advice-detail');
+    const whyNode = document.getElementById('advice-why-btn');
+    detailNode?.classList.toggle('hidden', !window.__adviceDetailExpanded);
+    whyNode?.setAttribute('aria-expanded', window.__adviceDetailExpanded ? 'true' : 'false');
+};
+
 window.updatePostGameAdviceUI = function() {
     const advice = window.postGameAdvice || {};
     const panel = document.getElementById('review-advice-panel');
     const text = document.getElementById('review-advice-text');
+    const subtext = document.getElementById('review-advice-subtext');
+    const detail = document.getElementById('review-advice-detail');
+    const whyBtn = document.getElementById('advice-why-btn');
     const strongBtn = document.getElementById('advice-strong-btn');
     const weakBtn = document.getElementById('advice-weak-btn');
     const closeBtn = document.getElementById('advice-close-btn');
     const modalAdviceBtn = document.getElementById('modal-advice-btn');
     const inlineAdviceBtn = document.getElementById('inline-advice-btn');
+    window.__adviceDetailExpanded = Boolean(window.__adviceDetailExpanded);
 
     const updateAdviceLaunchButton = (button) => {
         if (!button) return;
@@ -694,6 +706,11 @@ window.updatePostGameAdviceUI = function() {
     panel.classList.toggle('hidden', !shouldShowPanel);
     if (!shouldShowPanel) {
         if (text) text.textContent = 'Совет готов';
+        subtext?.classList.add('hidden');
+        whyBtn?.classList.add('hidden');
+        if (detail) detail.textContent = '';
+        whyBtn?.setAttribute('aria-expanded', 'false');
+        window.setAdviceDetailExpanded?.(false);
         return;
     }
 
@@ -709,21 +726,56 @@ window.updatePostGameAdviceUI = function() {
 
     if (advice.loading) {
         if (text) text.textContent = 'Анализируем завершённую партию...';
+        subtext?.classList.add('hidden');
+        whyBtn?.classList.add('hidden');
+        if (detail) detail.textContent = '';
+        whyBtn?.setAttribute('aria-expanded', 'false');
+        window.setAdviceDetailExpanded?.(false);
         return;
     }
     if (advice.error) {
         if (text) text.textContent = 'Не удалось подготовить совет';
+        subtext?.classList.add('hidden');
+        whyBtn?.classList.add('hidden');
+        if (detail) detail.textContent = '';
+        whyBtn?.setAttribute('aria-expanded', 'false');
+        window.setAdviceDetailExpanded?.(false);
         return;
     }
 
     const activeMove = window.getPostGameAdviceMoveByMode?.(advice.activeMode);
     if (!activeMove) {
         if (text) text.textContent = 'Явного совета не найдено';
+        subtext?.classList.add('hidden');
+        whyBtn?.classList.add('hidden');
+        if (detail) detail.textContent = '';
+        whyBtn?.setAttribute('aria-expanded', 'false');
+        window.setAdviceDetailExpanded?.(false);
         return;
     }
 
     if (text) {
-        text.textContent = activeMove.message || 'Совет готов';
+        text.textContent = activeMove.shortMessage || activeMove.message || 'Совет готов';
+    }
+    if (subtext) {
+        subtext.textContent = activeMove.message || '';
+        subtext.classList.toggle('hidden', !activeMove.message);
+    }
+    if (detail) {
+        const detailText = [activeMove.detailMessage, activeMove.comparedMoveLine].filter(Boolean).join('\n');
+        detail.textContent = detailText;
+        detail.classList.toggle('hidden', !(window.__adviceDetailExpanded && detailText));
+    }
+    if (whyBtn) {
+        const hasDetail = Boolean(activeMove.detailMessage || activeMove.comparedMoveLine);
+        whyBtn.classList.toggle('hidden', !hasDetail);
+        if (!hasDetail) {
+            if (detail) detail.textContent = '';
+            whyBtn.setAttribute('aria-expanded', 'false');
+            window.setAdviceDetailExpanded?.(false);
+        } else {
+            whyBtn.setAttribute('aria-expanded', window.__adviceDetailExpanded ? 'true' : 'false');
+        }
     }
 };
 
