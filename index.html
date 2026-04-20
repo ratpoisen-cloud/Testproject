@@ -425,14 +425,7 @@
                                     <button id="review-live-btn" class="review-control-btn review-live-btn" type="button">К текущей позиции</button>
                                     <p id="review-status" class="review-status">Последняя позиция</p>
                                 </div>
-                                <div id="review-advice-panel" class="review-advice-panel hidden" role="group" aria-label="Совет после партии">
-                                    <div class="review-advice-panel-actions">
-                                        <button id="advice-strong-btn" class="review-control-btn review-advice-btn" type="button">Сильный ход</button>
-                                        <button id="advice-weak-btn" class="review-control-btn review-advice-btn" type="button">Слабый ход</button>
-                                        <button id="advice-close-btn" class="review-control-btn review-advice-btn review-advice-btn-close" type="button">Закрыть совет</button>
-                                    </div>
-                                    <p id="review-advice-text" class="review-advice-text">Совет готов</p>
-                                </div>
+                                <p id="review-analysis-hint" class="review-analysis-hint hidden">Выберите помеченный ход для разбора.</p>
                             </div>
                         </div>
 
@@ -462,7 +455,7 @@
 
                             <div id="finished-game-actions" class="finished-game-actions hidden" role="group" aria-label="Действия завершённой партии">
                                 <button id="inline-copy-pgn" class="btn btn-outline pgn-action-btn">Копировать PGN</button>
-                                <button id="inline-advice-btn" class="btn btn-outline hidden">Показать совет</button>
+                                <button id="inline-analysis-btn" class="btn btn-outline hidden">Анализ</button>
                                 <button id="inline-rematch-btn" class="btn btn-primary">Реванш</button>
                             </div>
                         </div>
@@ -497,7 +490,7 @@
                 </div>
                 <div class="game-modal-actions">
                     <button id="modal-review-btn" class="btn btn-outline">Посмотреть</button>
-                    <button id="modal-advice-btn" class="btn btn-outline hidden">Показать совет</button>
+                    <button id="modal-analysis-btn" class="btn btn-outline hidden">Анализ</button>
                     <button id="modal-rematch-btn" class="btn btn-primary btn-large">Новая партия (Реванш)</button>
                     <button id="modal-exit-btn" class="btn btn-outline">Выйти в лобби</button>
                 </div>
