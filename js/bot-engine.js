@@ -163,6 +163,49 @@ window.createBotEngine = function(level = 'medium') {
             const bestMove = beforeResult?.bestMove || null;
             const bestScoreType = beforeResult?.scoreType === 'mate' ? 'mate' : 'cp';
             const bestMateIn = Number.isFinite(beforeResult?.mateIn) ? beforeResult.mateIn : null;
+            let bestContinuationSan = null;
+
+            if (bestMove && bestScoreType === 'mate' && Number.isFinite(bestMateIn) && bestMateIn > 1 && bestMateIn <= 4) {
+                try {
+                    const previewDepth = Number.isFinite(options.depth) ? Math.max(8, options.depth - 2) : 8;
+                    const previewMovetime = Number.isFinite(options.movetime) ? Math.min(options.movetime, 260) : 220;
+                    const previewOptions = { depth: previewDepth, movetime: previewMovetime };
+                    const bestLineGame = new Chess(fen);
+                    const firstApplied = bestLineGame.move({
+                        from: bestMove.slice(0, 2),
+                        to: bestMove.slice(2, 4),
+                        promotion: bestMove.slice(4, 5) || 'q'
+                    });
+
+                    if (firstApplied) {
+                        const opponentReply = await this.getBestMoveWithEval(bestLineGame.fen(), previewOptions);
+                        const opponentBestMove = opponentReply?.bestMove || null;
+                        if (opponentBestMove) {
+                            bestLineGame.move({
+                                from: opponentBestMove.slice(0, 2),
+                                to: opponentBestMove.slice(2, 4),
+                                promotion: opponentBestMove.slice(4, 5) || 'q'
+                            });
+                        }
+
+                        const followUp = await this.getBestMoveWithEval(bestLineGame.fen(), previewOptions);
+                        const followUpMove = followUp?.bestMove || null;
+                        if (followUpMove) {
+                            const followUpApplied = bestLineGame.move({
+                                from: followUpMove.slice(0, 2),
+                                to: followUpMove.slice(2, 4),
+                                promotion: followUpMove.slice(4, 5) || 'q'
+                            });
+                            if (followUpApplied?.san) {
+                                bestContinuationSan = `${firstApplied.san} → ${followUpApplied.san}`;
+                            }
+                        }
+                    }
+                } catch (continuationError) {
+                    bestContinuationSan = null;
+                    console.warn('Не удалось построить короткую матовую идею:', continuationError);
+                }
+            }
 
             const previewGame = new Chess(fen);
             const applied = previewGame.move({
@@ -179,7 +222,8 @@ window.createBotEngine = function(level = 'medium') {
                     bestScoreType,
                     bestMateIn,
                     playedScoreType: bestScoreType,
-                    playedMateIn: bestMateIn
+                    playedMateIn: bestMateIn,
+                    bestContinuationSan
                 };
             }
 
@@ -192,7 +236,8 @@ window.createBotEngine = function(level = 'medium') {
                     bestScoreType,
                     bestMateIn,
                     playedScoreType: 'mate',
-                    playedMateIn: 0
+                    playedMateIn: 0,
+                    bestContinuationSan
                 };
             }
 
@@ -210,7 +255,8 @@ window.createBotEngine = function(level = 'medium') {
                 bestScoreType,
                 bestMateIn,
                 playedScoreType,
-                playedMateIn
+                playedMateIn,
+                bestContinuationSan
             };
         },
         destroy() {

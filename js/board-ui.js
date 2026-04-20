@@ -904,10 +904,47 @@ window.renderAnalysisHintMarker = function(targetSquare, annotation) {
         : `
         <p class="analysis-hint-popover-line">Вы сыграли: ${playedSan || '—'}</p>
         <p class="analysis-hint-popover-line">Сильнее было: ${strongerSan || '—'}</p>`;
-    popover.innerHTML = `
-        <p class="analysis-hint-popover-title">${titleText}</p>
-        <p class="analysis-hint-popover-text">${annotation.detailReason || 'Этот ход был надёжнее в позиции.'}</p>${comparisonHtml}
-    `;
+    const boardRect = document.getElementById('myBoard')?.getBoundingClientRect?.();
+    const squareRect = squareNode.getBoundingClientRect();
+    const vw = window.innerWidth || 0;
+    const isCompactScreen = vw <= 768;
+    const nearTopEdge = boardRect ? (squareRect.top - boardRect.top) < 56 : false;
+    const nearLeftEdge = boardRect ? (squareRect.left - boardRect.left) < 40 : false;
+    const nearRightEdge = boardRect ? (boardRect.right - squareRect.right) < 40 : false;
+
+    const compactIdeaSource = annotation.bestContinuationSan
+        ? `Идея: ${annotation.bestContinuationSan}`
+        : (annotation.shortReason || annotation.detailReason || 'Этот ход был надёжнее в позиции.');
+    const compactIdea = compactIdeaSource.length > 88
+        ? `${compactIdeaSource.slice(0, 85)}…`
+        : compactIdeaSource;
+
+    if (isCompactScreen) {
+        popover.innerHTML = `
+            <p class="analysis-hint-popover-title">Идея хода</p>
+            <p class="analysis-hint-popover-text">${compactIdea}</p>
+        `;
+    } else {
+        const continuationHtml = annotation.bestContinuationSan
+            ? `<p class="analysis-hint-popover-line">Идея: ${annotation.bestContinuationSan}</p>`
+            : '';
+        popover.innerHTML = `
+            <p class="analysis-hint-popover-title">${titleText}</p>
+            <p class="analysis-hint-popover-text">${annotation.detailReason || 'Этот ход был надёжнее в позиции.'}</p>${continuationHtml}${comparisonHtml}
+        `;
+    }
+
+    if (isCompactScreen) {
+        popover.classList.add('analysis-hint-popover--mobile');
+        if (nearTopEdge) {
+            popover.classList.add('analysis-hint-popover--below');
+        }
+        if (nearLeftEdge) {
+            popover.classList.add('analysis-hint-popover--shift-right');
+        } else if (nearRightEdge) {
+            popover.classList.add('analysis-hint-popover--shift-left');
+        }
+    }
     squareNode.appendChild(popover);
 };
 

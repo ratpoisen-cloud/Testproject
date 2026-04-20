@@ -1115,6 +1115,31 @@
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
 }
 
+.analysis-hint-popover--mobile {
+    min-width: 160px;
+    max-width: min(196px, calc(100vw - 22px));
+    padding: 8px 9px;
+}
+
+.analysis-hint-popover--mobile .analysis-hint-popover-text {
+    line-height: 1.4;
+}
+
+.analysis-hint-popover--below {
+    bottom: auto;
+    top: 22px;
+}
+
+.analysis-hint-popover--shift-left {
+    right: 2px;
+    left: auto;
+}
+
+.analysis-hint-popover--shift-right {
+    left: 2px;
+    right: auto;
+}
+
 .analysis-hint-popover-title {
     margin: 0 0 5px 0;
     font-size: 0.67rem;
