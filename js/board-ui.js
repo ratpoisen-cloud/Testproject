@@ -889,11 +889,24 @@ window.renderAnalysisHintMarker = function(targetSquare, annotation) {
     popover.className = 'analysis-hint-popover';
     const strongerSan = annotation.bestMove?.san || `${annotation.bestMove?.from || ''}${annotation.bestMove?.to || ''}`.trim();
     const playedSan = annotation.playedMove?.san || `${annotation.playedMove?.from || ''}${annotation.playedMove?.to || ''}`.trim();
-    popover.innerHTML = `
-        <p class="analysis-hint-popover-title">Сильнее было: ${strongerSan || 'лучшее продолжение'}</p>
-        <p class="analysis-hint-popover-text">${annotation.detailReason || 'Этот ход был надёжнее в позиции.'}</p>
+    const sameSan = Boolean(playedSan && strongerSan && playedSan === strongerSan);
+    const sameUci = annotation.playedMove?.from
+        && annotation.bestMove?.from
+        && annotation.playedMove?.from === annotation.bestMove?.from
+        && annotation.playedMove?.to === annotation.bestMove?.to
+        && (annotation.playedMove?.promotion || '') === (annotation.bestMove?.promotion || '');
+    const hideComparison = sameSan || sameUci;
+    const titleText = hideComparison
+        ? 'Лучшее продолжение найдено'
+        : `Сильнее было: ${strongerSan || 'лучшее продолжение'}`;
+    const comparisonHtml = hideComparison
+        ? ''
+        : `
         <p class="analysis-hint-popover-line">Вы сыграли: ${playedSan || '—'}</p>
-        <p class="analysis-hint-popover-line">Сильнее было: ${strongerSan || '—'}</p>
+        <p class="analysis-hint-popover-line">Сильнее было: ${strongerSan || '—'}</p>`;
+    popover.innerHTML = `
+        <p class="analysis-hint-popover-title">${titleText}</p>
+        <p class="analysis-hint-popover-text">${annotation.detailReason || 'Этот ход был надёжнее в позиции.'}</p>${comparisonHtml}
     `;
     squareNode.appendChild(popover);
 };

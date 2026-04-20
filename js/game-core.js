@@ -171,10 +171,19 @@ window.runPostGameAnalysis = async function() {
             scoreType === 'mate' && Number.isFinite(mateIn) && mateIn < 0
         );
         const buildPriorityReason = (classification, context = {}) => {
-            const { bestHasWinningMate, playedAllowsMate, bestMoveSan } = context;
-            if (classification === 'strong' && bestHasWinningMate) {
+            const { bestHasWinningMate, playedAllowsMate, bestMoveSan, bestMatchesPlayed } = context;
+            if (classification === 'strong' && bestMatchesPlayed && bestHasWinningMate) {
                 const shortReason = typeof bestMoveSan === 'string' && bestMoveSan.endsWith('#')
                     ? 'Здесь был мат'
+                    : 'Этот ход вёл к мату';
+                return {
+                    shortReason,
+                    detailReason: shortReason
+                };
+            }
+            if (classification === 'strong' && bestHasWinningMate) {
+                const shortReason = typeof bestMoveSan === 'string' && bestMoveSan.endsWith('#')
+                    ? 'Ход завершал атаку'
                     : 'Этот ход вёл к мату';
                 return {
                     shortReason,
@@ -244,18 +253,24 @@ window.runPostGameAnalysis = async function() {
                         promotion: bestMove.promotion || 'q'
                     });
                     const bestSan = bestApplied?.san || null;
-                    const bestMatchesPlayed = bestMove.from === playedMove.from && bestMove.to === playedMove.to;
+                    const bestMatchesPlayed = bestMove.from === playedMove.from
+                        && bestMove.to === playedMove.to
+                        && (bestMove.promotion || undefined) === (playedMove.promotion || undefined);
+                    const bestHasWinningMate = isWinningMateSignal(
+                        analysis?.bestScoreType,
+                        analysis?.bestMateIn,
+                        bestSan
+                    );
+                    const playedHasMate = typeof playedMove.san === 'string' && playedMove.san.endsWith('#');
+                    const isMatchedWinningMate = bestMatchesPlayed && (bestHasWinningMate || playedHasMate);
+
                     let classification = null;
-                    if (!isEarlyGame && delta >= 1.4) classification = 'blunder';
+                    if (isMatchedWinningMate) classification = 'strong';
+                    else if (!isEarlyGame && delta >= 1.4) classification = 'blunder';
                     else if (!isEarlyGame && delta >= 0.6) classification = 'mistake';
                     else if (plyIndex >= 8 && legalMovesBefore >= 16 && delta <= 0.2 && bestMatchesPlayed) classification = 'strong';
 
                     if (classification) {
-                        const bestHasWinningMate = isWinningMateSignal(
-                            analysis?.bestScoreType,
-                            analysis?.bestMateIn,
-                            bestSan
-                        );
                         const playedAllowsMate = isLosingMateSignal(
                             analysis?.playedScoreType,
                             analysis?.playedMateIn
@@ -263,7 +278,8 @@ window.runPostGameAnalysis = async function() {
                         const priorityReason = buildPriorityReason(classification, {
                             bestHasWinningMate,
                             playedAllowsMate,
-                            bestMoveSan: bestSan
+                            bestMoveSan: bestSan,
+                            bestMatchesPlayed
                         });
                         const reasonPool = classification === 'strong'
                             ? strongReasons
