@@ -617,6 +617,7 @@ window.updateFinishedGameActions = function(data) {
     const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
     const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
     const modalAdviceBtn = document.getElementById('modal-advice-btn');
+    const inlineAdviceBtn = document.getElementById('inline-advice-btn');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
@@ -654,7 +655,10 @@ window.updateFinishedGameActions = function(data) {
     shareBox?.classList.toggle('hidden', isFinishedGame || isLocalMode);
 
     const supportedAdviceMode = Boolean(window.isPostGameAdviceSupportedMode?.());
-    modalAdviceBtn?.classList.toggle('hidden', !isFinishedGame || !supportedAdviceMode);
+    const showModalAdviceEntry = isFinishedGame && supportedAdviceMode && isSelfTrainingMode;
+    const showInlineAdviceEntry = isFinishedGame && supportedAdviceMode && !isSelfTrainingMode;
+    modalAdviceBtn?.classList.toggle('hidden', !showModalAdviceEntry);
+    inlineAdviceBtn?.classList.toggle('hidden', !showInlineAdviceEntry);
 };
 
 window.updatePostGameAdviceUI = function() {
@@ -665,16 +669,21 @@ window.updatePostGameAdviceUI = function() {
     const weakBtn = document.getElementById('advice-weak-btn');
     const closeBtn = document.getElementById('advice-close-btn');
     const modalAdviceBtn = document.getElementById('modal-advice-btn');
+    const inlineAdviceBtn = document.getElementById('inline-advice-btn');
 
-    if (modalAdviceBtn) {
+    const updateAdviceLaunchButton = (button) => {
+        if (!button) return;
         if (advice.loading) {
-            modalAdviceBtn.textContent = 'Готовим совет...';
-            modalAdviceBtn.disabled = true;
+            button.textContent = 'Готовим совет...';
+            button.disabled = true;
         } else {
-            modalAdviceBtn.textContent = 'Показать совет';
-            modalAdviceBtn.disabled = !advice.supportedMode || !window.isGameFinished?.();
+            button.textContent = 'Показать совет';
+            button.disabled = !advice.supportedMode || !window.isGameFinished?.();
         }
-    }
+    };
+
+    updateAdviceLaunchButton(modalAdviceBtn);
+    updateAdviceLaunchButton(inlineAdviceBtn);
 
     if (!panel) return;
     const shouldShowPanel = Boolean(
