@@ -125,10 +125,61 @@ window.getPostGameAdviceMoveByMode = function(mode = null) {
     return targetMode === 'weak' ? (advice.weakMove || null) : (advice.strongMove || null);
 };
 
+window.resolveAdviceMoveSan = function(fenBefore, move, fallbackSan = null) {
+    if (!fenBefore || !move?.from || !move?.to) return fallbackSan || null;
+    try {
+        const sanGame = new Chess(fenBefore);
+        const result = sanGame.move({
+            from: move.from,
+            to: move.to,
+            promotion: move.promotion || 'q'
+        });
+        return result?.san || fallbackSan || null;
+    } catch (error) {
+        return fallbackSan || null;
+    }
+};
+
+window.getAdviceShortMessage = function(mode = 'strong', moveSan = '') {
+    if (mode === 'weak') return `Слабый ход: ${moveSan || '—'}`;
+    return `Сильнее было: ${moveSan || '—'}`;
+};
+
+window.getAdviceTemplateMessages = function(mode = 'strong', delta = 0) {
+    const isLargeDelta = Number(delta) >= 1.8;
+    if (mode === 'weak') {
+        return {
+            short: isLargeDelta ? 'Этот ход ослаблял позицию' : 'Позиция стала менее надёжной',
+            detail: 'После этого хода соперник получал более удобную игру и больше свободы.'
+        };
+    }
+    return {
+        short: isLargeDelta ? 'Позиция допускала более сильное продолжение' : 'Можно было сыграть активнее',
+        detail: 'Этот ход усиливал давление и помогал сохранить инициативу.'
+    };
+};
+
+window.buildPostGameAdviceEntry = function(candidate, mode = 'strong') {
+    if (!candidate) return null;
+    const move = mode === 'weak' ? candidate.playedMove : candidate.bestMove;
+    const moveSan = move?.san || null;
+    const templates = window.getAdviceTemplateMessages?.(mode, candidate.delta);
+    return {
+        ...candidate,
+        shortMessage: window.getAdviceShortMessage?.(mode, moveSan),
+        message: templates?.short || (mode === 'weak' ? 'Этот ход ослабил позицию' : 'Здесь был ход сильнее'),
+        detailMessage: templates?.detail || '',
+        comparedMoveLine: candidate.playedMove?.san && candidate.bestMove?.san
+            ? `Вы сыграли: ${candidate.playedMove.san} • Сильнее было: ${candidate.bestMove.san}`
+            : ''
+    };
+};
+
 window.closePostGameAdvice = function() {
     if (!window.postGameAdvice) return;
     window.postGameAdvice.visible = false;
     window.clearAdviceHighlights?.();
+    window.setAdviceDetailExpanded?.(false);
     window.updatePostGameAdviceUI?.();
     window.reapplyPersistentBoardHighlights?.();
 };
@@ -143,6 +194,7 @@ window.switchPostGameAdviceMode = function(mode = 'strong') {
     }
 
     window.postGameAdvice.activeMode = targetMode;
+    window.setAdviceDetailExpanded?.(false);
     window.enterReviewMode(targetMove.plyIndex);
     window.updatePostGameAdviceUI?.();
     window.reapplyPersistentBoardHighlights?.();
@@ -206,13 +258,14 @@ window.runPostGameAdviceAnalysis = async function() {
                 };
 
                 if (bestMove?.from && bestMove?.to) {
+                    const bestMoveSan = window.resolveAdviceMoveSan?.(fenBefore, bestMove, null);
                     adviceCandidates.push({
                         plyIndex,
                         fenBefore,
                         playedMove,
                         bestMove: {
                             ...bestMove,
-                            san: null
+                            san: bestMoveSan
                         },
                         playedEval: Number.isFinite(analysis?.playedEval) ? analysis.playedEval : 0,
                         bestEval: Number.isFinite(analysis?.bestEval) ? analysis.bestEval : 0,
@@ -238,10 +291,10 @@ window.runPostGameAdviceAnalysis = async function() {
         window.postGameAdvice.loading = false;
         window.postGameAdvice.analyzedColor = playerColor;
         window.postGameAdvice.strongMove = strongest
-            ? { ...strongest, message: 'Здесь был ход сильнее' }
+            ? window.buildPostGameAdviceEntry?.(strongest, 'strong')
             : null;
         window.postGameAdvice.weakMove = weakest
-            ? { ...weakest, message: 'Этот ход ослабил позицию' }
+            ? window.buildPostGameAdviceEntry?.(weakest, 'weak')
             : null;
         return true;
     } catch (error) {

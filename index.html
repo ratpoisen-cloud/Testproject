@@ -351,6 +351,17 @@
 
                             <div class="board-wrapper">
                                 <div id="myBoard"></div>
+                                <svg id="advice-arrow-overlay" class="advice-arrow-overlay hidden" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                                    <defs>
+                                        <marker id="advice-arrow-head-strong" markerWidth="8" markerHeight="8" refX="6" refY="3.5" orient="auto">
+                                            <path d="M0,0 L0,7 L7,3.5 z"></path>
+                                        </marker>
+                                        <marker id="advice-arrow-head-weak" markerWidth="8" markerHeight="8" refX="6" refY="3.5" orient="auto">
+                                            <path d="M0,0 L0,7 L7,3.5 z"></path>
+                                        </marker>
+                                    </defs>
+                                    <line id="advice-arrow-line" x1="0" y1="0" x2="0" y2="0"></line>
+                                </svg>
 
                                 <!-- Оверлей подтверждения хода -->
                                 <div id="confirm-move-box" class="confirm-overlay hidden">
@@ -432,6 +443,9 @@
                                         <button id="advice-close-btn" class="review-control-btn review-advice-btn review-advice-btn-close" type="button">Закрыть совет</button>
                                     </div>
                                     <p id="review-advice-text" class="review-advice-text">Совет готов</p>
+                                    <p id="review-advice-subtext" class="review-advice-subtext hidden"></p>
+                                    <button id="advice-why-btn" class="review-advice-why-btn hidden" type="button" aria-expanded="false">Почему?</button>
+                                    <div id="review-advice-detail" class="review-advice-detail hidden" role="note"></div>
                                 </div>
                             </div>
                         </div>
