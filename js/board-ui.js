@@ -26,7 +26,6 @@ window.boardReactionLongPressTriggered = false;
 window.__boardResizeSyncObserver = null;
 window.__boardResizeSyncRafId = null;
 window.__boardResizeSyncTimeoutId = null;
-window.__boardResizeEventsBound = false;
 window.pendingPromotionSelection = null;
 
 const PROMOTION_PIECE_ORDER = ['q', 'r', 'b', 'n'];
@@ -121,16 +120,6 @@ window.initBoardResizeSync = function() {
             window.scheduleBoardResizeSync();
         });
         section.__boardResizeSyncTransitionBound = true;
-    }
-
-    if (!window.__boardResizeEventsBound) {
-        window.addEventListener('resize', () => {
-            window.scheduleBoardResizeSync();
-        });
-        window.addEventListener('orientationchange', () => {
-            window.scheduleBoardResizeSync();
-        });
-        window.__boardResizeEventsBound = true;
     }
 
     window.scheduleBoardResizeSync();
@@ -870,54 +859,6 @@ window.removeHighlights = function() {
 
 window.clearAdviceHighlights = function() {
     $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-advice-from highlight-advice-to');
-    window.clearAdviceArrow?.();
-};
-
-window.getSquareCenterPoint = function(square) {
-    const squareNode = document.querySelector(`#myBoard .square-${square}`);
-    const boardNode = document.getElementById('myBoard');
-    if (!squareNode || !boardNode) return null;
-
-    const squareRect = squareNode.getBoundingClientRect();
-    const boardRect = boardNode.getBoundingClientRect();
-    if (!boardRect.width || !boardRect.height) return null;
-
-    return {
-        x: ((squareRect.left - boardRect.left) + (squareRect.width / 2)) / boardRect.width * 100,
-        y: ((squareRect.top - boardRect.top) + (squareRect.height / 2)) / boardRect.height * 100
-    };
-};
-
-window.clearAdviceArrow = function() {
-    const overlay = document.getElementById('advice-arrow-overlay');
-    const line = document.getElementById('advice-arrow-line');
-    if (!overlay || !line) return;
-    overlay.classList.add('hidden');
-    overlay.removeAttribute('data-mode');
-    line.setAttribute('x1', '0');
-    line.setAttribute('y1', '0');
-    line.setAttribute('x2', '0');
-    line.setAttribute('y2', '0');
-};
-
-window.renderAdviceArrow = function(move, mode = 'strong') {
-    const overlay = document.getElementById('advice-arrow-overlay');
-    const line = document.getElementById('advice-arrow-line');
-    if (!overlay || !line || !move?.from || !move?.to) return;
-
-    const fromPoint = window.getSquareCenterPoint(move.from);
-    const toPoint = window.getSquareCenterPoint(move.to);
-    if (!fromPoint || !toPoint) {
-        window.clearAdviceArrow();
-        return;
-    }
-
-    overlay.dataset.mode = mode === 'weak' ? 'weak' : 'strong';
-    line.setAttribute('x1', fromPoint.x.toFixed(2));
-    line.setAttribute('y1', fromPoint.y.toFixed(2));
-    line.setAttribute('x2', toPoint.x.toFixed(2));
-    line.setAttribute('y2', toPoint.y.toFixed(2));
-    overlay.classList.remove('hidden');
 };
 
 window.applyAdviceHighlights = function() {
@@ -934,7 +875,6 @@ window.applyAdviceHighlights = function() {
 
     window.highlightSquare(moveToHighlight.from, 'highlight-advice-from');
     window.highlightSquare(moveToHighlight.to, 'highlight-advice-to');
-    window.renderAdviceArrow?.(moveToHighlight, advice.activeMode);
 };
 
 // Подсветка клетки
