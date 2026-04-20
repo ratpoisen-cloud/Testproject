@@ -705,29 +705,17 @@ window.setupGameControls = function(gameRef, roomId) {
             window.enterReviewMode(maxPly);
         });
 
-        setClickHandler('modal-advice-btn', async () => {
-            if (!window.postGameAdvice?.supportedMode) return;
-            const opened = await window.openPostGameAdvice?.('strong');
+        setClickHandler('modal-analysis-btn', async () => {
+            if (!window.postGameAnalysis?.supportedMode) return;
+            const opened = await window.openPostGameAnalysis?.();
             if (opened) {
                 document.getElementById('game-modal')?.classList.add('hidden');
             }
         });
 
-        setClickHandler('inline-advice-btn', async () => {
-            if (!window.postGameAdvice?.supportedMode) return;
-            await window.openPostGameAdvice?.('strong');
-        });
-
-        setClickHandler('advice-strong-btn', () => {
-            window.switchPostGameAdviceMode?.('strong');
-        });
-
-        setClickHandler('advice-weak-btn', () => {
-            window.switchPostGameAdviceMode?.('weak');
-        });
-
-        setClickHandler('advice-close-btn', () => {
-            window.closePostGameAdvice?.();
+        setClickHandler('inline-analysis-btn', async () => {
+            if (!window.postGameAnalysis?.supportedMode) return;
+            await window.openPostGameAnalysis?.();
         });
 
         bindPgnCopyButton('modal-copy-pgn');

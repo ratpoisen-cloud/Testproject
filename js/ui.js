@@ -66,7 +66,7 @@ window.updateUI = function(data) {
     window.updateMoveHistory();
     window.updateFinishedGameActions(data);
     window.updateGameModal(data);
-    window.updatePostGameAdviceUI?.();
+    window.updatePostGameAnalysisUI?.();
     window.applyGameEndBoardEffects?.(window.game?.fen?.());
     if (window.isBotMode && data.gameState === 'game_over') {
         window.persistFinishedBotGame?.(data);
@@ -491,10 +491,15 @@ window.updateMoveHistory = function() {
         const createCell = ({ text = '', plyIndex = null, isMoveNumber = false, isEmpty = false }) => {
             const cell = document.createElement('div');
             cell.classList.add('move-list-cell');
-            cell.textContent = text;
+            const content = document.createElement('span');
+            content.className = 'move-list-cell-content';
+            const sanNode = document.createElement('span');
+            sanNode.textContent = text;
+            content.appendChild(sanNode);
 
             if (isMoveNumber) {
                 cell.classList.add('move-list-cell--move-number', 'move-list-cell--dimmed');
+                cell.textContent = text;
                 // Safe visual fallback: move numbers stay dimmed without relying only on CSS.
                 cell.style.color = legacyDimmedColor;
             }
@@ -506,13 +511,29 @@ window.updateMoveHistory = function() {
             if (Number.isInteger(plyIndex)) {
                 cell.classList.add('move-list-cell--move');
                 cell.dataset.plyIndex = String(plyIndex);
+                const annotation = window.getPostGameAnalysisMove?.(plyIndex);
+                if (annotation?.badge) {
+                    const badge = document.createElement('span');
+                    badge.className = `move-annotation-badge move-annotation-badge--${annotation.classification}`;
+                    badge.textContent = annotation.badge;
+                    badge.title = annotation.label;
+                    content.appendChild(badge);
+                }
 
                 if (plyIndex === activePlyIndex) {
                     cell.classList.add('move-list-cell--active');
                     activeMoveCell = cell;
                 }
 
-                cell.addEventListener('click', () => goToPlyFromHistory(plyIndex));
+                cell.addEventListener('click', () => {
+                    goToPlyFromHistory(plyIndex);
+                    if (annotation) {
+                        window.setActivePostGameAnalysisPly?.(plyIndex);
+                    }
+                });
+                cell.appendChild(content);
+            } else if (!isMoveNumber) {
+                cell.appendChild(content);
             }
 
             return cell;
@@ -599,7 +620,7 @@ window.updateReviewControlsState = function() {
     if (liveBtn) {
         liveBtn.disabled = !window.reviewMode || isFinishedGame;
     }
-    window.updatePostGameAdviceUI?.();
+    window.updatePostGameAnalysisUI?.();
 };
 
 window.updateFinishedGameActions = function(data) {
@@ -616,8 +637,8 @@ window.updateFinishedGameActions = function(data) {
     const shareBox = document.querySelector('.game-share-box');
     const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
     const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
-    const modalAdviceBtn = document.getElementById('modal-advice-btn');
-    const inlineAdviceBtn = document.getElementById('inline-advice-btn');
+    const modalAnalysisBtn = document.getElementById('modal-analysis-btn');
+    const inlineAnalysisBtn = document.getElementById('inline-analysis-btn');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
@@ -654,76 +675,49 @@ window.updateFinishedGameActions = function(data) {
     }
     shareBox?.classList.toggle('hidden', isFinishedGame || isLocalMode);
 
-    const supportedAdviceMode = Boolean(window.isPostGameAdviceSupportedMode?.());
-    const showModalAdviceEntry = isFinishedGame && supportedAdviceMode && isSelfTrainingMode;
-    const showInlineAdviceEntry = isFinishedGame && supportedAdviceMode && !isSelfTrainingMode;
-    modalAdviceBtn?.classList.toggle('hidden', !showModalAdviceEntry);
-    inlineAdviceBtn?.classList.toggle('hidden', !showInlineAdviceEntry);
+    const supportedAnalysisMode = Boolean(window.isPostGameAnalysisSupportedMode?.());
+    const showModalAnalysisEntry = isFinishedGame && supportedAnalysisMode && isSelfTrainingMode;
+    const showInlineAnalysisEntry = isFinishedGame && supportedAnalysisMode && !isSelfTrainingMode;
+    modalAnalysisBtn?.classList.toggle('hidden', !showModalAnalysisEntry);
+    inlineAnalysisBtn?.classList.toggle('hidden', !showInlineAnalysisEntry);
 };
 
-window.updatePostGameAdviceUI = function() {
-    const advice = window.postGameAdvice || {};
-    const panel = document.getElementById('review-advice-panel');
-    const text = document.getElementById('review-advice-text');
-    const strongBtn = document.getElementById('advice-strong-btn');
-    const weakBtn = document.getElementById('advice-weak-btn');
-    const closeBtn = document.getElementById('advice-close-btn');
-    const modalAdviceBtn = document.getElementById('modal-advice-btn');
-    const inlineAdviceBtn = document.getElementById('inline-advice-btn');
+window.updatePostGameAnalysisUI = function() {
+    const analysis = window.postGameAnalysis || {};
+    const modalAnalysisBtn = document.getElementById('modal-analysis-btn');
+    const inlineAnalysisBtn = document.getElementById('inline-analysis-btn');
+    const hint = document.getElementById('review-analysis-hint');
 
-    const updateAdviceLaunchButton = (button) => {
+    const updateAnalysisLaunchButton = (button) => {
         if (!button) return;
-        if (advice.loading) {
-            button.textContent = 'Готовим совет...';
+        if (analysis.loading) {
+            button.textContent = 'Анализируем...';
             button.disabled = true;
         } else {
-            button.textContent = 'Показать совет';
-            button.disabled = !advice.supportedMode || !window.isGameFinished?.();
+            button.textContent = 'Анализ';
+            button.disabled = !analysis.supportedMode || !window.isGameFinished?.();
         }
     };
 
-    updateAdviceLaunchButton(modalAdviceBtn);
-    updateAdviceLaunchButton(inlineAdviceBtn);
+    updateAnalysisLaunchButton(modalAnalysisBtn);
+    updateAnalysisLaunchButton(inlineAnalysisBtn);
 
-    if (!panel) return;
-    const shouldShowPanel = Boolean(
-        advice.supportedMode
-        && advice.visible
-        && window.reviewMode
-    );
-    panel.classList.toggle('hidden', !shouldShowPanel);
-    if (!shouldShowPanel) {
-        if (text) text.textContent = 'Совет готов';
-        return;
-    }
-
-    const hasStrong = Boolean(advice.strongMove);
-    const hasWeak = Boolean(advice.weakMove);
-
-    strongBtn && (strongBtn.disabled = !hasStrong || advice.loading);
-    weakBtn && (weakBtn.disabled = !hasWeak || advice.loading);
-    closeBtn && (closeBtn.disabled = false);
-
-    strongBtn?.classList.toggle('is-active', advice.activeMode === 'strong');
-    weakBtn?.classList.toggle('is-active', advice.activeMode === 'weak');
-
-    if (advice.loading) {
-        if (text) text.textContent = 'Анализируем завершённую партию...';
-        return;
-    }
-    if (advice.error) {
-        if (text) text.textContent = 'Не удалось подготовить совет';
-        return;
-    }
-
-    const activeMove = window.getPostGameAdviceMoveByMode?.(advice.activeMode);
-    if (!activeMove) {
-        if (text) text.textContent = 'Явного совета не найдено';
-        return;
-    }
-
-    if (text) {
-        text.textContent = activeMove.message || 'Совет готов';
+    if (!hint) return;
+    const hasAnnotatedMoves = Array.isArray(analysis.annotations) && analysis.annotations.length > 0;
+    const shouldShowHint = window.reviewMode && analysis.ready;
+    hint.classList.toggle('hidden', !shouldShowHint);
+    if (!shouldShowHint) return;
+    if (analysis.loading) {
+        hint.textContent = 'Анализируем завершённую партию...';
+    } else if (analysis.error) {
+        hint.textContent = 'Не удалось подготовить анализ.';
+    } else if (!hasAnnotatedMoves) {
+        hint.textContent = 'Явных ключевых ходов не найдено.';
+    } else if (Number.isInteger(analysis.activePlyIndex)) {
+        const active = analysis.byPly?.[analysis.activePlyIndex];
+        hint.textContent = active?.detailReason || 'Выберите помеченный ход для разбора.';
+    } else {
+        hint.textContent = 'Выберите помеченный ход для разбора.';
     }
 };
 

@@ -770,7 +770,7 @@ window.reapplyPersistentBoardHighlights = function(forcedFen = null) {
     }
 
     window.applyGameEndBoardEffects?.(effectiveFen);
-    window.applyAdviceHighlights?.();
+    window.applyPostGameAnalysisHighlights?.();
 };
 
 // Создание безопасного предпросмотра хода без изменения основной партии
@@ -857,24 +857,68 @@ window.removeHighlights = function() {
     $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-selected highlight-drag-source highlight-possible highlight-capture');
 };
 
-window.clearAdviceHighlights = function() {
-    $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-advice-from highlight-advice-to');
+window.clearAnalysisHintMarker = function() {
+    document.querySelectorAll('#myBoard .analysis-hint-marker, #myBoard .analysis-hint-popover')
+        .forEach((node) => node.remove());
 };
 
-window.applyAdviceHighlights = function() {
-    window.clearAdviceHighlights();
-    const advice = window.postGameAdvice || {};
-    if (!advice.visible || !advice.ready || !window.reviewMode) return;
+window.clearAnalysisHighlights = function() {
+    $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-analysis-from highlight-analysis-to');
+    window.clearAnalysisHintMarker?.();
+};
 
-    const adviceMove = window.getPostGameAdviceMoveByMode?.(advice.activeMode);
-    if (!Number.isInteger(adviceMove?.plyIndex)) return;
-    if (!Number.isInteger(window.reviewPlyIndex) || window.reviewPlyIndex !== adviceMove.plyIndex) return;
+window.renderAnalysisHintMarker = function(targetSquare, annotation) {
+    if (!targetSquare || !annotation) return;
+    const squareNode = document.querySelector(`#myBoard .square-${targetSquare}`);
+    if (!squareNode) return;
+    const marker = document.createElement('button');
+    marker.type = 'button';
+    marker.className = 'analysis-hint-marker';
+    marker.textContent = '?';
+    marker.setAttribute('aria-label', 'Почему этот ход сильнее');
+    marker.addEventListener('click', (event) => {
+        event.stopPropagation();
+        window.postGameAnalysis = window.postGameAnalysis || {};
+        window.postGameAnalysis.popoverOpen = !window.postGameAnalysis.popoverOpen;
+        window.reapplyPersistentBoardHighlights?.();
+    });
+    squareNode.appendChild(marker);
 
-    const moveToHighlight = advice.activeMode === 'weak' ? adviceMove.playedMove : adviceMove.bestMove;
-    if (!moveToHighlight?.from || !moveToHighlight?.to) return;
+    if (!window.postGameAnalysis?.popoverOpen) return;
+    const popover = document.createElement('div');
+    popover.className = 'analysis-hint-popover';
+    const strongerSan = annotation.bestMove?.san || `${annotation.bestMove?.from || ''}${annotation.bestMove?.to || ''}`.trim();
+    const playedSan = annotation.playedMove?.san || `${annotation.playedMove?.from || ''}${annotation.playedMove?.to || ''}`.trim();
+    popover.innerHTML = `
+        <p class="analysis-hint-popover-title">Сильнее было: ${strongerSan || 'лучшее продолжение'}</p>
+        <p class="analysis-hint-popover-text">${annotation.detailReason || 'Этот ход был надёжнее в позиции.'}</p>
+        <p class="analysis-hint-popover-line">Вы сыграли: ${playedSan || '—'}</p>
+        <p class="analysis-hint-popover-line">Сильнее было: ${strongerSan || '—'}</p>
+    `;
+    squareNode.appendChild(popover);
+};
 
-    window.highlightSquare(moveToHighlight.from, 'highlight-advice-from');
-    window.highlightSquare(moveToHighlight.to, 'highlight-advice-to');
+window.applyPostGameAnalysisHighlights = function() {
+    window.clearAnalysisHighlights();
+    const analysis = window.postGameAnalysis || {};
+    if (!analysis.ready || !window.reviewMode) return;
+
+    const annotation = window.getPostGameAnalysisMove?.();
+    if (!Number.isInteger(annotation?.plyIndex)) return;
+    if (!Number.isInteger(window.reviewPlyIndex) || window.reviewPlyIndex !== annotation.plyIndex) return;
+
+    if (annotation.classification === 'strong') {
+        if (annotation.playedMove?.from && annotation.playedMove?.to) {
+            window.highlightSquare(annotation.playedMove.from, 'highlight-analysis-from');
+            window.highlightSquare(annotation.playedMove.to, 'highlight-analysis-to');
+        }
+        return;
+    }
+
+    if (!annotation.bestMove?.from || !annotation.bestMove?.to) return;
+    window.highlightSquare(annotation.bestMove.from, 'highlight-analysis-from');
+    window.highlightSquare(annotation.bestMove.to, 'highlight-analysis-to');
+    window.renderAnalysisHintMarker?.(annotation.bestMove.to, annotation);
 };
 
 // Подсветка клетки
