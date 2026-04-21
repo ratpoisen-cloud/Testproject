@@ -25,6 +25,7 @@ window.lobbyShowFinished = false;
 window.reviewMode = false;
 window.reviewPlyIndex = null;
 window.reviewGame = null;
+window.postGameAnalysisEngine = null;
 window.lastRemotePgn = '';
 window.hasInitializedRemotePgnSync = false;
 window.lastKnownGameState = null;
@@ -579,6 +580,20 @@ window.clearPostGameAnalysisSelection = function() {
     window.reapplyPersistentBoardHighlights?.();
 };
 
+window.isPassAndPlayStandardMode = function() {
+    return Boolean(window.isPassAndPlayMode && window.passAndPlayVariant === 'standard');
+};
+
+window.syncPassAndPlayOrientation = function() {
+    if (!window.isPassAndPlayStandardMode?.() || !window.board || !window.game) return;
+    const nextTurn = window.game.turn?.();
+    if (nextTurn === 'b') {
+        window.board.orientation('black');
+        return;
+    }
+    window.board.orientation('white');
+};
+
 window.isGameFinished = function(gameData = null) {
     return Boolean(
         window.game?.game_over?.() ||
@@ -1014,6 +1029,7 @@ window.enterReviewMode = function(startIndex) {
     window.resetTransientBoardInteractionState?.();
     window.reviewMode = true;
     window.syncReviewStateFromCurrentGame();
+    window.ensurePostGameAnalysisEngine?.();
 
     const maxPly = window.reviewGame ? window.reviewGame.history().length : 0;
     const targetIndex = Number.isInteger(startIndex) ? startIndex : maxPly;
@@ -1548,6 +1564,9 @@ function getLobbyNodes() {
         passAndPlayModeCancelBtn: document.getElementById('pass-and-play-mode-cancel'),
         botColorSelect: document.getElementById('bot-color-select'),
         botLevelSelect: document.getElementById('bot-level-select'),
+        passPlayModal: document.getElementById('pass-play-modal'),
+        passPlayStandardBtn: document.getElementById('pass-play-standard-btn'),
+        passPlayCancelBtn: document.getElementById('pass-play-cancel-btn'),
         colorButtons: document.querySelectorAll('[data-create-color]'),
         backButtons: document.querySelectorAll('[data-lobby-back]'),
         finishedGamesList: document.getElementById('finished-games-list'),
@@ -1753,12 +1772,40 @@ function getLobbyPresenceSnapshot(opponentUid, { isWaitingForOpponent = false } 
     };
 }
 
+function normalizeBotGamesHistory(list) {
+    if (!Array.isArray(list)) return [];
+
+    const bySession = new Set();
+    const bySignature = new Set();
+
+    const normalized = list
+        .filter((entry) => entry && typeof entry === 'object' && entry.id && entry.pgn)
+        .sort((a, b) => (Number(b?.completedAt) || 0) - (Number(a?.completedAt) || 0))
+        .filter((entry) => {
+            const sessionKey = entry?.sourceSessionId ? `session:${entry.sourceSessionId}` : null;
+            if (sessionKey && bySession.has(sessionKey)) return false;
+
+            const signatureKey = entry?.signature ? `signature:${entry.signature}` : null;
+            if (signatureKey && bySignature.has(signatureKey)) return false;
+
+            if (sessionKey) bySession.add(sessionKey);
+            if (signatureKey) bySignature.add(signatureKey);
+            return true;
+        });
+
+    return normalized.slice(0, window.BOT_GAMES_HISTORY_LIMIT || 5);
+}
+
 function parseBotGamesHistory() {
     try {
         const raw = localStorage.getItem(window.BOT_GAMES_HISTORY_STORAGE_KEY);
         if (!raw) return [];
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
+        const normalized = normalizeBotGamesHistory(parsed);
+        if (Array.isArray(parsed) && normalized.length !== parsed.length) {
+            localStorage.setItem(window.BOT_GAMES_HISTORY_STORAGE_KEY, JSON.stringify(normalized));
+        }
+        return normalized;
     } catch (error) {
         console.warn('Не удалось прочитать историю bot games:', error);
         return [];
@@ -1767,7 +1814,8 @@ function parseBotGamesHistory() {
 
 function persistBotGamesHistory(list) {
     try {
-        localStorage.setItem(window.BOT_GAMES_HISTORY_STORAGE_KEY, JSON.stringify(list.slice(0, 300)));
+        const normalized = normalizeBotGamesHistory(list);
+        localStorage.setItem(window.BOT_GAMES_HISTORY_STORAGE_KEY, JSON.stringify(normalized));
     } catch (error) {
         console.warn('Не удалось сохранить историю bot games:', error);
     }
@@ -3309,6 +3357,7 @@ function initLocalGameState() {
         window.__gameWatchUnsubscribe = null;
     }
     window.stopBotGame?.();
+    window.stopPostGameAnalysisEngine?.();
     window.game = new Chess();
     window.currentRoomId = null;
     window.isBotMode = false;
@@ -3406,6 +3455,22 @@ window.stopBotGame = function() {
     }
     window.botEngine = null;
     window.isBotThinking = false;
+};
+
+window.ensurePostGameAnalysisEngine = function() {
+    if (!window.game?.game_over?.()) return null;
+    if (window.postGameAnalysisEngine) return window.postGameAnalysisEngine;
+    if (typeof window.createBotAnalysisEngine !== 'function') return null;
+
+    window.postGameAnalysisEngine = window.createBotAnalysisEngine();
+    return window.postGameAnalysisEngine;
+};
+
+window.stopPostGameAnalysisEngine = function() {
+    if (window.postGameAnalysisEngine && typeof window.postGameAnalysisEngine.destroy === 'function') {
+        window.postGameAnalysisEngine.destroy();
+    }
+    window.postGameAnalysisEngine = null;
 };
 
 window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {

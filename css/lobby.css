@@ -414,6 +414,15 @@ body[data-ui-theme="pixel"] .hub-tile:hover .hub-icon-svg {
 
 #bot-games-new-btn {
     margin-right: 4px;
+    opacity: 1;
+    color: var(--accent-contrast);
+    font-size: 0.78rem;
+    line-height: 1.25;
+    padding: 8px 16px;
+    min-height: 34px;
+    min-width: 174px;
+    white-space: normal;
+    text-align: center;
 }
 
 #finished-games-list {

@@ -416,6 +416,14 @@
         width: 100%;
     }
 
+    #bot-games-new-btn {
+        min-width: 0;
+        width: 100%;
+        font-size: 0.8rem;
+        line-height: 1.3;
+        padding: 10px 14px;
+    }
+
     .lobby-back-btn {
         width: 100%;
     }

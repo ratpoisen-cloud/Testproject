@@ -255,7 +255,12 @@ window.updateOpponentHeader = function(data) {
     let presenceText = 'не в сети';
     let isInteractivePresence = true;
     let indicatorVariant = 'offline';
-    if (isViewer) {
+    if (window.isPassAndPlayStandardMode?.()) {
+        window.__lastEnsuredOpponentUid = null;
+        presenceText = 'На одном устройстве';
+        indicatorVariant = 'offline';
+        isInteractivePresence = false;
+    } else if (isViewer) {
         window.__lastEnsuredOpponentUid = null;
         presenceText = 'Режим наблюдения';
         indicatorVariant = 'offline';

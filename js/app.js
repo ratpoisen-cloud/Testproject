@@ -258,6 +258,12 @@ window.addEventListener('DOMContentLoaded', () => {
     if (roomId) {
         window.setAppLoadingFlag('lobby', true);
         window.initGame(roomId);
+    } else if (isPassAndPlayMode) {
+        window.setAppLoadingFlag('lobby', true);
+        window.initLobby();
+        window.initPassAndPlayGame({
+            variant: urlParams.get('variant') || 'standard'
+        });
     } else if (isBotMode) {
         window.setAppLoadingFlag('lobby', true);
         window.initLobby();
