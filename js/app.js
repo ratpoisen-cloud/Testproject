@@ -123,6 +123,9 @@ window.initBoardSettingsControls = function() {
     if (uiThemeSelect) {
         const savedUITheme = localStorage.getItem('chess-ui-theme');
         const allowedTheme = window.UI_THEMES?.includes(savedUITheme) ? savedUITheme : 'default';
+        if (savedUITheme !== allowedTheme) {
+            localStorage.setItem('chess-ui-theme', allowedTheme);
+        }
         uiThemeSelect.value = allowedTheme;
 
         uiThemeSelect.addEventListener('change', (e) => {
@@ -254,15 +257,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const isLocalMode = urlParams.get('local') === '1';
     const localModeType = urlParams.get('mode');
     const localVariant = urlParams.get('variant');
+    const isPassAndPlayMode = !isLocalMode && localModeType === 'pass';
 
     if (roomId) {
         window.setAppLoadingFlag('lobby', true);
         window.initGame(roomId);
     } else if (isPassAndPlayMode) {
+        // Legacy URL-путь для pass-and-play без local=1.
+        // Оставляем ради обратной совместимости старых ссылок.
         window.setAppLoadingFlag('lobby', true);
         window.initLobby();
         window.initPassAndPlayGame({
-            variant: urlParams.get('variant') || 'standard'
+            variant: localVariant || 'standard'
         });
     } else if (isBotMode) {
         window.setAppLoadingFlag('lobby', true);

@@ -132,6 +132,11 @@
         if (Object.prototype.hasOwnProperty.call(data, 'reactions')) patch.reactions = data.reactions;
         if (Object.prototype.hasOwnProperty.call(data, 'quickPhrase')) patch.quick_phrase = data.quickPhrase;
         if (Object.prototype.hasOwnProperty.call(data, 'rematchRequest')) patch.rematch_request = data.rematchRequest;
+        Object.keys(patch).forEach((key) => {
+            if (patch[key] === undefined) {
+                delete patch[key];
+            }
+        });
         return patch;
     };
 
@@ -258,12 +263,18 @@
     window.update = async function update(refObj, data) {
         if (!refObj?.roomId) return;
         const patch = toDbPatch(data || {});
+        if (Object.keys(patch).length === 0) return;
         const { error } = await supabase.from('games').update(patch).eq('room_id', refObj.roomId);
         if (error) throw error;
     };
 
-    window.updateGame = function updateGame(gameRef, data) {
-        return window.update(gameRef, data);
+    window.updateGame = async function updateGame(gameRef, data) {
+        try {
+            return await window.update(gameRef, data);
+        } catch (error) {
+            console.error('updateGame failed:', error);
+            throw error;
+        }
     };
 
     // LEGACY-COMPAT helper (Firebase-like API shape).

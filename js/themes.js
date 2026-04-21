@@ -39,7 +39,12 @@ window.setTheme = function(themeName) {
     
     // Обновляем доску
     if (window.board && window.game) {
-        window.board.position(window.game.fen(), true);
+        const fen = window.game.fen();
+        if (typeof window.updateBoardPosition === 'function') {
+            window.updateBoardPosition(fen, true);
+        } else {
+            window.board.position(fen, true);
+        }
     }
 };
 
@@ -69,7 +74,7 @@ window.initThemeButtons = function() {
 // ==================== UI ТЕМЫ АККАУНТА ====================
 // Отвечает за: глобальную тему интерфейса (вне шахматной доски)
 
-window.UI_THEMES = ['default', 'pixel'];
+window.UI_THEMES = ['default'];
 
 window.updateGuestWordmark = function(themeName) {
     const guestWordmarkImg = document.getElementById('guest-wordmark-img');

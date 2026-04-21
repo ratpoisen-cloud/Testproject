@@ -26,6 +26,7 @@ window.boardReactionLongPressTriggered = false;
 window.__boardResizeSyncObserver = null;
 window.__boardResizeSyncRafId = null;
 window.__boardResizeSyncTimeoutId = null;
+window.__lastRenderedBoardFen = null;
 window.pendingPromotionSelection = null;
 
 const PROMOTION_PIECE_ORDER = ['q', 'r', 'b', 'n'];
@@ -209,6 +210,7 @@ window.rebuildBoardWithCurrentState = function() {
 
     window.board = Chessboard('myBoard', window.getBoardConfig());
     window.board.position(fen, false);
+    window.__lastRenderedBoardFen = fen;
     window.board.orientation(orientation);
     window.reapplyPersistentBoardHighlights?.(fen);
 
@@ -259,6 +261,7 @@ window.initPieceSetControls = function(pieceSetSelect) {
 // Инициализация доски
 window.initBoard = function(playerColor) {
     window.board = Chessboard('myBoard', window.getBoardConfig());
+    window.__lastRenderedBoardFen = window.game?.fen ? window.game.fen() : 'start';
     window.updateCheckHighlight(window.game?.fen ? window.game.fen() : 'start');
     
     if (playerColor === 'b') window.board.orientation('black');
@@ -678,7 +681,7 @@ window.handleMobileClick = function(square) {
             window.pendingMove = preview;
             // Показываем ход на доске
             window.updateBoardPosition(preview.previewFen, true);
-            document.getElementById('confirm-move-box').classList.remove('hidden');
+            document.getElementById('confirm-move-box')?.classList.remove('hidden');
             window.clearSelection();
         } else {
             if (piece && piece.color === interactionColor) {
@@ -728,7 +731,13 @@ window.clearSelection = function() {
 // Обновление позиции доски
 window.updateBoardPosition = function(fen, animate = true) {
     if (window.board) {
+        if (typeof fen !== 'string' || !fen) return;
+        if (window.__lastRenderedBoardFen === fen) {
+            window.reapplyPersistentBoardHighlights?.(fen);
+            return;
+        }
         window.board.position(fen, animate);
+        window.__lastRenderedBoardFen = fen;
     }
 
     window.reapplyPersistentBoardHighlights?.(fen);
