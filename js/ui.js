@@ -66,6 +66,7 @@ window.updateUI = function(data) {
     window.updateMoveHistory();
     window.updateFinishedGameActions(data);
     window.updateGameModal(data);
+    window.updatePostGameAnalysisUI?.();
     window.applyGameEndBoardEffects?.(window.game?.fen?.());
     if (window.isBotMode && data.gameState === 'game_over') {
         window.persistFinishedBotGame?.(data);
@@ -105,7 +106,7 @@ window.updateTurnIndicator = function(isMyTurn) {
         : null;
     const isOnlineHumanGame = Boolean(
         window.currentRoomId
-        && !window.isBotMode
+        && !window.isLocalGameMode?.()
         && (window.playerColor === 'w' || window.playerColor === 'b')
     );
     const shouldShowCenterQuickPhrase = Boolean(
@@ -196,10 +197,10 @@ window.updateTurnIndicator = function(isMyTurn) {
         return;
     }
     
-    if (window.isPassAndPlayStandardMode?.()) {
-        const currentTurn = window.game?.turn?.() === 'b' ? 'чёрных' : 'белых';
+    if (window.isSelfTrainingMode?.() || window.isPassAndPlayStandardMode?.()) {
+        const sideLabel = window.game?.turn?.() === 'b' ? 'Чёрных' : 'Белых';
         turnStatus.className = 'turn-status my-turn';
-        turnText.innerHTML = `Ход ${currentTurn}`;
+        turnText.innerHTML = `Ход ${sideLabel}`;
     } else if (isMyTurn) {
         turnStatus.className = 'turn-status my-turn';
         turnText.innerHTML = 'Ваш ход';
@@ -223,14 +224,18 @@ window.updateOpponentHeader = function(data) {
     const isBlackPlayer = window.playerColor === 'b';
     const isViewer = !isWhitePlayer && !isBlackPlayer;
     const isBotMode = Boolean(window.isBotMode || data?.mode === 'bot');
+    const isSelfTrainingMode = Boolean(window.isSelfTrainingMode?.() || (window.isTrainingMode && window.trainingModeType === 'self'));
+    const isPassAndPlayMode = Boolean(window.isPassAndPlayStandardMode?.() || (window.isPassAndPlayMode && window.passAndPlayVariant === 'standard'));
 
     let opponentName = 'Соперник';
     let opponentAvatar = '';
     let opponentUid = null;
     const isBotGame = isBotMode;
 
-    if (window.isPassAndPlayStandardMode?.()) {
-        opponentName = 'Локальная партия';
+    if (isSelfTrainingMode) {
+        opponentName = 'Сам с собой';
+    } else if (isPassAndPlayMode) {
+        opponentName = 'Локальная партия (Вдвоём)';
     } else if (isBotMode) {
         const levelMap = { easy: 'Лёгкий', medium: 'Средний', hard: 'Сильный' };
         opponentName = `Бот (${levelMap[window.botLevel] || 'Средний'})`;
@@ -258,6 +263,11 @@ window.updateOpponentHeader = function(data) {
     } else if (isViewer) {
         window.__lastEnsuredOpponentUid = null;
         presenceText = 'Режим наблюдения';
+        indicatorVariant = 'offline';
+        isInteractivePresence = false;
+    } else if (isSelfTrainingMode || isPassAndPlayMode) {
+        window.__lastEnsuredOpponentUid = null;
+        presenceText = 'Локальный режим';
         indicatorVariant = 'offline';
         isInteractivePresence = false;
     } else if (isBotGame) {
@@ -345,12 +355,114 @@ window.updateGameStatus = function(data) {
     return data;
 };
 
+window.CAPTURED_PIECE_ORDER = ['p', 'n', 'b', 'r', 'q'];
+window.CAPTURED_PIECE_START_COUNTS = { p: 8, n: 2, b: 2, r: 2, q: 1 };
+window.CAPTURED_PIECE_UNICODE = {
+    w: { p: '♙', n: '♘', b: '♗', r: '♖', q: '♕' },
+    b: { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛' }
+};
+
+window.getCapturedPiecesBySide = function(fen) {
+    const normalizedFen = typeof fen === 'string' && fen.trim() ? fen : 'start';
+    const positionGame = new Chess(normalizedFen);
+    const board = positionGame.board();
+    const currentCounts = {
+        w: { p: 0, n: 0, b: 0, r: 0, q: 0 },
+        b: { p: 0, n: 0, b: 0, r: 0, q: 0 }
+    };
+
+    board.forEach((rank) => {
+        rank.forEach((piece) => {
+            if (!piece) return;
+            if (piece.type === 'k') return;
+            if (!currentCounts[piece.color] || !Object.prototype.hasOwnProperty.call(currentCounts[piece.color], piece.type)) {
+                return;
+            }
+            currentCounts[piece.color][piece.type] += 1;
+        });
+    });
+
+    const missingByColor = { w: {}, b: {} };
+    ['w', 'b'].forEach((color) => {
+        window.CAPTURED_PIECE_ORDER.forEach((type) => {
+            const startCount = window.CAPTURED_PIECE_START_COUNTS[type] || 0;
+            missingByColor[color][type] = Math.max(0, startCount - (currentCounts[color][type] || 0));
+        });
+    });
+
+    return {
+        byWhite: missingByColor.b,
+        byBlack: missingByColor.w
+    };
+};
+
+window.renderCapturedPieces = function() {
+    const container = document.getElementById('captured-pieces');
+    if (!container) return;
+
+    const leftSide = container.querySelector('[data-captured-by="white"]');
+    const rightSide = container.querySelector('[data-captured-by="black"]');
+    if (!leftSide || !rightSide) return;
+
+    const displayedFen = window.getDisplayedBoardContext?.()?.fen || window.game?.fen?.() || 'start';
+    const captured = window.getCapturedPiecesBySide(displayedFen);
+
+    const renderSide = (sideNode, capturedMap, capturedPieceColor) => {
+        sideNode.replaceChildren();
+        const fragment = document.createDocumentFragment();
+        let hasAny = false;
+
+        window.CAPTURED_PIECE_ORDER.forEach((type) => {
+            const count = capturedMap?.[type] || 0;
+            if (count <= 0) return;
+            hasAny = true;
+
+            const item = document.createElement('span');
+            item.className = 'captured-piece-item';
+
+            const iconPath = window.getPieceAssetPath?.(type, capturedPieceColor);
+            if (iconPath) {
+                const icon = document.createElement('img');
+                icon.className = 'captured-piece-icon';
+                icon.src = iconPath;
+                icon.alt = '';
+                icon.loading = 'lazy';
+                item.appendChild(icon);
+            } else {
+                const iconFallback = document.createElement('span');
+                iconFallback.className = 'captured-piece-icon captured-piece-icon--fallback';
+                iconFallback.textContent = window.CAPTURED_PIECE_UNICODE[capturedPieceColor]?.[type] || '';
+                item.appendChild(iconFallback);
+            }
+
+            const countNode = document.createElement('span');
+            countNode.className = 'captured-piece-count';
+            countNode.textContent = `×${count}`;
+            item.appendChild(countNode);
+            fragment.appendChild(item);
+        });
+
+        if (!hasAny) {
+            const empty = document.createElement('span');
+            empty.className = 'captured-pieces-empty';
+            empty.textContent = '—';
+            fragment.appendChild(empty);
+        }
+
+        sideNode.appendChild(fragment);
+    };
+
+    renderSide(leftSide, captured.byWhite, 'b');
+    renderSide(rightSide, captured.byBlack, 'w');
+};
+
 // Обновление истории ходов
 window.updateMoveHistory = function() {
     const history = window.game.history({ verbose: true });
     const moveListDiv = document.getElementById('move-list');
 
     if (!moveListDiv) return;
+    window.renderCapturedPieces?.();
 
     const previousHistoryLength = Number.isInteger(window.lastRenderedMoveHistoryLength)
         ? window.lastRenderedMoveHistoryLength
@@ -384,10 +496,15 @@ window.updateMoveHistory = function() {
         const createCell = ({ text = '', plyIndex = null, isMoveNumber = false, isEmpty = false }) => {
             const cell = document.createElement('div');
             cell.classList.add('move-list-cell');
-            cell.textContent = text;
+            const content = document.createElement('span');
+            content.className = 'move-list-cell-content';
+            const sanNode = document.createElement('span');
+            sanNode.textContent = text;
+            content.appendChild(sanNode);
 
             if (isMoveNumber) {
                 cell.classList.add('move-list-cell--move-number', 'move-list-cell--dimmed');
+                cell.textContent = text;
                 // Safe visual fallback: move numbers stay dimmed without relying only on CSS.
                 cell.style.color = legacyDimmedColor;
             }
@@ -399,13 +516,29 @@ window.updateMoveHistory = function() {
             if (Number.isInteger(plyIndex)) {
                 cell.classList.add('move-list-cell--move');
                 cell.dataset.plyIndex = String(plyIndex);
+                const annotation = window.getPostGameAnalysisMove?.(plyIndex);
+                if (annotation?.badge) {
+                    const badge = document.createElement('span');
+                    badge.className = `move-annotation-badge move-annotation-badge--${annotation.classification}`;
+                    badge.textContent = annotation.badge;
+                    badge.title = annotation.label;
+                    content.appendChild(badge);
+                }
 
                 if (plyIndex === activePlyIndex) {
                     cell.classList.add('move-list-cell--active');
                     activeMoveCell = cell;
                 }
 
-                cell.addEventListener('click', () => goToPlyFromHistory(plyIndex));
+                cell.addEventListener('click', () => {
+                    goToPlyFromHistory(plyIndex);
+                    if (annotation) {
+                        window.setActivePostGameAnalysisPly?.(plyIndex);
+                    }
+                });
+                cell.appendChild(content);
+            } else if (!isMoveNumber) {
+                cell.appendChild(content);
             }
 
             return cell;
@@ -492,6 +625,7 @@ window.updateReviewControlsState = function() {
     if (liveBtn) {
         liveBtn.disabled = !window.reviewMode || isFinishedGame;
     }
+    window.updatePostGameAnalysisUI?.();
 };
 
 window.updateFinishedGameActions = function(data) {
@@ -508,35 +642,88 @@ window.updateFinishedGameActions = function(data) {
     const shareBox = document.querySelector('.game-share-box');
     const quickPhrasesToggle = document.getElementById('quick-phrases-toggle');
     const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
+    const modalAnalysisBtn = document.getElementById('modal-analysis-btn');
+    const inlineAnalysisBtn = document.getElementById('inline-analysis-btn');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
+    const isSelfTrainingMode = Boolean(window.isSelfTrainingMode?.());
     const isPassAndPlayMode = Boolean(window.isPassAndPlayStandardMode?.());
+    const isLocalMode = isBotMode || isSelfTrainingMode || isPassAndPlayMode;
+    const shouldShowFinishedLayout = isFinishedGame && !isPassAndPlayMode;
 
-    gameSection?.classList.toggle('finished-viewer-mode', isFinishedGame);
+    gameSection?.classList.toggle('finished-viewer-mode', shouldShowFinishedLayout);
 
-    liveTopActions?.classList.toggle('hidden', isFinishedGame);
-    liveBottomActions?.classList.toggle('hidden', isFinishedGame);
+    liveTopActions?.classList.toggle('hidden', shouldShowFinishedLayout);
+    liveBottomActions?.classList.toggle('hidden', shouldShowFinishedLayout);
 
     if (finishedActions) {
-        finishedActions.classList.toggle('hidden', !isFinishedGame);
+        finishedActions.classList.toggle('hidden', !shouldShowFinishedLayout);
     }
 
-    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode || isPassAndPlayMode);
-    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode || isPassAndPlayMode);
+    drawBtn?.classList.toggle('hidden', isFinishedGame || isLocalMode);
+    drawBtn && (drawBtn.disabled = isFinishedGame || isLocalMode);
     resignBtn?.classList.toggle('hidden', isFinishedGame || isPassAndPlayMode);
+    quickPhrasesToggle?.classList.toggle('hidden', isFinishedGame || isLocalMode);
+    if (isFinishedGame || isLocalMode) {
+        quickPhrasesMenu?.classList.add('hidden');
+    }
     if (takebackBtn) {
-        takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode);
-        takebackBtn.disabled = isFinishedGame || isBotMode;
+        const shouldHideTakeback = isBotMode || (isFinishedGame && !isPassAndPlayMode);
+        takebackBtn.classList.toggle('hidden', shouldHideTakeback);
+        takebackBtn.disabled = shouldHideTakeback;
     }
     if (isFinishedGame) {
         confirmMoveBox?.classList.add('hidden');
         takebackRequestBox?.classList.add('hidden');
         drawRequestBox?.classList.add('hidden');
     }
-    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode || isPassAndPlayMode);
-    quickPhrasesToggle?.classList.toggle('hidden', isPassAndPlayMode);
-    quickPhrasesMenu?.classList.add('hidden');
+    shareBox?.classList.toggle('hidden', isFinishedGame || isLocalMode);
+
+    const supportedAnalysisMode = Boolean(window.isPostGameAnalysisSupportedMode?.());
+    const showModalAnalysisEntry = isFinishedGame && supportedAnalysisMode && isSelfTrainingMode;
+    const showInlineAnalysisEntry = isFinishedGame && supportedAnalysisMode && !isSelfTrainingMode;
+    modalAnalysisBtn?.classList.toggle('hidden', !showModalAnalysisEntry);
+    inlineAnalysisBtn?.classList.toggle('hidden', !showInlineAnalysisEntry);
+};
+
+window.updatePostGameAnalysisUI = function() {
+    const analysis = window.postGameAnalysis || {};
+    const modalAnalysisBtn = document.getElementById('modal-analysis-btn');
+    const inlineAnalysisBtn = document.getElementById('inline-analysis-btn');
+    const hint = document.getElementById('review-analysis-hint');
+
+    const updateAnalysisLaunchButton = (button) => {
+        if (!button) return;
+        if (analysis.loading) {
+            button.textContent = 'Анализируем...';
+            button.disabled = true;
+        } else {
+            button.textContent = 'Анализ';
+            button.disabled = !analysis.supportedMode || !window.isGameFinished?.();
+        }
+    };
+
+    updateAnalysisLaunchButton(modalAnalysisBtn);
+    updateAnalysisLaunchButton(inlineAnalysisBtn);
+
+    if (!hint) return;
+    const hasAnnotatedMoves = Array.isArray(analysis.annotations) && analysis.annotations.length > 0;
+    const shouldShowHint = window.reviewMode && analysis.ready;
+    hint.classList.toggle('hidden', !shouldShowHint);
+    if (!shouldShowHint) return;
+    if (analysis.loading) {
+        hint.textContent = 'Анализируем завершённую партию...';
+    } else if (analysis.error) {
+        hint.textContent = 'Не удалось подготовить анализ.';
+    } else if (!hasAnnotatedMoves) {
+        hint.textContent = 'Явных ключевых ходов не найдено.';
+    } else if (Number.isInteger(analysis.activePlyIndex)) {
+        const active = analysis.byPly?.[analysis.activePlyIndex];
+        hint.textContent = active?.detailReason || 'Выберите помеченный ход для разбора.';
+    } else {
+        hint.textContent = 'Выберите помеченный ход для разбора.';
+    }
 };
 
 // Обновление модального окна окончания игры

@@ -18,6 +18,14 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const runRematch = async () => {
         hideElement('game-modal');
+        if (isPassAndPlayMode()) {
+            window.initPassAndPlayGame({ variant: 'standard' });
+            return;
+        }
+        if (window.isSelfTrainingMode?.()) {
+            window.initTrainingGame({ mode: 'self' });
+            return;
+        }
         if (window.isBotMode) {
             window.initBotGame({ color: window.playerColor, level: window.botLevel || 'medium' });
             return;
@@ -79,35 +87,9 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     const isBotMode = () => Boolean(window.isBotMode);
-    const isPassAndPlayMode = () => Boolean(window.isPassAndPlayMode);
-    const BOT_MOVE_VISUAL_DELAY_RANGES = {
-        easy: { min: 1400, max: 1800 },
-        medium: { min: 900, max: 1300 },
-        hard: { min: 600, max: 900 }
-    };
-    const BOT_MOVE_VISUAL_DELAY_ENDGAME_RANGE = { min: 320, max: 560 };
-
-    const waitForMs = async (ms) => {
-        if (!Number.isFinite(ms) || ms <= 0) return;
-        await new Promise((resolve) => setTimeout(resolve, ms));
-    };
-
-    const randomInRange = (min, max) => {
-        const safeMin = Number.isFinite(min) ? Math.max(0, Math.floor(min)) : 0;
-        const safeMax = Number.isFinite(max) ? Math.max(safeMin, Math.floor(max)) : safeMin;
-        return Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin;
-    };
-
-    const getBotVisualThinkingDelayMs = ({ level, isFastEndgameHint = false } = {}) => {
-        const baseRange = BOT_MOVE_VISUAL_DELAY_RANGES[level] || BOT_MOVE_VISUAL_DELAY_RANGES.medium;
-        if (!isFastEndgameHint) {
-            return randomInRange(baseRange.min, baseRange.max);
-        }
-
-        const tunedMin = Math.min(baseRange.min, BOT_MOVE_VISUAL_DELAY_ENDGAME_RANGE.min);
-        const tunedMax = Math.min(baseRange.max, BOT_MOVE_VISUAL_DELAY_ENDGAME_RANGE.max);
-        return randomInRange(tunedMin, Math.max(tunedMin, tunedMax));
-    };
+    const isSelfTrainingMode = () => Boolean(window.isSelfTrainingMode?.());
+    const isPassAndPlayMode = () => Boolean(window.isPassAndPlayStandardMode?.());
+    const isLocalMode = () => Boolean(window.isLocalGameMode?.());
 
     window.requestBotMove = async function() {
         if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
@@ -170,14 +152,16 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
 
-    const applyBotModeUiRestrictions = () => {
-        if (!isBotMode()) return;
+    const applyLocalModeUiRestrictions = () => {
+        if (!isLocalMode()) return;
         document.querySelector('.game-share-box')?.classList.add('hidden');
         document.getElementById('draw-btn')?.classList.add('hidden');
         const drawBtn = document.getElementById('draw-btn');
         if (drawBtn) drawBtn.disabled = true;
+        document.getElementById('quick-phrases-toggle')?.classList.add('hidden');
+        document.getElementById('quick-phrases-menu')?.classList.add('hidden');
         const takebackBtn = document.getElementById('takeback-btn');
-        if (takebackBtn) {
+        if (takebackBtn && isBotMode()) {
             takebackBtn.classList.add('hidden');
             takebackBtn.disabled = true;
         }
@@ -229,10 +213,23 @@ window.setupGameControls = function(gameRef, roomId) {
                 lastMoveTime: now // Добавляем время последнего хода для сортировки
             };
 
-            if (isBotMode()) {
+            if (isBotMode() || isSelfTrainingMode() || isPassAndPlayMode()) {
                 window.syncReviewStateFromCurrentGame?.();
                 resetPendingMoveUI();
-                window.updateUI({ gameState: window.game.game_over() ? 'game_over' : 'active', mode: 'bot' });
+                if (isPassAndPlayMode()) {
+                    window.syncPassAndPlayBoardOrientation?.();
+                }
+                window.updateUI({
+                    gameState: window.game.game_over() ? 'game_over' : 'active',
+                    mode: isBotMode() ? 'bot' : (isPassAndPlayMode() ? 'pass' : 'training'),
+                    trainingMode: isSelfTrainingMode() ? 'self' : null,
+                    variant: isPassAndPlayMode() ? 'standard' : null
+                });
+                if (isPassAndPlayMode()) {
+                    window.savePassAndPlayGameSnapshot?.({
+                        gameState: window.game.game_over() ? 'game_over' : 'active'
+                    });
+                }
 
                 if (window.game.game_over()) {
                     const metadata = window.applyGameHeaders(window.game, {
@@ -240,10 +237,13 @@ window.setupGameControls = function(gameRef, roomId) {
                         message: window.getGameResultMessage(window.game)
                     });
                     window.updateGameModal({ gameState: 'game_over', message: metadata.message });
+                    document.getElementById('game-modal')?.classList.remove('hidden');
                     return;
                 }
 
-                await window.requestBotMove?.();
+                if (isBotMode()) {
+                    await window.requestBotMove?.();
+                }
                 return;
             }
 
@@ -316,22 +316,25 @@ window.setupGameControls = function(gameRef, roomId) {
                 danger: true
             });
             if (shouldResign) {
-                const winner = window.playerColor === 'w' ? 'Черные' : 'Белые';
-                const players = isBotMode() ? null : await resolvePlayersForHeaders();
+                const resignColor = isSelfTrainingMode() ? window.game?.turn?.() : window.playerColor;
+                const winner = resignColor === 'w' ? 'Черные' : 'Белые';
+                const players = isLocalMode() ? null : await resolvePlayersForHeaders();
                 const metadata = window.applyGameHeaders(window.game, {
                     players,
                     gameState: 'game_over',
                     message: `${winner} победили (сдача)`,
-                    resign: window.playerColor
+                    resign: resignColor
                 });
 
-                if (isBotMode()) {
+                if (isLocalMode()) {
                     window.applyImmediateGameOverState?.({
                         gameState: 'game_over',
                         message: metadata.message,
-                        resign: window.playerColor,
-                        mode: 'bot'
+                        resign: resignColor,
+                        mode: isBotMode() ? 'bot' : 'training',
+                        trainingMode: isSelfTrainingMode() ? 'self' : null
                     });
+                    document.getElementById('game-modal')?.classList.remove('hidden');
                     return;
                 }
 
@@ -339,7 +342,7 @@ window.setupGameControls = function(gameRef, roomId) {
                     gameState: 'game_over',
                     message: metadata.message,
                     pgn: window.game.pgn(),
-                    resign: window.playerColor
+                    resign: resignColor
                 };
                 window.applyImmediateGameOverState?.(updateData);
                 await window.updateGame(gameRef, updateData);
@@ -375,7 +378,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Поделиться ссылкой
         setClickHandler('share-btn', async () => {
-            if (isBotMode() || isPassAndPlayMode()) return;
+            if (isLocalMode()) return;
             const link = document.getElementById('room-link').value;
             if (navigator.share) {
                 try {
@@ -436,6 +439,53 @@ window.setupGameControls = function(gameRef, roomId) {
 
     // ===== Takeback =====
     const bindTakebackControls = () => {
+        if (isSelfTrainingMode()) {
+            setClickHandler('takeback-btn', () => {
+                if (isFinishedGame()) {
+                    window.notify("Игра уже окончена", "warning");
+                    return;
+                }
+                const undoneMove = window.game?.undo?.();
+                if (!undoneMove) {
+                    window.notify("Нет ходов для отмены", "warning");
+                    return;
+                }
+                resetPendingMoveUI();
+                window.clearSelection();
+                window.updateBoardPosition(window.game.fen(), true);
+                window.syncReviewStateFromCurrentGame?.();
+                window.updateUI({ gameState: 'active', mode: 'training', trainingMode: 'self' });
+            });
+            return;
+        }
+        if (isPassAndPlayMode()) {
+            setClickHandler('takeback-btn', () => {
+                const undoneMove = window.game?.undo?.();
+                if (!undoneMove) {
+                    window.notify("Нет ходов для отмены", "warning");
+                    return;
+                }
+                resetPendingMoveUI();
+                window.clearSelection();
+                window.updateBoardPosition(window.game.fen(), true);
+                window.syncPassAndPlayBoardOrientation?.();
+                window.syncReviewStateFromCurrentGame?.();
+                document.getElementById('game-modal')?.classList.add('hidden');
+                const isStillFinished = Boolean(window.game?.game_over?.());
+                if (!isStillFinished) {
+                    window.lastKnownGameState = 'active';
+                }
+                window.updateUI({
+                    gameState: isStillFinished ? 'game_over' : 'active',
+                    mode: 'pass',
+                    variant: 'standard'
+                });
+                window.savePassAndPlayGameSnapshot?.({
+                    gameState: isStillFinished ? 'game_over' : 'active'
+                });
+            });
+            return;
+        }
         if (isBotMode()) return;
         if (isPassAndPlayMode()) {
             setClickHandler('takeback-btn', () => {
@@ -552,7 +602,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
     // ===== Draw =====
     const bindDrawControls = () => {
-        if (isBotMode() || isPassAndPlayMode()) return;
+        if (isLocalMode()) return;
         let lastIncomingDrawKey = '';
         // Кнопка "Предложить ничью"
         setClickHandler('draw-btn', () => {
@@ -640,7 +690,7 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     const bindRematchControls = () => {
-        if (isBotMode() || isPassAndPlayMode()) return;
+        if (isLocalMode()) return;
         let lastIncomingRematchKey = '';
 
         const rematchRef = window.getRematchRef?.(roomId);
@@ -720,11 +770,24 @@ window.setupGameControls = function(gameRef, roomId) {
             window.enterReviewMode(maxPly);
         });
 
+        setClickHandler('modal-analysis-btn', async () => {
+            if (!window.postGameAnalysis?.supportedMode) return;
+            const opened = await window.openPostGameAnalysis?.();
+            if (opened) {
+                document.getElementById('game-modal')?.classList.add('hidden');
+            }
+        });
+
+        setClickHandler('inline-analysis-btn', async () => {
+            if (!window.postGameAnalysis?.supportedMode) return;
+            await window.openPostGameAnalysis?.();
+        });
+
         bindPgnCopyButton('modal-copy-pgn');
         bindPgnCopyButton('inline-copy-pgn');
     };
 
-    applyBotModeUiRestrictions();
+    applyLocalModeUiRestrictions();
 
     bindPendingMoveControls();
     bindSessionControls();

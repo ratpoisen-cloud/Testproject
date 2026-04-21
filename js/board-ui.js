@@ -35,6 +35,14 @@ const PROMOTION_PIECE_TO_BOARD_SUFFIX = {
     b: 'B',
     n: 'N'
 };
+const PIECE_TO_BOARD_SUFFIX = {
+    p: 'P',
+    n: 'N',
+    b: 'B',
+    r: 'R',
+    q: 'Q',
+    k: 'K'
+};
 const PROMOTION_PIECE_LABELS = {
     q: 'Ферзь',
     r: 'Ладья',
@@ -150,7 +158,7 @@ window.getCurrentPieceTheme = function() {
 };
 
 window.getPieceAssetPath = function(pieceType, pieceColor, pieceTheme = window.getCurrentPieceTheme()) {
-    const suffix = PROMOTION_PIECE_TO_BOARD_SUFFIX[pieceType];
+    const suffix = PIECE_TO_BOARD_SUFFIX[pieceType];
     const colorCode = pieceColor === 'b' ? 'b' : 'w';
     if (!suffix || typeof pieceTheme !== 'string') return '';
     return pieceTheme.replace('{piece}', `${colorCode}${suffix}`);
@@ -171,6 +179,13 @@ window.getBoardConfig = function() {
 
 window.isReviewInteractionLocked = function() {
     return Boolean(window.reviewMode);
+};
+
+window.getBoardInteractionColor = function() {
+    if (window.isSelfTrainingMode?.() || window.isPassAndPlayStandardMode?.()) {
+        return window.game?.turn?.() || null;
+    }
+    return window.playerColor || null;
 };
 
 window.resetTransientBoardInteractionState = function() {
@@ -217,6 +232,7 @@ window.applyPieceSet = function(setName) {
     if (window.board) {
         window.rebuildBoardWithCurrentState();
     }
+    window.renderCapturedPieces?.();
 
     return safeSetName;
 };
@@ -489,22 +505,26 @@ window.handleDragStart = function(source, piece, position, orientation) {
         return false;
     }
 
-    if (window.game.game_over() || 
-        !window.playerColor || 
-        window.game.turn() !== window.playerColor || 
+    const interactionColor = window.getBoardInteractionColor();
+    if (window.game.game_over() ||
+        !interactionColor ||
+        window.game.turn() !== interactionColor ||
         window.pendingMove) {
         return false;
     }
     
     const pieceColor = piece.charAt(0);
-    if ((window.playerColor === 'w' && pieceColor === 'b') ||
-        (window.playerColor === 'b' && pieceColor === 'w')) {
+    if (pieceColor !== interactionColor) {
         return false;
     }
     
+    const availableMoves = window.game.moves({ square: source, verbose: true });
+
     window.dragSourceSquare = source;
-    window.showPossibleMoves(source);
-    window.SoundManager?.play?.('piece_select');
+    window.showPossibleMoves(source, availableMoves);
+    if (availableMoves.length > 0) {
+        window.SoundManager?.play?.('piece_select');
+    }
     
     return true;
 };
@@ -513,11 +533,12 @@ window.handleDragStart = function(source, piece, position, orientation) {
 window.handleMouseoverSquare = function(square, piece) {
     if (window.isMobile) return;
     if (window.isReviewInteractionLocked()) return;
-    if (!window.playerColor || window.game.game_over() || window.pendingMove) return;
+    const interactionColor = window.getBoardInteractionColor();
+    if (!interactionColor || window.game.game_over() || window.pendingMove) return;
     
     if (window.dragSourceSquare) return;
     
-    if (piece && piece.charAt(0) === window.playerColor && window.game.turn() === window.playerColor) {
+    if (piece && piece.charAt(0) === interactionColor && window.game.turn() === interactionColor) {
         window.showPossibleMoves(square);
     }
 };
@@ -535,13 +556,15 @@ window.handleMouseoutSquare = function(square, piece) {
 };
 
 // Показ возможных ходов для фигуры
-window.showPossibleMoves = function(square) {
+window.showPossibleMoves = function(square, precomputedMoves = null) {
     if (window.isReviewInteractionLocked()) return;
 
     window.removeTemporaryHighlights();
     window.highlightSquare(square, 'highlight-drag-source');
     
-    const moves = window.game.moves({ square: square, verbose: true });
+    const moves = Array.isArray(precomputedMoves)
+        ? precomputedMoves
+        : window.game.moves({ square: square, verbose: true });
     moves.forEach(move => {
         if (move.captured) {
             window.highlightSquare(move.to, 'highlight-capture');
@@ -549,6 +572,8 @@ window.showPossibleMoves = function(square) {
             window.highlightSquare(move.to, 'highlight-possible');
         }
     });
+
+    return moves;
 };
 
 // Убираем временную подсветку
@@ -568,7 +593,8 @@ window.handleDrop = function(source, target) {
 
     window.removeTemporaryHighlights();
     
-    if (window.game.game_over() || !window.playerColor || window.game.turn() !== window.playerColor || window.pendingMove) {
+    const interactionColor = window.getBoardInteractionColor();
+    if (window.game.game_over() || !interactionColor || window.game.turn() !== interactionColor || window.pendingMove) {
         window.dragSourceSquare = null;
         return 'snapback';
     }
@@ -627,8 +653,9 @@ window.handleMobileClick = function(square) {
     }
 
     if (window.game.game_over()) return;
-    if (!window.playerColor) return;
-    if (window.game.turn() !== window.playerColor) return;
+    const interactionColor = window.getBoardInteractionColor();
+    if (!interactionColor) return;
+    if (window.game.turn() !== interactionColor) return;
     if (window.pendingMove) return;
     
     const piece = window.game.get(square);
@@ -654,14 +681,14 @@ window.handleMobileClick = function(square) {
             document.getElementById('confirm-move-box').classList.remove('hidden');
             window.clearSelection();
         } else {
-            if (piece && piece.color === window.playerColor) {
+            if (piece && piece.color === interactionColor) {
                 window.selectSquare(square);
             } else {
                 window.clearSelection();
             }
         }
     } else {
-        if (piece && piece.color === window.playerColor) {
+        if (piece && piece.color === interactionColor) {
             window.selectSquare(square);
         }
     }
@@ -677,9 +704,12 @@ window.selectSquare = function(square) {
     window.clearSelection();
     window.selectedSquare = square;
     window.highlightSquare(square, 'highlight-selected');
-    window.SoundManager?.play?.('piece_select');
-    
+
     const moves = window.game.moves({ square: square, verbose: true });
+    if (moves.length > 0) {
+        window.SoundManager?.play?.('piece_select');
+    }
+
     moves.forEach(move => {
         if (move.captured) {
             window.highlightSquare(move.to, 'highlight-capture');
@@ -740,6 +770,7 @@ window.reapplyPersistentBoardHighlights = function(forcedFen = null) {
     }
 
     window.applyGameEndBoardEffects?.(effectiveFen);
+    window.applyPostGameAnalysisHighlights?.();
 };
 
 // Создание безопасного предпросмотра хода без изменения основной партии
@@ -798,7 +829,10 @@ window.openPromotionChoice = function(from, to) {
     window.ensurePromotionChoiceBindings();
     window.pendingPromotionSelection = { from, to };
 
-    const color = window.playerColor === 'b' ? 'b' : 'w';
+    const movingPiece = window.game?.get?.(from);
+    const color = movingPiece?.type === 'p'
+        ? movingPiece.color
+        : (window.game?.turn?.() === 'b' ? 'b' : 'w');
     options.querySelectorAll('[data-promotion-piece]').forEach((button) => {
         const piece = button.dataset.promotionPiece;
         const assetPath = window.getPieceAssetPath(piece, color);
@@ -821,6 +855,120 @@ window.BOARD_PIECE_SELECTOR = '#myBoard .piece-417db';
 
 window.removeHighlights = function() {
     $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-selected highlight-drag-source highlight-possible highlight-capture');
+};
+
+window.clearAnalysisHintMarker = function() {
+    document.querySelectorAll('#myBoard .analysis-hint-marker, #myBoard .analysis-hint-popover')
+        .forEach((node) => node.remove());
+};
+
+window.clearAnalysisHighlights = function() {
+    $(window.BOARD_SQUARE_SELECTOR).removeClass('highlight-analysis-from highlight-analysis-to');
+    window.clearAnalysisHintMarker?.();
+};
+
+window.renderAnalysisHintMarker = function(targetSquare, annotation) {
+    if (!targetSquare || !annotation) return;
+    const squareNode = document.querySelector(`#myBoard .square-${targetSquare}`);
+    if (!squareNode) return;
+    const marker = document.createElement('button');
+    marker.type = 'button';
+    marker.className = 'analysis-hint-marker';
+    marker.textContent = '?';
+    marker.setAttribute('aria-label', 'Почему этот ход сильнее');
+    marker.addEventListener('click', (event) => {
+        event.stopPropagation();
+        window.postGameAnalysis = window.postGameAnalysis || {};
+        window.postGameAnalysis.popoverOpen = !window.postGameAnalysis.popoverOpen;
+        window.reapplyPersistentBoardHighlights?.();
+    });
+    squareNode.appendChild(marker);
+
+    if (!window.postGameAnalysis?.popoverOpen) return;
+    const popover = document.createElement('div');
+    popover.className = 'analysis-hint-popover';
+    const strongerSan = annotation.bestMove?.san || `${annotation.bestMove?.from || ''}${annotation.bestMove?.to || ''}`.trim();
+    const playedSan = annotation.playedMove?.san || `${annotation.playedMove?.from || ''}${annotation.playedMove?.to || ''}`.trim();
+    const sameSan = Boolean(playedSan && strongerSan && playedSan === strongerSan);
+    const sameUci = annotation.playedMove?.from
+        && annotation.bestMove?.from
+        && annotation.playedMove?.from === annotation.bestMove?.from
+        && annotation.playedMove?.to === annotation.bestMove?.to
+        && (annotation.playedMove?.promotion || '') === (annotation.bestMove?.promotion || '');
+    const hideComparison = sameSan || sameUci;
+    const titleText = hideComparison
+        ? 'Лучшее продолжение найдено'
+        : `Сильнее было: ${strongerSan || 'лучшее продолжение'}`;
+    const comparisonHtml = hideComparison
+        ? ''
+        : `
+        <p class="analysis-hint-popover-line">Вы сыграли: ${playedSan || '—'}</p>
+        <p class="analysis-hint-popover-line">Сильнее было: ${strongerSan || '—'}</p>`;
+    const boardRect = document.getElementById('myBoard')?.getBoundingClientRect?.();
+    const squareRect = squareNode.getBoundingClientRect();
+    const vw = window.innerWidth || 0;
+    const isCompactScreen = vw <= 768;
+    const nearTopEdge = boardRect ? (squareRect.top - boardRect.top) < 56 : false;
+    const nearLeftEdge = boardRect ? (squareRect.left - boardRect.left) < 40 : false;
+    const nearRightEdge = boardRect ? (boardRect.right - squareRect.right) < 40 : false;
+
+    const compactIdeaSource = annotation.bestContinuationSan
+        ? `Идея: ${annotation.bestContinuationSan}`
+        : (annotation.shortReason || annotation.detailReason || 'Этот ход был надёжнее в позиции.');
+    const compactIdea = compactIdeaSource.length > 88
+        ? `${compactIdeaSource.slice(0, 85)}…`
+        : compactIdeaSource;
+
+    if (isCompactScreen) {
+        popover.innerHTML = `
+            <p class="analysis-hint-popover-title">Идея хода</p>
+            <p class="analysis-hint-popover-text">${compactIdea}</p>
+        `;
+    } else {
+        const continuationHtml = annotation.bestContinuationSan
+            ? `<p class="analysis-hint-popover-line">Идея: ${annotation.bestContinuationSan}</p>`
+            : '';
+        popover.innerHTML = `
+            <p class="analysis-hint-popover-title">${titleText}</p>
+            <p class="analysis-hint-popover-text">${annotation.detailReason || 'Этот ход был надёжнее в позиции.'}</p>${continuationHtml}${comparisonHtml}
+        `;
+    }
+
+    if (isCompactScreen) {
+        popover.classList.add('analysis-hint-popover--mobile');
+        if (nearTopEdge) {
+            popover.classList.add('analysis-hint-popover--below');
+        }
+        if (nearLeftEdge) {
+            popover.classList.add('analysis-hint-popover--shift-right');
+        } else if (nearRightEdge) {
+            popover.classList.add('analysis-hint-popover--shift-left');
+        }
+    }
+    squareNode.appendChild(popover);
+};
+
+window.applyPostGameAnalysisHighlights = function() {
+    window.clearAnalysisHighlights();
+    const analysis = window.postGameAnalysis || {};
+    if (!analysis.ready || !window.reviewMode) return;
+
+    const annotation = window.getPostGameAnalysisMove?.();
+    if (!Number.isInteger(annotation?.plyIndex)) return;
+    if (!Number.isInteger(window.reviewPlyIndex) || window.reviewPlyIndex !== annotation.plyIndex) return;
+
+    if (annotation.classification === 'strong') {
+        if (annotation.playedMove?.from && annotation.playedMove?.to) {
+            window.highlightSquare(annotation.playedMove.from, 'highlight-analysis-from');
+            window.highlightSquare(annotation.playedMove.to, 'highlight-analysis-to');
+        }
+        return;
+    }
+
+    if (!annotation.bestMove?.from || !annotation.bestMove?.to) return;
+    window.highlightSquare(annotation.bestMove.from, 'highlight-analysis-from');
+    window.highlightSquare(annotation.bestMove.to, 'highlight-analysis-to');
+    window.renderAnalysisHintMarker?.(annotation.bestMove.to, annotation);
 };
 
 // Подсветка клетки

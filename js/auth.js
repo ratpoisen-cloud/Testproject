@@ -22,7 +22,11 @@ window.setupAuth = function() {
     let isAvatarUploading = false;
     let hasResolvedInitialAuthState = false;
 
-    const isBotModeRequested = () => new URLSearchParams(window.location.search).get('bot') === '1';
+    const isLocalModeRequested = () => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('bot') === '1'
+            || (params.get('training') === '1' && params.get('mode') === 'self');
+    };
 
     window.setAppAuthView = (isAuthorized) => {
         document.body.classList.toggle('auth-state', isAuthorized);
@@ -39,7 +43,7 @@ window.setupAuth = function() {
             return;
         }
 
-        if (isBotModeRequested()) {
+        if (isLocalModeRequested()) {
             guestSection?.classList.add('hidden');
             gameSection?.classList.remove('hidden');
             lobbySection?.classList.add('hidden');
@@ -58,12 +62,13 @@ window.setupAuth = function() {
     };
 
     const cleanupGuestUiState = () => {
-        if (isBotModeRequested() && window.isBotMode) {
+        if (isLocalModeRequested() && window.isLocalGameMode?.()) {
             closeUserMenu();
             hideModalById('email-modal');
             document.body.classList.remove('email-modal-open');
             hideModalById('create-game-modal');
             hideModalById('bot-game-modal');
+            hideModalById('training-mode-modal');
             document.getElementById('email-error')?.classList.add('hidden');
             return;
         }

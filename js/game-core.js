@@ -8,6 +8,8 @@ window.pendingMove = null;
 window.selectedSquare = null;
 window.currentRoomId = null;
 window.isBotMode = false;
+window.isTrainingMode = false;
+window.trainingModeType = null;
 window.isPassAndPlayMode = false;
 window.passAndPlayVariant = null;
 window.botColor = null;
@@ -43,7 +45,7 @@ window.DIRECT_CHALLENGE_SEEN_STORAGE_KEY = 'chess_direct_challenge_seen_v1';
 window.DIRECT_INVITE_HANDLED_STORAGE_KEY = 'chess_direct_invite_handled_v1';
 window.REMATCH_INVITE_SEEN_STORAGE_KEY = 'chess_rematch_invite_seen_v1';
 window.BOT_GAMES_HISTORY_STORAGE_KEY = 'chess_bot_games_history_v1';
-window.BOT_GAMES_HISTORY_LIMIT = 5;
+window.PASS_AND_PLAY_SAVED_GAME_STORAGE_KEY = 'go_chess_pass_and_play_saved_game_v1';
 window.lobbyLastSnapshotByGame = new Map();
 window.lobbyLastEventSnapshotByGame = new Map();
 window.lobbyGameCardRegistry = new Map();
@@ -66,6 +68,517 @@ window.gameSoundFlags = {
 };
 window.lastPlayedGameOverSoundKey = null;
 window.lastMoveSequenceEndgameMarker = null;
+window.postGameAnalysis = {
+    ready: false,
+    loading: false,
+    error: null,
+    analyzedColor: null,
+    annotations: [],
+    byPly: {},
+    activePlyIndex: null,
+    popoverOpen: false,
+    supportedMode: false
+};
+
+window.isSelfTrainingMode = function() {
+    return Boolean(window.isTrainingMode && window.trainingModeType === 'self');
+};
+
+window.isPassAndPlayStandardMode = function() {
+    return Boolean(window.isPassAndPlayMode && window.passAndPlayVariant === 'standard');
+};
+
+window.isLocalGameMode = function() {
+    return Boolean(window.isBotMode || window.isTrainingMode || window.isPassAndPlayMode);
+};
+
+window.isPostGameAnalysisSupportedMode = function() {
+    return Boolean(window.isBotMode || window.isSelfTrainingMode?.());
+};
+
+window.resetPostGameAnalysisState = function(options = {}) {
+    const supportedMode = Object.prototype.hasOwnProperty.call(options, 'supportedMode')
+        ? Boolean(options.supportedMode)
+        : Boolean(window.isPostGameAnalysisSupportedMode?.());
+    const keepAnalysis = Boolean(options.keepAnalysis);
+    const previous = window.postGameAnalysis || {};
+
+    window.postGameAnalysis = {
+        ready: keepAnalysis ? Boolean(previous.ready) : false,
+        loading: false,
+        error: null,
+        analyzedColor: keepAnalysis ? (previous.analyzedColor || null) : null,
+        annotations: keepAnalysis ? (Array.isArray(previous.annotations) ? previous.annotations : []) : [],
+        byPly: keepAnalysis ? (previous.byPly || {}) : {},
+        activePlyIndex: keepAnalysis && Number.isInteger(previous.activePlyIndex) ? previous.activePlyIndex : null,
+        popoverOpen: false,
+        supportedMode
+    };
+};
+
+window.getPostGameAnalysisMove = function(plyIndex = null) {
+    const analysis = window.postGameAnalysis || {};
+    const index = Number.isInteger(plyIndex) ? plyIndex : analysis.activePlyIndex;
+    if (!Number.isInteger(index)) return null;
+    return analysis.byPly?.[index] || null;
+};
+
+window.setActivePostGameAnalysisPly = function(plyIndex = null) {
+    if (!window.postGameAnalysis?.ready) return;
+    window.postGameAnalysis.activePlyIndex = Number.isInteger(plyIndex) ? plyIndex : null;
+    window.postGameAnalysis.popoverOpen = false;
+    window.updatePostGameAnalysisUI?.();
+    window.reapplyPersistentBoardHighlights?.();
+};
+
+window.runPostGameAnalysis = async function() {
+    if (!window.postGameAnalysis?.supportedMode || !window.game) return false;
+    if (window.postGameAnalysis.loading) return false;
+    if (window.postGameAnalysis.ready) return true;
+
+    if (!window.botEngine && typeof window.createBotEngine === 'function') {
+        window.botEngine = window.createBotEngine(window.botLevel || 'medium');
+    }
+    if (!window.botEngine?.analyzePositionForAdvice) {
+        window.postGameAnalysis.error = 'bot_engine_unavailable';
+        return false;
+    }
+
+    window.postGameAnalysis.loading = true;
+    window.postGameAnalysis.error = null;
+    window.updatePostGameAnalysisUI?.();
+
+    try {
+        const history = window.game.history({ verbose: true }) || [];
+        const replay = new Chess();
+        const annotations = [];
+        const playerColor = window.isBotMode ? window.playerColor : 'both';
+        const strongReasons = ['усиливал давление', 'активизировал фигуры', 'сохранял инициативу', 'улучшал защиту', 'находил сильное продолжение'];
+        const mistakeReasons = ['ослаблял позицию', 'терял темп', 'допускал более сильный ответ', 'упускал активное продолжение', 'делал позицию менее надёжной'];
+        const blunderReasons = ['терял материал', 'пропускал угрозу', 'резко ухудшал позицию', 'допускал решающее давление', 'упускал важную защиту'];
+        const MATE_ATTACK_THRESHOLD = 4;
+        const FILES = 'abcdefgh';
+        const FORK_HIGH_VALUE_PIECES = new Set(['q', 'r']);
+        const PIECE_PRIORITY = { k: 0, q: 4, r: 3, b: 2, n: 2, p: 1 };
+        const FORK_MIN_GAIN = 3;
+        const FORK_PRIORITY_MIN_DELTA = 0.5;
+        const SEVERE_BLUNDER_DELTA = 2.2;
+        const buildDetailReason = (classification, shortReason) => {
+            if (classification === 'strong') {
+                return `Этот ход ${shortReason} и помогал удерживать качество позиции.`;
+            }
+            if (classification === 'mistake') {
+                return `После этого хода позиция становилась менее надёжной: ход ${shortReason}.`;
+            }
+            return `Этот ход ${shortReason} и допускал серьёзное ухудшение позиции.`;
+        };
+        const isWinningMateSignal = (scoreType, mateIn, san) => (
+            scoreType === 'mate' && Number.isFinite(mateIn) && mateIn > 0
+        ) || (typeof san === 'string' && san.endsWith('#'));
+        const isLosingMateSignal = (scoreType, mateIn) => (
+            scoreType === 'mate' && Number.isFinite(mateIn) && mateIn < 0
+        );
+        const squareToCoords = (square) => {
+            if (typeof square !== 'string' || square.length !== 2) return null;
+            const file = FILES.indexOf(square[0]);
+            const rank = Number(square[1]) - 1;
+            if (file < 0 || rank < 0 || rank > 7) return null;
+            return { file, rank };
+        };
+        const getPieceAt = (gameState, square) => {
+            const coords = squareToCoords(square);
+            if (!coords) return null;
+            const board = gameState.board();
+            return board?.[7 - coords.rank]?.[coords.file] || null;
+        };
+        const isInside = (file, rank) => file >= 0 && file < 8 && rank >= 0 && rank < 8;
+        const squareFromCoords = (file, rank) => `${FILES[file]}${rank + 1}`;
+        const isPieceAttackingSquare = (gameState, fromSquare, piece, targetSquare) => {
+            const from = squareToCoords(fromSquare);
+            const to = squareToCoords(targetSquare);
+            if (!from || !to || !piece?.type) return false;
+            const df = to.file - from.file;
+            const dr = to.rank - from.rank;
+            const absDf = Math.abs(df);
+            const absDr = Math.abs(dr);
+            const board = gameState.board();
+            const squareOccupied = (file, rank) => board?.[7 - rank]?.[file] || null;
+
+            if (piece.type === 'n') return (absDf === 1 && absDr === 2) || (absDf === 2 && absDr === 1);
+            if (piece.type === 'k') return Math.max(absDf, absDr) === 1;
+            if (piece.type === 'p') {
+                const forward = piece.color === 'w' ? 1 : -1;
+                return dr === forward && absDf === 1;
+            }
+
+            const isDiagonal = absDf === absDr && absDf > 0;
+            const isStraight = (df === 0 && absDr > 0) || (dr === 0 && absDf > 0);
+            const isSlidingPiece = piece.type === 'b' || piece.type === 'r' || piece.type === 'q';
+            if (!isSlidingPiece) return false;
+            if (piece.type === 'b' && !isDiagonal) return false;
+            if (piece.type === 'r' && !isStraight) return false;
+            if (piece.type === 'q' && !(isDiagonal || isStraight)) return false;
+
+            const stepFile = df === 0 ? 0 : (df > 0 ? 1 : -1);
+            const stepRank = dr === 0 ? 0 : (dr > 0 ? 1 : -1);
+            let scanFile = from.file + stepFile;
+            let scanRank = from.rank + stepRank;
+            while (isInside(scanFile, scanRank) && (scanFile !== to.file || scanRank !== to.rank)) {
+                if (squareOccupied(scanFile, scanRank)) return false;
+                scanFile += stepFile;
+                scanRank += stepRank;
+            }
+            return true;
+        };
+        const describeForkTargets = (targets = []) => {
+            const names = targets.map((target) => {
+                if (target.type === 'q') return 'ферзя';
+                if (target.type === 'r') return 'ладью';
+                if (target.type === 'b') return 'слона';
+                if (target.type === 'n') return 'коня';
+                return 'фигуру';
+            });
+            if (names.length < 2) return null;
+            return `${names[0]} и ${names[1]}`;
+        };
+        const detectForkIdea = (fenBefore, moveCandidate) => {
+            if (!moveCandidate?.from || !moveCandidate?.to) return null;
+            const position = new Chess(fenBefore);
+            const applied = position.move({
+                from: moveCandidate.from,
+                to: moveCandidate.to,
+                promotion: moveCandidate.promotion || 'q'
+            });
+            if (!applied) return null;
+
+            const movedPiece = getPieceAt(position, moveCandidate.to);
+            if (!movedPiece) return null;
+            const movedColor = movedPiece.color;
+            const enemyColor = movedColor === 'w' ? 'b' : 'w';
+            const board = position.board();
+            const attackedTargets = [];
+
+            for (let rankIndex = 0; rankIndex < 8; rankIndex++) {
+                for (let fileIndex = 0; fileIndex < 8; fileIndex++) {
+                    const piece = board?.[rankIndex]?.[fileIndex];
+                    if (!piece || piece.color !== enemyColor) continue;
+                    const targetSquare = squareFromCoords(fileIndex, 7 - rankIndex);
+                    if (!isPieceAttackingSquare(position, moveCandidate.to, movedPiece, targetSquare)) continue;
+                    attackedTargets.push({
+                        type: piece.type,
+                        square: targetSquare,
+                        priority: PIECE_PRIORITY[piece.type] || 0
+                    });
+                }
+            }
+
+            const sortedTargets = attackedTargets.sort((a, b) => b.priority - a.priority);
+            const highValueTargets = sortedTargets.filter((target) => FORK_HIGH_VALUE_PIECES.has(target.type));
+            const minorTargets = sortedTargets.filter((target) => target.type === 'b' || target.type === 'n');
+            const hasKingCheck = attackedTargets.some((target) => target.type === 'k');
+            const topPair = sortedTargets.slice(0, 2);
+            const positiveGain = topPair.length >= 2
+                ? (topPair[0].priority + topPair[1].priority) - (PIECE_PRIORITY[movedPiece.type] || 0)
+                : 0;
+            const hasDoubleMajorFork = highValueTargets.length >= 2;
+            const hasMajorAndMinorFork = highValueTargets.length >= 1 && minorTargets.length >= 1 && positiveGain >= (FORK_MIN_GAIN + 1);
+            const hasCheckAndMajorPressure = hasKingCheck
+                && movedPiece.type === 'n'
+                && highValueTargets.some((target) => target.type === 'q')
+                && positiveGain >= FORK_MIN_GAIN;
+            const isReliableFork = hasDoubleMajorFork || hasMajorAndMinorFork || hasCheckAndMajorPressure;
+            if (!isReliableFork) return null;
+
+            const focusTargets = (highValueTargets.length >= 2 ? highValueTargets : [...highValueTargets, ...minorTargets]).slice(0, 2);
+            const targetText = describeForkTargets(focusTargets);
+            return {
+                pieceType: movedPiece.type,
+                targets: focusTargets,
+                targetText,
+                hasKingCheck
+            };
+        };
+        const resolveMatePriorityReason = (classification, context = {}) => {
+            const {
+                bestHasWinningMate,
+                playedAllowsMate,
+                bestMoveSan,
+                bestMatchesPlayed,
+                bestMateIn,
+                bestContinuationSan
+            } = context;
+            const isImmediateMate = (Number.isFinite(bestMateIn) && bestMateIn === 1)
+                || (typeof bestMoveSan === 'string' && bestMoveSan.endsWith('#'));
+            const isPreMate = Number.isFinite(bestMateIn) && bestMateIn > 1 && bestMateIn <= MATE_ATTACK_THRESHOLD;
+            const isMistakeLayer = classification === 'mistake' || classification === 'blunder';
+
+            if (classification === 'strong' && bestMatchesPlayed && bestHasWinningMate && isImmediateMate) {
+                return { priority: 1, shortReason: 'Здесь был мат', detailReason: 'Вы нашли мат' };
+            }
+            if (isMistakeLayer && bestHasWinningMate && isImmediateMate) {
+                return {
+                    priority: 2,
+                    shortReason: 'Упускался мат',
+                    detailReason: 'Находился форсированный мат'
+                };
+            }
+            if (isMistakeLayer && playedAllowsMate) {
+                return {
+                    priority: 3,
+                    shortReason: classification === 'blunder' ? 'Этот ход допускал мат' : 'Ход пропускал матовую атаку',
+                    detailReason: 'Не замечалась решающая угроза королю'
+                };
+            }
+            if ((classification === 'strong' && bestMatchesPlayed && bestHasWinningMate && isPreMate)
+                || (isMistakeLayer && bestHasWinningMate && isPreMate)) {
+                const shortReason = classification === 'strong'
+                    ? 'Здесь начиналась матовая комбинация'
+                    : 'Можно было начать форсированный мат';
+                const detailReason = bestContinuationSan
+                    ? `${shortReason}. Идея: ${bestContinuationSan}`
+                    : `${shortReason}. Этот ход запускал атаку на короля.`;
+                return { priority: 4, shortReason, detailReason };
+            }
+            return null;
+        };
+        const shouldPrioritizeForkIdea = (context = {}) => {
+            const { forkFound, delta, bestHasWinningMate, bestMateIn, playedAllowsMate } = context;
+            if (!forkFound) return false;
+            if (!Number.isFinite(delta) || delta < FORK_PRIORITY_MIN_DELTA) return false;
+            if (playedAllowsMate) return false;
+            const isMateTheme = bestHasWinningMate
+                && Number.isFinite(bestMateIn)
+                && bestMateIn > 0
+                && bestMateIn <= MATE_ATTACK_THRESHOLD;
+            if (isMateTheme) return false;
+            return true;
+        };
+        const buildPriorityReason = (classification, context = {}) => {
+            const mateReason = resolveMatePriorityReason(classification, context);
+            if (mateReason) return mateReason;
+            const isMistakeLayer = classification === 'mistake' || classification === 'blunder';
+            const { forkFound } = context;
+
+            if (shouldPrioritizeForkIdea(context)) {
+                const checkSuffix = forkFound?.hasKingCheck ? ' с шахом королю' : '';
+                if (classification === 'strong') {
+                    const shortReason = forkFound.targetText
+                        ? `Здесь была вилка на ${forkFound.targetText}${checkSuffix}`
+                        : 'Здесь была вилка';
+                    return { priority: 5, shortReason, detailReason: shortReason };
+                }
+                const shortReason = forkFound.targetText
+                    ? `Можно было вилкой напасть на ${forkFound.targetText}${checkSuffix}`
+                    : 'Можно было создать вилку';
+                return { priority: 5, shortReason, detailReason: shortReason };
+            }
+
+            if (classification === 'strong') {
+                return {
+                    priority: 6,
+                    shortReason: 'Аккуратный сильный ход',
+                    detailReason: 'Ход укреплял позицию и сохранял инициативу'
+                };
+            }
+            if (isMistakeLayer) {
+                return {
+                    priority: 7,
+                    shortReason: classification === 'blunder' ? 'Здесь был серьёзный зевок' : 'Здесь была неточность',
+                    detailReason: 'После этого хода упускалась важная тактическая возможность'
+                };
+            }
+            return null;
+        };
+        const rankAnnotationBucket = (item) => {
+            const reasonPriority = Number.isFinite(item?.reasonPriority) ? item.reasonPriority : 8;
+            if (reasonPriority <= 4) return 0; // мат и предмат остаются главным приоритетом
+            if (item?.classification === 'blunder' && Number(item?.delta || 0) >= SEVERE_BLUNDER_DELTA) return 1;
+            if (reasonPriority === 5) return 2; // вилка
+            if (item?.classification === 'blunder') return 3;
+            if (item?.classification === 'mistake') return 4;
+            return 5;
+        };
+        const compareAnnotationsForFeed = (a, b) => {
+            const bucketDiff = rankAnnotationBucket(a) - rankAnnotationBucket(b);
+            if (bucketDiff !== 0) return bucketDiff;
+            const priorityDiff = (a.reasonPriority || 8) - (b.reasonPriority || 8);
+            if (priorityDiff !== 0) return priorityDiff;
+            if ((a.reasonPriority || 8) <= 4 || (b.reasonPriority || 8) <= 4) {
+                const mateA = Math.abs(Number.isFinite(a.bestMateIn) ? a.bestMateIn : 99);
+                const mateB = Math.abs(Number.isFinite(b.bestMateIn) ? b.bestMateIn : 99);
+                if (mateA !== mateB) return mateA - mateB;
+            }
+            if (b.delta !== a.delta) return b.delta - a.delta;
+            return a.plyIndex - b.plyIndex;
+        };
+
+        for (let plyIndex = 0; plyIndex < history.length; plyIndex++) {
+            const move = history[plyIndex];
+            const fenBefore = replay.fen();
+            const legalMovesBefore = replay.moves().length;
+            const isEarlyGame = plyIndex < 6;
+            const isHumanMove = window.isBotMode
+                ? move?.color === window.playerColor
+                // В self-training игрок управляет обеими сторонами, поэтому анализируем все ходы.
+                : Boolean(window.isSelfTrainingMode?.());
+
+            if (!isEarlyGame && isHumanMove) {
+                const analysis = await window.botEngine.analyzePositionForAdvice(
+                    fenBefore,
+                    move,
+                    { depth: 10, movetime: 320 }
+                );
+
+                const bestMoveUci = analysis?.bestMove || '';
+                const bestMove = bestMoveUci && bestMoveUci !== '(none)'
+                    ? {
+                        from: bestMoveUci.slice(0, 2),
+                        to: bestMoveUci.slice(2, 4),
+                        promotion: bestMoveUci.slice(4, 5) || undefined
+                    }
+                    : null;
+
+                const playedMove = {
+                    from: move.from,
+                    to: move.to,
+                    promotion: move.promotion || undefined,
+                    san: move.san
+                };
+
+                const delta = Number.isFinite(analysis?.delta) ? analysis.delta : 0;
+                if (bestMove?.from && bestMove?.to) {
+                    const bestMoveGame = new Chess(fenBefore);
+                    const bestApplied = bestMoveGame.move({
+                        from: bestMove.from,
+                        to: bestMove.to,
+                        promotion: bestMove.promotion || 'q'
+                    });
+                    const bestSan = bestApplied?.san || null;
+                    const bestMatchesPlayed = bestMove.from === playedMove.from
+                        && bestMove.to === playedMove.to
+                        && (bestMove.promotion || undefined) === (playedMove.promotion || undefined);
+                    const bestHasWinningMate = isWinningMateSignal(
+                        analysis?.bestScoreType,
+                        analysis?.bestMateIn,
+                        bestSan
+                    );
+                    const playedHasMate = typeof playedMove.san === 'string' && playedMove.san.endsWith('#');
+                    const isMatchedWinningMate = bestMatchesPlayed && (bestHasWinningMate || playedHasMate);
+
+                    let classification = null;
+                    if (isMatchedWinningMate) classification = 'strong';
+                    else if (!isEarlyGame && delta >= 1.4) classification = 'blunder';
+                    else if (!isEarlyGame && delta >= 0.6) classification = 'mistake';
+                    else if (plyIndex >= 8 && legalMovesBefore >= 16 && delta <= 0.2 && bestMatchesPlayed) classification = 'strong';
+
+                    if (classification) {
+                        const playedAllowsMate = isLosingMateSignal(
+                            analysis?.playedScoreType,
+                            analysis?.playedMateIn
+                        );
+                        const bestFork = detectForkIdea(fenBefore, bestMove);
+                        const playedFork = detectForkIdea(fenBefore, playedMove);
+                        const forkFound = classification === 'strong'
+                            ? (bestMatchesPlayed ? playedFork : null)
+                            : (bestFork && !playedFork ? bestFork : null);
+                        const priorityReason = buildPriorityReason(classification, {
+                            bestHasWinningMate,
+                            playedAllowsMate,
+                            bestMoveSan: bestSan,
+                            bestMatchesPlayed,
+                            bestMateIn: Number.isFinite(analysis?.bestMateIn) ? analysis.bestMateIn : null,
+                            forkFound,
+                            bestContinuationSan: analysis?.bestContinuationSan || null,
+                            delta
+                        });
+                        const reasonPool = classification === 'strong'
+                            ? strongReasons
+                            : (classification === 'mistake' ? mistakeReasons : blunderReasons);
+                        const reason = priorityReason?.shortReason || reasonPool[plyIndex % reasonPool.length];
+                        const badge = classification === 'strong' ? '!!' : (classification === 'mistake' ? '?' : '?!');
+                        const label = classification === 'strong' ? 'Сильный ход' : (classification === 'mistake' ? 'Ошибка' : 'Зевок');
+                        annotations.push({
+                            plyIndex: plyIndex + 1,
+                            classification,
+                            badge,
+                            label,
+                            shortReason: reason,
+                            detailReason: priorityReason?.detailReason || buildDetailReason(classification, reason),
+                            reasonPriority: Number.isFinite(priorityReason?.priority) ? priorityReason.priority : 8,
+                            fenBefore,
+                            playedMove,
+                            bestMove: { ...bestMove, san: bestSan },
+                            delta,
+                            bestScoreType: analysis?.bestScoreType || 'cp',
+                            bestMateIn: Number.isFinite(analysis?.bestMateIn) ? analysis.bestMateIn : null,
+                            playedScoreType: analysis?.playedScoreType || 'cp',
+                            playedMateIn: Number.isFinite(analysis?.playedMateIn) ? analysis.playedMateIn : null,
+                            bestContinuationSan: analysis?.bestContinuationSan || null
+                        });
+                    }
+                }
+            }
+
+            replay.move({
+                from: move.from,
+                to: move.to,
+                promotion: move.promotion || 'q'
+            });
+        }
+
+        const prioritized = [...annotations]
+            .sort(compareAnnotationsForFeed)
+            .slice(0, 12)
+            .sort((a, b) => a.plyIndex - b.plyIndex);
+        const byPly = Object.fromEntries(prioritized.map((item) => [item.plyIndex, item]));
+
+        window.postGameAnalysis.ready = true;
+        window.postGameAnalysis.loading = false;
+        window.postGameAnalysis.analyzedColor = playerColor;
+        window.postGameAnalysis.annotations = prioritized;
+        window.postGameAnalysis.byPly = byPly;
+        window.postGameAnalysis.activePlyIndex = prioritized[0]?.plyIndex ?? null;
+        return true;
+    } catch (error) {
+        console.error('Ошибка post-game анализа:', error);
+        window.postGameAnalysis.loading = false;
+        window.postGameAnalysis.error = 'analysis_failed';
+        return false;
+    } finally {
+        window.updatePostGameAnalysisUI?.();
+    }
+};
+
+window.openPostGameAnalysis = async function() {
+    if (!window.postGameAnalysis?.supportedMode) return false;
+    if (!window.game || !window.isGameFinished?.()) return false;
+
+    window.updatePostGameAnalysisUI?.();
+    if (!window.postGameAnalysis.ready) {
+        const ok = await window.runPostGameAnalysis();
+        if (!ok) {
+            window.updatePostGameAnalysisUI?.();
+            window.notify('Не удалось подготовить анализ', 'error', 2600);
+            return false;
+        }
+    }
+    const maxPly = window.game.history().length;
+    const firstAnnotatedPly = Number.isInteger(window.postGameAnalysis.annotations?.[0]?.plyIndex)
+        ? window.postGameAnalysis.annotations[0].plyIndex
+        : null;
+    window.enterReviewMode(firstAnnotatedPly ?? maxPly);
+    window.updatePostGameAnalysisUI?.();
+    window.reapplyPersistentBoardHighlights?.();
+    return true;
+};
+
+window.clearPostGameAnalysisSelection = function() {
+    if (!window.postGameAnalysis) return;
+    window.postGameAnalysis.activePlyIndex = null;
+    window.postGameAnalysis.popoverOpen = false;
+    window.updatePostGameAnalysisUI?.();
+    window.reapplyPersistentBoardHighlights?.();
+};
 
 window.isPassAndPlayStandardMode = function() {
     return Boolean(window.isPassAndPlayMode && window.passAndPlayVariant === 'standard');
@@ -351,7 +864,7 @@ window.setActiveQuickPhraseFromState = function(quickPhrase) {
 };
 
 window.pushQuickPhrase = async function({ text, emoji }) {
-    if (!window.currentRoomId || !window.playerColor || window.isBotMode) return false;
+    if (!window.currentRoomId || !window.playerColor || window.isLocalGameMode?.()) return false;
     if (window.playerColor !== 'w' && window.playerColor !== 'b') return false;
 
     const safeText = String(text || '').trim().slice(0, 64);
@@ -528,7 +1041,8 @@ window.exitReviewMode = function() {
     window.reviewMode = false;
     window.reviewPlyIndex = null;
     window.reviewGame = null;
-    window.stopPostGameAnalysisEngine?.();
+    window.clearPostGameAnalysisSelection?.();
+    window.clearAnalysisHighlights?.();
 
     if (!window.game) return;
 
@@ -549,6 +1063,12 @@ window.goToReviewPly = function(index) {
     const { displayGame, safeIndex } = window.buildReviewDisplayGame(index);
 
     window.reviewPlyIndex = safeIndex;
+    if (window.postGameAnalysis?.ready) {
+        window.postGameAnalysis.activePlyIndex = window.postGameAnalysis.byPly?.[safeIndex]
+            ? safeIndex
+            : null;
+        window.postGameAnalysis.popoverOpen = false;
+    }
     window.removeHighlights?.();
     window.updateBoardPosition(displayGame.fen(), true);
 
@@ -844,12 +1364,6 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
     const isFinishedGame = Boolean(summary?.isFinished);
     const isCheckmate = Boolean(window.game.in_checkmate?.());
     const isCheck = !isCheckmate && Boolean(window.game.in_check?.());
-    const isCheckForCurrentClient = Boolean(
-        isCheck &&
-        window.playerColor &&
-        typeof window.game.turn === 'function' &&
-        window.playerColor === window.game.turn()
-    );
 
     if (moveResult.promotion) {
         events.push('promotion');
@@ -872,7 +1386,7 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
         if (finalEvent) {
             events.push(finalEvent);
         }
-    } else if (isCheckForCurrentClient) {
+    } else if (isCheck) {
         events.push('check');
     }
 
@@ -1028,7 +1542,8 @@ function getLobbyNodes() {
         hubOpenGamesBtn: document.getElementById('hub-open-games'),
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
         hubOpenBotGamesBtn: document.getElementById('hub-open-bot-games'),
-        hubOpenPassPlayBtn: document.getElementById('hub-open-pass-play'),
+        hubOpenTrainingBtn: document.getElementById('hub-open-training'),
+        hubOpenPassAndPlayBtn: document.getElementById('hub-open-pass-and-play'),
         hubGamesInviteDot: document.getElementById('hub-games-invite-dot'),
         hubGamesInviteLabel: document.getElementById('hub-games-invite-label'),
         createGameBtn: document.getElementById('create-game-btn'),
@@ -1039,6 +1554,14 @@ function getLobbyNodes() {
         botGameModal: document.getElementById('bot-game-modal'),
         botGameStartBtn: document.getElementById('bot-game-start'),
         botGameCancelBtn: document.getElementById('bot-game-cancel'),
+        trainingModeModal: document.getElementById('training-mode-modal'),
+        trainingModeSelfBtn: document.getElementById('training-mode-self'),
+        trainingModeCancelBtn: document.getElementById('training-mode-cancel'),
+        passAndPlayModeModal: document.getElementById('pass-and-play-mode-modal'),
+        passAndPlayModeStandardBtn: document.getElementById('pass-and-play-mode-standard'),
+        passAndPlayModeResumeBtn: document.getElementById('pass-and-play-mode-resume'),
+        passAndPlayModeNewGameBtn: document.getElementById('pass-and-play-mode-new-game'),
+        passAndPlayModeCancelBtn: document.getElementById('pass-and-play-mode-cancel'),
         botColorSelect: document.getElementById('bot-color-select'),
         botLevelSelect: document.getElementById('bot-level-select'),
         passPlayModal: document.getElementById('pass-play-modal'),
@@ -1137,9 +1660,89 @@ function closeBotGameModal(modal) {
     modal?.classList.add('hidden');
 }
 
-function closePassPlayModal(modal) {
+function closeTrainingModeModal(modal) {
     modal?.classList.add('hidden');
 }
+
+function closePassAndPlayModeModal(modal) {
+    modal?.classList.add('hidden');
+}
+
+function syncPassAndPlayModeModalState(nodes) {
+    const hasSavedGame = Boolean(window.hasSavedPassAndPlayGame?.());
+    const standardBtn = nodes.passAndPlayModeStandardBtn;
+    const resumeBtn = nodes.passAndPlayModeResumeBtn;
+    const newGameBtn = nodes.passAndPlayModeNewGameBtn;
+
+    if (standardBtn) {
+        standardBtn.classList.toggle('hidden', hasSavedGame);
+    }
+    if (resumeBtn) {
+        resumeBtn.classList.toggle('hidden', !hasSavedGame);
+    }
+    if (newGameBtn) {
+        newGameBtn.classList.toggle('hidden', !hasSavedGame);
+    }
+}
+
+function getPassAndPlaySnapshotGameState(snapshot, gameInstance = null) {
+    if (snapshot?.gameState === 'game_over') return 'game_over';
+    if (gameInstance?.game_over?.()) return 'game_over';
+    return 'active';
+}
+
+window.loadPassAndPlayGameSnapshot = function() {
+    try {
+        const raw = localStorage.getItem(window.PASS_AND_PLAY_SAVED_GAME_STORAGE_KEY);
+        if (!raw) return null;
+        const snapshot = JSON.parse(raw);
+        if (!snapshot || typeof snapshot !== 'object') return null;
+        if (snapshot.mode !== 'pass-and-play') return null;
+        if (snapshot.variant !== 'standard') return null;
+        if (!snapshot.pgn && !snapshot.fen) return null;
+        return snapshot;
+    } catch (error) {
+        console.warn('Не удалось загрузить локальное сохранение pass-and-play:', error);
+        return null;
+    }
+};
+
+window.clearPassAndPlayGameSnapshot = function() {
+    try {
+        localStorage.removeItem(window.PASS_AND_PLAY_SAVED_GAME_STORAGE_KEY);
+    } catch (error) {
+        console.warn('Не удалось очистить локальное сохранение pass-and-play:', error);
+    }
+};
+
+window.savePassAndPlayGameSnapshot = function(extra = {}) {
+    if (!window.isPassAndPlayStandardMode?.() || !window.game) return null;
+    try {
+        const history = window.game.history?.() || [];
+        const snapshot = {
+            mode: 'pass-and-play',
+            variant: 'standard',
+            pgn: window.game.pgn(),
+            fen: window.game.fen(),
+            history,
+            turn: window.game.turn(),
+            orientation: window.board?.orientation?.() || (window.game.turn() === 'b' ? 'black' : 'white'),
+            gameState: getPassAndPlaySnapshotGameState(extra, window.game),
+            updatedAt: Date.now(),
+            ...extra
+        };
+        localStorage.setItem(window.PASS_AND_PLAY_SAVED_GAME_STORAGE_KEY, JSON.stringify(snapshot));
+        return snapshot;
+    } catch (error) {
+        console.warn('Не удалось сохранить локальную партию pass-and-play:', error);
+        return null;
+    }
+};
+
+window.hasSavedPassAndPlayGame = function() {
+    const snapshot = window.loadPassAndPlayGameSnapshot?.();
+    return Boolean(snapshot);
+};
 
 function getBotLevelLabel(level) {
     if (level === 'easy') return 'Лёгкий';
@@ -1286,6 +1889,7 @@ window.openBotHistoryViewer = function(gameId) {
     window.playerColor = entry.userColor === 'b' ? 'b' : 'w';
     window.botColor = window.playerColor === 'w' ? 'b' : 'w';
     window.botLevel = window.BOT_LEVELS?.[entry.botLevel] ? entry.botLevel : 'medium';
+    window.resetPostGameAnalysisState?.({ supportedMode: true });
     window.game = new Chess();
     const loaded = window.game.load_pgn(entry.pgn);
     if (!loaded) {
@@ -2387,9 +2991,15 @@ window.initLobby = function() {
             window.renderBotGamesLobby?.();
         };
     }
-    if (nodes.hubOpenPassPlayBtn) {
-        nodes.hubOpenPassPlayBtn.onclick = () => {
-            nodes.passPlayModal?.classList.remove('hidden');
+    if (nodes.hubOpenTrainingBtn) {
+        nodes.hubOpenTrainingBtn.onclick = () => {
+            nodes.trainingModeModal?.classList.remove('hidden');
+        };
+    }
+    if (nodes.hubOpenPassAndPlayBtn) {
+        nodes.hubOpenPassAndPlayBtn.onclick = () => {
+            syncPassAndPlayModeModalState(nodes);
+            nodes.passAndPlayModeModal?.classList.remove('hidden');
         };
     }
     nodes.backButtons.forEach((button) => {
@@ -2430,6 +3040,12 @@ window.initLobby = function() {
     if (nodes.botGameCancelBtn) {
         nodes.botGameCancelBtn.onclick = () => closeBotGameModal(nodes.botGameModal);
     }
+    if (nodes.trainingModeCancelBtn) {
+        nodes.trainingModeCancelBtn.onclick = () => closeTrainingModeModal(nodes.trainingModeModal);
+    }
+    if (nodes.passAndPlayModeCancelBtn) {
+        nodes.passAndPlayModeCancelBtn.onclick = () => closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+    }
     if (nodes.botGameStartBtn) {
         nodes.botGameStartBtn.onclick = () => {
             const color = nodes.botColorSelect?.value || 'random';
@@ -2438,12 +3054,34 @@ window.initLobby = function() {
             window.initBotGame({ color, level });
         };
     }
-    if (nodes.passPlayCancelBtn) {
-        nodes.passPlayCancelBtn.onclick = () => closePassPlayModal(nodes.passPlayModal);
+    if (nodes.trainingModeSelfBtn) {
+        nodes.trainingModeSelfBtn.onclick = () => {
+            closeTrainingModeModal(nodes.trainingModeModal);
+            window.initTrainingGame({ mode: 'self' });
+        };
     }
-    if (nodes.passPlayStandardBtn) {
-        nodes.passPlayStandardBtn.onclick = () => {
-            closePassPlayModal(nodes.passPlayModal);
+    if (nodes.passAndPlayModeStandardBtn) {
+        nodes.passAndPlayModeStandardBtn.onclick = () => {
+            closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+            window.clearPassAndPlayGameSnapshot?.();
+            window.initPassAndPlayGame({ variant: 'standard' });
+        };
+    }
+    if (nodes.passAndPlayModeResumeBtn) {
+        nodes.passAndPlayModeResumeBtn.onclick = () => {
+            closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+            const hasResumed = window.resumePassAndPlayGame?.();
+            if (!hasResumed) {
+                window.notify('Не удалось загрузить сохранённую партию. Запускаю новую.', 'warning', 2600);
+                window.clearPassAndPlayGameSnapshot?.();
+                window.initPassAndPlayGame({ variant: 'standard' });
+            }
+        };
+    }
+    if (nodes.passAndPlayModeNewGameBtn) {
+        nodes.passAndPlayModeNewGameBtn.onclick = () => {
+            closePassAndPlayModeModal(nodes.passAndPlayModeModal);
+            window.clearPassAndPlayGameSnapshot?.();
             window.initPassAndPlayGame({ variant: 'standard' });
         };
     }
@@ -2455,9 +3093,14 @@ window.initLobby = function() {
             if (event.target === nodes.botGameModal) closeBotGameModal(nodes.botGameModal);
         };
     }
-    if (nodes.passPlayModal) {
-        nodes.passPlayModal.onclick = (event) => {
-            if (event.target === nodes.passPlayModal) closePassPlayModal(nodes.passPlayModal);
+    if (nodes.trainingModeModal) {
+        nodes.trainingModeModal.onclick = (event) => {
+            if (event.target === nodes.trainingModeModal) closeTrainingModeModal(nodes.trainingModeModal);
+        };
+    }
+    if (nodes.passAndPlayModeModal) {
+        nodes.passAndPlayModeModal.onclick = (event) => {
+            if (event.target === nodes.passAndPlayModeModal) closePassAndPlayModeModal(nodes.passAndPlayModeModal);
         };
     }
     window.lobbyShowFinished = false;
@@ -2718,6 +3361,8 @@ function initLocalGameState() {
     window.game = new Chess();
     window.currentRoomId = null;
     window.isBotMode = false;
+    window.isTrainingMode = false;
+    window.trainingModeType = null;
     window.isPassAndPlayMode = false;
     window.passAndPlayVariant = null;
     window.botColor = null;
@@ -2739,6 +3384,7 @@ function initLocalGameState() {
     window.lastPlayedGameOverSoundKey = null;
     window.lastMoveSequenceEndgameMarker = null;
     window.lastRenderedMoveHistoryLength = 0;
+    window.resetPostGameAnalysisState?.({ supportedMode: false });
     window.resetGameSoundFlags?.();
     window.syncReviewStateFromCurrentGame();
     window.activeReactions = [];
@@ -2841,6 +3487,7 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     window.playerColor = normalizedColor;
     window.botColor = normalizedColor === 'w' ? 'b' : 'w';
     window.botLevel = normalizedLevel;
+    window.resetPostGameAnalysisState?.({ supportedMode: true });
 
     window.setGameSectionVisibility();
     window.currentRoomId = null;
@@ -2854,6 +3501,10 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     params.set('bot', '1');
     params.set('color', normalizedColor);
     params.set('level', normalizedLevel);
+    params.delete('training');
+    params.delete('local');
+    params.delete('variant');
+    params.delete('mode');
     params.delete('room');
     params.delete('view');
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
@@ -2889,12 +3540,145 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     window.markGameReady?.();
 };
 
-window.initPassAndPlayGame = function({ variant = 'standard' } = {}) {
-    const normalizedVariant = variant === 'standard' ? 'standard' : 'standard';
+window.initTrainingGame = function({ mode = 'self' } = {}) {
+    const normalizedMode = mode === 'self' ? 'self' : 'self';
+
+    window.stopBotGame();
     initLocalGameState();
+
+    window.isTrainingMode = true;
+    window.trainingModeType = normalizedMode;
+    window.playerColor = 'w';
+    window.resetPostGameAnalysisState?.({ supportedMode: normalizedMode === 'self' });
+
+    window.setGameSectionVisibility();
+    window.currentRoomId = null;
+
+    const roomLink = document.getElementById('room-link');
+    if (roomLink) {
+        roomLink.value = '';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('training', '1');
+    params.set('mode', normalizedMode);
+    params.delete('local');
+    params.delete('variant');
+    params.delete('room');
+    params.delete('bot');
+    params.delete('color');
+    params.delete('level');
+    params.delete('view');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+    window.updatePlayerBadge();
+    window.initBoard(window.playerColor);
+    window.board?.orientation?.('white');
+
+    document.getElementById('game-modal')?.classList.add('hidden');
+    document.getElementById('takeback-request-box')?.classList.add('hidden');
+    document.getElementById('draw-request-box')?.classList.add('hidden');
+    document.getElementById('rematch-request-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
+
+    window.setupGameControls(null, null);
+    window.syncReviewStateFromCurrentGame();
+    window.lastKnownGameState = 'active';
+    window.updateUI({ gameState: 'active', mode: 'training', trainingMode: normalizedMode });
+    window.refreshPresenceUI?.();
+    window.markGameReady?.();
+};
+
+window.syncPassAndPlayBoardOrientation = function() {
+    if (!window.isPassAndPlayStandardMode?.() || !window.board || !window.game) return;
+    const orientation = window.game.turn() === 'b' ? 'black' : 'white';
+    window.board.orientation(orientation);
+    window.reapplyPersistentBoardHighlights?.(window.game.fen());
+};
+
+function applyPassAndPlayCommonUi(normalizedVariant) {
+    window.updatePlayerBadge();
+    window.initBoard(window.playerColor);
+    window.syncPassAndPlayBoardOrientation?.();
+
+    document.getElementById('game-modal')?.classList.add('hidden');
+    document.getElementById('takeback-request-box')?.classList.add('hidden');
+    document.getElementById('draw-request-box')?.classList.add('hidden');
+    document.getElementById('rematch-request-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
+
+    window.setupGameControls(null, null);
+    window.syncReviewStateFromCurrentGame();
+    const nextState = window.game?.game_over?.() ? 'game_over' : 'active';
+    window.lastKnownGameState = nextState;
+    window.updateUI({ gameState: nextState, mode: 'pass', variant: normalizedVariant });
+    window.refreshPresenceUI?.();
+    window.markGameReady?.();
+}
+
+window.resumePassAndPlayGame = function() {
+    const snapshot = window.loadPassAndPlayGameSnapshot?.();
+    if (!snapshot) return false;
+
+    const normalizedVariant = 'standard';
+    window.stopBotGame();
+    initLocalGameState();
+
     window.isPassAndPlayMode = true;
     window.passAndPlayVariant = normalizedVariant;
+    window.currentRoomId = null;
+
+    const restoredGame = new Chess();
+    let restored = false;
+    if (typeof snapshot.pgn === 'string' && snapshot.pgn.trim()) {
+        restored = restoredGame.load_pgn(snapshot.pgn);
+    }
+    if (!restored && Array.isArray(snapshot.history) && snapshot.history.length > 0) {
+        restored = snapshot.history.every((sanMove) => restoredGame.move(sanMove));
+    }
+    if (!restored && typeof snapshot.fen === 'string' && snapshot.fen.trim()) {
+        restored = restoredGame.load(snapshot.fen);
+    }
+    if (!restored) return false;
+
+    window.game = restoredGame;
     window.playerColor = window.game.turn();
+    window.setGameSectionVisibility();
+
+    const roomLink = document.getElementById('room-link');
+    if (roomLink) {
+        roomLink.value = '';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('local', '1');
+    params.set('mode', 'pass');
+    params.set('variant', normalizedVariant);
+    params.delete('room');
+    params.delete('bot');
+    params.delete('color');
+    params.delete('level');
+    params.delete('training');
+    params.delete('view');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+    applyPassAndPlayCommonUi(normalizedVariant);
+    window.savePassAndPlayGameSnapshot?.({
+        gameState: getPassAndPlaySnapshotGameState(snapshot, window.game),
+        orientation: snapshot.orientation || (window.game.turn() === 'b' ? 'black' : 'white')
+    });
+    return true;
+};
+
+window.initPassAndPlayGame = function({ variant = 'standard' } = {}) {
+    const normalizedVariant = variant === 'standard' ? 'standard' : 'standard';
+
+    window.stopBotGame();
+    initLocalGameState();
+
+    window.isPassAndPlayMode = true;
+    window.passAndPlayVariant = normalizedVariant;
+    window.playerColor = 'w';
 
     window.setGameSectionVisibility();
     window.currentRoomId = null;
@@ -2909,28 +3693,15 @@ window.initPassAndPlayGame = function({ variant = 'standard' } = {}) {
     params.set('mode', 'pass');
     params.set('variant', normalizedVariant);
     params.delete('room');
-    params.delete('view');
     params.delete('bot');
     params.delete('color');
     params.delete('level');
+    params.delete('training');
+    params.delete('view');
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
 
-    window.updatePlayerBadge();
-    window.initBoard(window.playerColor);
-    window.syncPassAndPlayOrientation?.();
-
-    document.getElementById('game-modal')?.classList.add('hidden');
-    document.getElementById('takeback-request-box')?.classList.add('hidden');
-    document.getElementById('draw-request-box')?.classList.add('hidden');
-    document.getElementById('rematch-request-box')?.classList.add('hidden');
-    document.getElementById('promotion-choice-box')?.classList.add('hidden');
-
-    window.setupGameControls(null, null);
-    window.syncReviewStateFromCurrentGame();
-    window.lastKnownGameState = 'active';
-    window.updateUI({ gameState: 'active', mode: 'pass-and-play' });
-    window.refreshPresenceUI?.();
-    window.markGameReady?.();
+    applyPassAndPlayCommonUi(normalizedVariant);
+    window.savePassAndPlayGameSnapshot?.({ gameState: 'active' });
 };
 
 

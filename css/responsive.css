@@ -541,6 +541,16 @@
         height: 190px;
     }
 
+    .captured-pieces {
+        padding: 5px 6px;
+        gap: 6px;
+    }
+
+    .captured-piece-icon {
+        width: 13px;
+        height: 13px;
+    }
+
     .review-controls {
         margin-bottom: var(--space-8);
     }
@@ -584,6 +594,18 @@
 
     .user-presence-text {
         max-width: 42px;
+    }
+
+    .captured-pieces {
+        gap: 4px;
+    }
+
+    .captured-pieces-side {
+        gap: 4px;
+    }
+
+    .captured-piece-item {
+        font-size: 0.64rem;
     }
 
     .game-status-header {

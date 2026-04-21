@@ -93,6 +93,14 @@
                         <label for="piece-set-select">Фигурки</label>
                         <select id="piece-set-select" class="board-settings-select system-select"></select>
                     </div>
+                    <div class="user-menu-setting user-menu-setting-audio">
+                        <label class="user-menu-audio-toggle" for="sound-enabled-toggle">
+                            <input id="sound-enabled-toggle" type="checkbox" checked>
+                            <span>Включить звук</span>
+                        </label>
+                        <label for="sound-master-volume">Общая громкость</label>
+                        <input id="sound-master-volume" type="range" min="0" max="1" step="0.01" value="0.8">
+                    </div>
                     <button id="user-menu-lobby-btn" class="user-menu-item" type="button" role="menuitem">В лобби</button>
                     <button id="logout-btn" class="user-menu-item user-menu-item-danger" type="button" role="menuitem">Выйти</button>
                 </div>
@@ -143,27 +151,49 @@
                 </div>
                 <div class="lobby-hub-grid">
                     <button id="hub-create-game" class="hub-tile hub-tile-primary" type="button">
-                        <span class="hub-tile-icon" aria-hidden="true">⚔️</span>
+                        <span class="hub-tile-icon" aria-hidden="true">
+                            <span class="hub-icon-emoji">⚔️</span>
+                            <img class="hub-icon-svg" src="assets/icons/start-game.svg" alt="">
+                        </span>
                         <span class="hub-tile-title">Создать игру</span>
                     </button>
                     <button id="hub-open-games" class="hub-tile hub-tile-secondary hub-tile-secondary--games" type="button">
                         <span id="hub-games-invite-dot" class="hub-tile-notify-dot hidden" aria-hidden="true"></span>
-                        <span class="hub-tile-icon" aria-hidden="true">♟️</span>
+                        <span class="hub-tile-icon" aria-hidden="true">
+                            <span class="hub-icon-emoji">♟️</span>
+                            <img class="hub-icon-svg" src="assets/icons/games.svg" alt="">
+                        </span>
                         <span class="hub-tile-title-wrap">
                             <span class="hub-tile-title">Партии</span>
                             <span id="hub-games-invite-label" class="hub-tile-subtitle hidden">Вас пригласили</span>
                         </span>
                     </button>
                     <button id="hub-open-players" class="hub-tile hub-tile-secondary hub-tile-secondary--players" type="button">
-                        <span class="hub-tile-icon" aria-hidden="true">👥</span>
+                        <span class="hub-tile-icon" aria-hidden="true">
+                            <span class="hub-icon-emoji">👥</span>
+                            <img class="hub-icon-svg" src="assets/icons/players.svg" alt="">
+                        </span>
                         <span class="hub-tile-title">Игроки</span>
                     </button>
                     <button id="hub-open-bot-games" class="hub-tile hub-tile-secondary" type="button">
-                        <span class="hub-tile-icon" aria-hidden="true">🐈‍⬛</span>
+                        <span class="hub-tile-icon" aria-hidden="true">
+                            <span class="hub-icon-emoji">🐈‍⬛</span>
+                            <img class="hub-icon-svg" src="assets/icons/ichi.svg" alt="">
+                        </span>
                         <span class="hub-tile-title">Игры с Ичи</span>
                     </button>
-                    <button id="hub-open-pass-play" class="hub-tile hub-tile-secondary" type="button">
-                        <span class="hub-tile-icon" aria-hidden="true">🧑‍🤝‍🧑</span>
+                    <button id="hub-open-training" class="hub-tile hub-tile-secondary" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">
+                            <span class="hub-icon-emoji">🎯</span>
+                            <img class="hub-icon-svg" src="assets/icons/traninig.svg" alt="">
+                        </span>
+                        <span class="hub-tile-title">Тренировка</span>
+                    </button>
+                    <button id="hub-open-pass-and-play" class="hub-tile hub-tile-secondary" type="button">
+                        <span class="hub-tile-icon" aria-hidden="true">
+                            <span class="hub-icon-emoji">🤝</span>
+                            <img class="hub-icon-svg" src="assets/icons/duo.svg" alt="">
+                        </span>
                         <span class="hub-tile-title">Вдвоём</span>
                     </button>
                 </div>
@@ -261,14 +291,29 @@
             </div>
         </div>
 
-        <div id="pass-play-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pass-play-modal-title">
-            <div class="modal-content create-game-modal-content">
-                <h3 id="pass-play-modal-title" class="modal-title-reset">Режим «Вдвоём»</h3>
-                <p class="modal-desc-secondary">Выберите формат локальной партии</p>
-                <div class="create-game-modal-actions">
-                    <button id="pass-play-standard-btn" class="btn btn-primary" type="button">Обычный</button>
+        <div id="training-mode-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="training-mode-modal-title">
+            <div class="modal-content create-game-modal-content bot-game-modal-content">
+                <h3 id="training-mode-modal-title" class="modal-title-reset">Тренировка</h3>
+                <p class="modal-desc-secondary">Выберите режим тренировки</p>
+                <div class="create-game-modal-actions bot-game-modal-actions">
+                    <button id="training-mode-self" class="btn btn-primary" type="button">Сам с собой</button>
+                    <button class="btn btn-outline" type="button" disabled>Студия — скоро</button>
+                    <button class="btn btn-outline" type="button" disabled>Дебюты — скоро</button>
+                    <button id="training-mode-cancel" class="btn btn-outline" type="button">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pass-and-play-mode-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pass-and-play-mode-modal-title">
+            <div class="modal-content create-game-modal-content bot-game-modal-content">
+                <h3 id="pass-and-play-mode-modal-title" class="modal-title-reset">Вдвоём</h3>
+                <p class="modal-desc-secondary">Выберите режим</p>
+                <div class="create-game-modal-actions bot-game-modal-actions">
+                    <button id="pass-and-play-mode-standard" class="btn btn-primary" type="button">Обычный</button>
+                    <button id="pass-and-play-mode-resume" class="btn btn-primary hidden" type="button">Продолжить</button>
+                    <button id="pass-and-play-mode-new-game" class="btn btn-outline hidden" type="button">Новая партия</button>
                     <button class="btn btn-outline" type="button" disabled>Напротив — скоро</button>
-                    <button id="pass-play-cancel-btn" class="btn btn-outline" type="button">Отмена</button>
+                    <button id="pass-and-play-mode-cancel" class="btn btn-outline" type="button">Отмена</button>
                 </div>
             </div>
         </div>
@@ -327,7 +372,7 @@
 
                                 <!-- Оверлей подтверждения хода -->
                                 <div id="confirm-move-box" class="confirm-overlay hidden">
-                                    <button id="confirm-btn" class="btn-round btn-success">✓</button>
+                                    <button id="confirm-btn" class="btn-round btn-success" data-no-ui-sound="true">✓</button>
                                     <button id="cancel-move-btn" class="btn-round btn-danger">✕</button>
                                 </div>
 
@@ -398,12 +443,18 @@
                                     <button id="review-live-btn" class="review-control-btn review-live-btn" type="button">К текущей позиции</button>
                                     <p id="review-status" class="review-status">Последняя позиция</p>
                                 </div>
+                                <p id="review-analysis-hint" class="review-analysis-hint hidden">Выберите помеченный ход для разбора.</p>
                             </div>
                         </div>
 
                         <div class="game-bottom-panel">
                             <div class="moves-card">
                                 <h3>История ходов</h3>
+                                <div id="captured-pieces" class="captured-pieces" aria-label="Съеденные фигуры">
+                                    <div class="captured-pieces-side captured-pieces-side--white" data-captured-by="white"></div>
+                                    <div class="captured-pieces-divider" aria-hidden="true"></div>
+                                    <div class="captured-pieces-side captured-pieces-side--black" data-captured-by="black"></div>
+                                </div>
                                 <div id="move-list" class="move-list-content"></div>
                             </div>
 
@@ -422,6 +473,7 @@
 
                             <div id="finished-game-actions" class="finished-game-actions hidden" role="group" aria-label="Действия завершённой партии">
                                 <button id="inline-copy-pgn" class="btn btn-outline pgn-action-btn">Копировать PGN</button>
+                                <button id="inline-analysis-btn" class="btn btn-outline hidden">Анализ</button>
                                 <button id="inline-rematch-btn" class="btn btn-primary">Реванш</button>
                             </div>
                         </div>
@@ -456,6 +508,7 @@
                 </div>
                 <div class="game-modal-actions">
                     <button id="modal-review-btn" class="btn btn-outline">Посмотреть</button>
+                    <button id="modal-analysis-btn" class="btn btn-outline hidden">Анализ</button>
                     <button id="modal-rematch-btn" class="btn btn-primary btn-large">Новая партия (Реванш)</button>
                     <button id="modal-exit-btn" class="btn btn-outline">Выйти в лобби</button>
                 </div>
