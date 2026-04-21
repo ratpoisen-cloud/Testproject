@@ -3,6 +3,7 @@
 // Если движок требует .wasm, положите соответствующий .wasm файл вручную рядом с этим .js.
 
 window.BOT_ENGINE_PATH = 'js/engine/stockfish-18-lite-single.js';
+window.BOT_ENGINE_WASM_PATH = 'js/engine/stockfish-18-lite-single.wasm';
 window.BOT_ANALYSIS_PROFILE = {
     skill: 9,
     depth: 11,
@@ -99,9 +100,17 @@ window.createBotEngine = function(level = 'medium', options = {}) {
         worker.postMessage(command);
     };
 
+    const resolveEngineWorkerUrl = () => {
+        const scriptUrl = new URL(window.BOT_ENGINE_PATH, window.location.href);
+        const explicitWasmPath = window.BOT_ENGINE_WASM_PATH || scriptUrl.href.replace(/\.js(\?.*)?$/, '.wasm$1');
+        const wasmUrl = new URL(explicitWasmPath, window.location.href);
+        const workerHash = `${encodeURIComponent(wasmUrl.href)},worker`;
+        return `${scriptUrl.href}#${workerHash}`;
+    };
+
     const ensureInitialized = () => {
         if (worker) return;
-        worker = new Worker(window.BOT_ENGINE_PATH);
+        worker = new Worker(resolveEngineWorkerUrl());
         worker.onmessage = onWorkerMessage;
         worker.onerror = (error) => {
             console.error('Stockfish worker error:', error);
