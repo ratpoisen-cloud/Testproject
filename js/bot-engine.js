@@ -128,10 +128,6 @@ window.createBotEngine = function(level = 'medium', options = {}) {
     const ensureInitialized = () => {
         if (worker) return;
         worker = new Worker(resolveEngineWorkerUrl());
-        readyPromise = new Promise((resolve, reject) => {
-            resolveReady = resolve;
-            rejectReady = reject;
-        });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (error) => {
             console.error('Stockfish worker error:', error);
