@@ -80,6 +80,34 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const isBotMode = () => Boolean(window.isBotMode);
     const isPassAndPlayMode = () => Boolean(window.isPassAndPlayMode);
+    const BOT_MOVE_VISUAL_DELAY_RANGES = {
+        easy: { min: 1400, max: 1800 },
+        medium: { min: 900, max: 1300 },
+        hard: { min: 600, max: 900 }
+    };
+    const BOT_MOVE_VISUAL_DELAY_ENDGAME_RANGE = { min: 320, max: 560 };
+
+    const waitForMs = async (ms) => {
+        if (!Number.isFinite(ms) || ms <= 0) return;
+        await new Promise((resolve) => setTimeout(resolve, ms));
+    };
+
+    const randomInRange = (min, max) => {
+        const safeMin = Number.isFinite(min) ? Math.max(0, Math.floor(min)) : 0;
+        const safeMax = Number.isFinite(max) ? Math.max(safeMin, Math.floor(max)) : safeMin;
+        return Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin;
+    };
+
+    const getBotVisualThinkingDelayMs = ({ level, isFastEndgameHint = false } = {}) => {
+        const baseRange = BOT_MOVE_VISUAL_DELAY_RANGES[level] || BOT_MOVE_VISUAL_DELAY_RANGES.medium;
+        if (!isFastEndgameHint) {
+            return randomInRange(baseRange.min, baseRange.max);
+        }
+
+        const tunedMin = Math.min(baseRange.min, BOT_MOVE_VISUAL_DELAY_ENDGAME_RANGE.min);
+        const tunedMax = Math.min(baseRange.max, BOT_MOVE_VISUAL_DELAY_ENDGAME_RANGE.max);
+        return randomInRange(tunedMin, Math.max(tunedMin, tunedMax));
+    };
 
     window.requestBotMove = async function() {
         if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
@@ -90,8 +118,26 @@ window.setupGameControls = function(gameRef, roomId) {
         window.updateTurnIndicator(false);
 
         try {
-            const bestMove = await window.botEngine.getBestMove(window.game.fen());
+            const botTurnSessionId = window.currentBotSessionId || null;
+            const botTurnFen = window.game.fen();
+            const engineSearchStartedAt = performance.now();
+            const bestMove = await window.botEngine.getBestMove(botTurnFen);
             if (!bestMove || bestMove === '(none)' || !window.isBotMode) return;
+
+            const engineSearchElapsedMs = performance.now() - engineSearchStartedAt;
+            const legalMovesCount = window.game.moves?.().length || 0;
+            const isFastEndgameHint = legalMovesCount <= 4 || Boolean(window.game.in_check?.());
+            const visualDelayTargetMs = getBotVisualThinkingDelayMs({
+                level: window.botLevel,
+                isFastEndgameHint
+            });
+            const remainingVisualDelayMs = Math.max(0, visualDelayTargetMs - engineSearchElapsedMs);
+            await waitForMs(remainingVisualDelayMs);
+
+            if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
+            if (window.game.turn() !== window.botColor) return;
+            if ((window.currentBotSessionId || null) !== botTurnSessionId) return;
+            if (window.game.fen() !== botTurnFen) return;
 
             const botMove = window.game.move({
                 from: bestMove.slice(0, 2),
