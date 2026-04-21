@@ -3,29 +3,34 @@
 // Если движок требует .wasm, положите соответствующий .wasm файл вручную рядом с этим .js.
 
 window.BOT_ENGINE_PATH = 'js/engine/stockfish-18-lite-single.js';
+window.BOT_ANALYSIS_PROFILE = {
+    skill: 9,
+    depth: 11,
+    movetime: 420
+};
 window.BOT_LEVELS = {
     easy: {
         label: 'Лёгкий',
-        skill: 4,
-        depth: 8,
-        movetime: 220
+        skill: 1,
+        depth: 4,
+        movetime: 120
     },
     medium: {
         label: 'Средний',
-        skill: 10,
-        depth: 12,
-        movetime: 450
+        skill: 3,
+        depth: 6,
+        movetime: 170
     },
     hard: {
         label: 'Сильный',
-        skill: 16,
-        depth: 16,
-        movetime: 900
+        skill: 4,
+        depth: 8,
+        movetime: 220
     }
 };
 
-window.createBotEngine = function(level = 'medium') {
-    const profile = window.BOT_LEVELS[level] || window.BOT_LEVELS.medium;
+window.createBotEngine = function(level = 'medium', options = {}) {
+    const profile = options?.profile || window.BOT_LEVELS[level] || window.BOT_LEVELS.medium;
     let worker = null;
     let activeResolver = null;
     let activeRejector = null;
@@ -106,4 +111,10 @@ window.createBotEngine = function(level = 'medium') {
             }
         }
     };
+};
+
+window.createBotAnalysisEngine = function() {
+    return window.createBotEngine('medium', {
+        profile: window.BOT_ANALYSIS_PROFILE
+    });
 };
