@@ -34,10 +34,19 @@ window.createBotEngine = function(level = 'medium', options = {}) {
     const profile = options?.profile || window.BOT_LEVELS[level] || window.BOT_LEVELS.medium;
     let worker = null;
     let activeRequest = null;
+    let readyPromise = null;
+    let resolveReady = null;
+    let rejectReady = null;
+    let isReady = false;
 
     const MATE_SCORE_PAWNS = 100;
+    const ENGINE_READY_TIMEOUT_MS = 5000;
+    const SEARCH_TIMEOUT_MS = 12000;
 
     const clearPendingRequest = () => {
+        if (activeRequest?.timeoutId) {
+            clearTimeout(activeRequest.timeoutId);
+        }
         activeRequest = null;
     };
 
@@ -71,6 +80,14 @@ window.createBotEngine = function(level = 'medium', options = {}) {
     const onWorkerMessage = (event) => {
         const line = String(event?.data || '').trim();
         if (!line) return;
+
+        if (line === 'readyok') {
+            isReady = true;
+            resolveReady?.();
+            resolveReady = null;
+            rejectReady = null;
+            return;
+        }
 
         if (activeRequest && line.startsWith('info')) {
             const scoreData = parseScoreFromInfoLine(line);
@@ -114,6 +131,9 @@ window.createBotEngine = function(level = 'medium', options = {}) {
         worker.onmessage = onWorkerMessage;
         worker.onerror = (error) => {
             console.error('Stockfish worker error:', error);
+            rejectReady?.(error);
+            resolveReady = null;
+            rejectReady = null;
             if (activeRequest?.reject) {
                 activeRequest.reject(error);
             }
@@ -121,15 +141,26 @@ window.createBotEngine = function(level = 'medium', options = {}) {
         };
 
         send('uci');
-        send('isready');
         send(`setoption name Skill Level value ${profile.skill}`);
+        send('isready');
+    };
+
+    const waitForEngineReady = async () => {
+        ensureInitialized();
+        if (isReady) return;
+
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Bot engine ready timeout')), ENGINE_READY_TIMEOUT_MS);
+        });
+
+        await Promise.race([readyPromise, timeoutPromise]);
     };
 
     return {
         level,
         profile,
         async getBestMoveWithEval(fen, options = {}) {
-            ensureInitialized();
+            await waitForEngineReady();
             if (!fen) return { bestMove: null, score: 0, scoreType: 'cp', mateIn: null };
 
             if (activeRequest?.reject) {
@@ -146,7 +177,11 @@ window.createBotEngine = function(level = 'medium', options = {}) {
                     reject,
                     lastScore: null,
                     lastScoreType: null,
-                    lastMateIn: null
+                    lastMateIn: null,
+                    timeoutId: setTimeout(() => {
+                        reject(new Error('Bot engine search timeout'));
+                        clearPendingRequest();
+                    }, SEARCH_TIMEOUT_MS)
                 };
 
                 send('stop');
