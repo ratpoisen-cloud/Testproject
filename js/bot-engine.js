@@ -208,17 +208,6 @@ window.createBotEngine = function(level = 'medium', options = {}) {
         return null;
     };
 
-    const pickUrlWithFallback = async (urls, missingLabel) => {
-        const foundUrl = await pickFirstExistingUrl(urls, missingLabel);
-        if (foundUrl) return foundUrl;
-
-        const fallbackUrl = urls[0] || null;
-        if (fallbackUrl) {
-            console.warn(`${missingLabel}: using unchecked fallback`, fallbackUrl);
-        }
-        return fallbackUrl;
-    };
-
     const resolveEnginePaths = async () => {
         const scriptCandidates = uniqueResolvedUrls([
             window.BOT_ENGINE_PATH,
@@ -226,7 +215,7 @@ window.createBotEngine = function(level = 'medium', options = {}) {
             'js/stockfish-18-lite-single.js',
             'stockfish-18-lite-single.js'
         ]);
-        const scriptUrl = await pickUrlWithFallback(scriptCandidates, 'worker script not found');
+        const scriptUrl = await pickFirstExistingUrl(scriptCandidates, 'worker script not found');
         if (!scriptUrl) {
             throw new Error('worker script not found');
         }
@@ -243,7 +232,7 @@ window.createBotEngine = function(level = 'medium', options = {}) {
             'js/stockfish-18-lite-single.wasm',
             'stockfish-18-lite-single.wasm'
         ]);
-        const wasmUrl = await pickUrlWithFallback(wasmCandidates, 'wasm not found');
+        const wasmUrl = await pickFirstExistingUrl(wasmCandidates, 'wasm not found');
         if (!wasmUrl) {
             throw new Error('wasm not found');
         }
