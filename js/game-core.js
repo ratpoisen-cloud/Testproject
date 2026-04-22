@@ -609,6 +609,10 @@ window.applyImmediateGameOverState = function(partialData = {}) {
         gameState: 'game_over'
     };
 
+    if (window.isBotMode) {
+        window.stopBotGame?.();
+    }
+
     window.lastKnownGameState = 'game_over';
     window.updateUI?.(nextSnapshot);
     window.applyGameEndBoardEffects?.(window.game?.fen?.());
