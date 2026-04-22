@@ -144,7 +144,20 @@ window.setupGameControls = function(gameRef, roomId) {
                 window.updateGameModal({ gameState: 'game_over', message: metadata.message });
             }
         } catch (error) {
-            console.error('Ошибка хода бота:', error);
+            const errorMessage = String(error?.message || error || '');
+            if (errorMessage.includes('ready timeout')) {
+                console.error('Ошибка хода бота: ready timeout', error);
+            } else if (errorMessage.includes('search timeout')) {
+                console.error('Ошибка хода бота: search timeout', error);
+            } else if (errorMessage.includes('worker script not found')) {
+                console.error('Ошибка хода бота: worker script not found', error);
+            } else if (errorMessage.includes('wasm not found')) {
+                console.error('Ошибка хода бота: wasm not found', error);
+            } else if (errorMessage.includes('engine init failed')) {
+                console.error('Ошибка хода бота: engine init failed', error);
+            } else {
+                console.error('Ошибка хода бота:', error);
+            }
             window.notify('Не удалось получить ход бота', 'error', 2600);
         } finally {
             window.isBotThinking = false;
