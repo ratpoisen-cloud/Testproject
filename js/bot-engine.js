@@ -208,7 +208,6 @@ window.createBotEngine = function(level = 'medium', options = {}) {
         return null;
     };
 
-<<<<<<< codex/fix-bot-game-mode-in-go-chess
     const pickUrlWithFallback = async (urls, missingLabel) => {
         const foundUrl = await pickFirstExistingUrl(urls, missingLabel);
         if (foundUrl) return foundUrl;
@@ -219,9 +218,6 @@ window.createBotEngine = function(level = 'medium', options = {}) {
         }
         return fallbackUrl;
     };
-
-=======
->>>>>>> Practice-test
     const resolveEnginePaths = async () => {
         const scriptCandidates = uniqueResolvedUrls([
             window.BOT_ENGINE_PATH,
@@ -229,11 +225,7 @@ window.createBotEngine = function(level = 'medium', options = {}) {
             'js/stockfish-18-lite-single.js',
             'stockfish-18-lite-single.js'
         ]);
-<<<<<<< codex/fix-bot-game-mode-in-go-chess
         const scriptUrl = await pickUrlWithFallback(scriptCandidates, 'worker script not found');
-=======
-        const scriptUrl = await pickFirstExistingUrl(scriptCandidates, 'worker script not found');
->>>>>>> Practice-test
         if (!scriptUrl) {
             throw new Error('worker script not found');
         }
@@ -250,11 +242,7 @@ window.createBotEngine = function(level = 'medium', options = {}) {
             'js/stockfish-18-lite-single.wasm',
             'stockfish-18-lite-single.wasm'
         ]);
-<<<<<<< codex/fix-bot-game-mode-in-go-chess
         const wasmUrl = await pickUrlWithFallback(wasmCandidates, 'wasm not found');
-=======
-        const wasmUrl = await pickFirstExistingUrl(wasmCandidates, 'wasm not found');
->>>>>>> Practice-test
         if (!wasmUrl) {
             throw new Error('wasm not found');
         }
