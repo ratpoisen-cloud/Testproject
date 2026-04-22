@@ -226,8 +226,8 @@ window.updateOpponentHeader = function(data) {
     const isBotGame = isBotMode;
 
     if (isBotMode) {
-        const levelMap = { easy: 'Лёгкий', medium: 'Средний', hard: 'Сильный' };
-        opponentName = `Бот (${levelMap[window.botLevel] || 'Средний'})`;
+        const levelMap = { easy: 'Очень лёгкий', medium: 'Лёгкий', hard: 'Средний' };
+        opponentName = `Бот (${levelMap[window.botLevel] || 'Лёгкий'})`;
     } else if (isWhitePlayer) {
         opponentName = players.blackName || 'Ожидание соперника';
         opponentAvatar = players.blackPhotoURL || players.blackAvatar || '';

@@ -1114,9 +1114,9 @@ function closeBotGameModal(modal) {
 }
 
 function getBotLevelLabel(level) {
-    if (level === 'easy') return 'Лёгкий';
-    if (level === 'hard') return 'Сильный';
-    return 'Средний';
+    if (level === 'easy') return 'Очень лёгкий';
+    if (level === 'hard') return 'Средний';
+    return 'Лёгкий';
 }
 
 function getUserColorLabel(color) {
