@@ -5,22 +5,22 @@
 window.BOT_ENGINE_PATH = 'js/engine/stockfish-18-lite-single.js';
 window.BOT_LEVELS = {
     easy: {
+        label: 'Очень лёгкий',
+        skill: 0,
+        depth: 3,
+        movetime: 50
+    },
+    medium: {
         label: 'Лёгкий',
+        skill: 2,
+        depth: 5,
+        movetime: 100
+    },
+    hard: {
+        label: 'Средний',
         skill: 4,
         depth: 8,
         movetime: 220
-    },
-    medium: {
-        label: 'Средний',
-        skill: 10,
-        depth: 12,
-        movetime: 450
-    },
-    hard: {
-        label: 'Сильный',
-        skill: 16,
-        depth: 16,
-        movetime: 900
     }
 };
 
