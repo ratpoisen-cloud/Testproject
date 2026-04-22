@@ -109,8 +109,14 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     window.requestBotMove = async function() {
-        if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
-        if (window.game.turn() !== window.botColor) return;
+        const isBotTurnRunnable = () => {
+            if (!isBotMode() || !window.botEngine || !window.game) return false;
+            if (window.isGameFinished?.() || window.game.game_over()) return false;
+            if (window.game.turn() !== window.botColor) return false;
+            return true;
+        };
+
+        if (!isBotTurnRunnable()) return;
         if (window.isBotThinking) return;
 
         window.isBotThinking = true;
@@ -133,8 +139,7 @@ window.setupGameControls = function(gameRef, roomId) {
             const remainingVisualDelayMs = Math.max(0, visualDelayTargetMs - engineSearchElapsedMs);
             await waitForMs(remainingVisualDelayMs);
 
-            if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
-            if (window.game.turn() !== window.botColor) return;
+            if (!isBotTurnRunnable()) return;
             if ((window.currentBotSessionId || null) !== botTurnSessionId) return;
             if (window.game.fen() !== botTurnFen) return;
 
@@ -144,7 +149,13 @@ window.setupGameControls = function(gameRef, roomId) {
                 promotion: bestMove.slice(4, 5) || 'q'
             });
 
-            if (!botMove) return;
+            if (!botMove) {
+                throw new Error(`illegal bot move: ${bestMove}`);
+            }
+
+            if (window.reviewMode && !window.game.game_over()) {
+                window.exitReviewMode?.();
+            }
 
             window.playMoveSoundSequence?.(botMove, { allowVoiceLine: false });
 
@@ -162,10 +173,18 @@ window.setupGameControls = function(gameRef, roomId) {
             }
         } catch (error) {
             const errorMessage = String(error?.message || error || '');
+            if (!isBotMode()) {
+                return;
+            }
+            if (errorMessage.includes('Bot search interrupted by newer request')) {
+                return;
+            }
             if (errorMessage.includes('ready timeout')) {
                 console.error('Ошибка хода бота: ready timeout', error);
             } else if (errorMessage.includes('search timeout')) {
                 console.error('Ошибка хода бота: search timeout', error);
+            } else if (errorMessage.includes('illegal bot move')) {
+                console.error('Ошибка хода бота: illegal bot move', error);
             } else if (errorMessage.includes('worker script not found')) {
                 console.error('Ошибка хода бота: worker script not found', error);
             } else if (errorMessage.includes('wasm not found')) {
