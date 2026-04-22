@@ -91,33 +91,6 @@ window.setupGameControls = function(gameRef, roomId) {
     const isPassAndPlayMode = () => Boolean(window.isPassAndPlayStandardMode?.());
     const isLocalMode = () => Boolean(window.isLocalGameMode?.());
 
-    // Вспомогательная функция для задержки (Promise-based sleep)
-    const waitForMs = (ms) => new Promise((resolve) => {
-        if (ms <= 0) {
-            resolve();
-        } else {
-            setTimeout(resolve, ms);
-        }
-    });
-
-    // Получение задержки для визуального обдумывания хода ботом
-    const getBotVisualThinkingDelayMs = ({ level, isFastEndgameHint = false }) => {
-        const baseDelays = {
-            easy: 350,
-            medium: 500,
-            hard: 650
-        };
-        const levelKey = level?.toLowerCase?.() || 'medium';
-        const baseDelay = baseDelays[levelKey] ?? baseDelays.medium;
-        
-        // Если позиция простая (мало ходов или шах), уменьшаем задержку
-        if (isFastEndgameHint) {
-            return Math.max(150, Math.floor(baseDelay * 0.5));
-        }
-        
-        return baseDelay;
-    };
-
     window.requestBotMove = async function() {
         if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
         if (window.game.turn() !== window.botColor) return;
