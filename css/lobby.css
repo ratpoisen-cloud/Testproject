@@ -367,6 +367,9 @@ body[data-ui-theme] .brand-wordmark-asset-dark {
 
 #bot-games-new-btn {
     margin-right: 4px;
+    color: var(--accent-contrast);
+    opacity: 1;
+    text-shadow: 0 1px 0 color-mix(in srgb, #000 38%, transparent);
 }
 
 #finished-games-list {
