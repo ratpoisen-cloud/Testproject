@@ -37,6 +37,8 @@ window.createBotEngine = function(level = 'medium', options = {}) {
     let readyPromise = null;
     let resolveReady = null;
     let rejectReady = null;
+    let initPromise = null;
+    let enginePaths = null;
     let isReady = false;
 
     const MATE_SCORE_PAWNS = 100;
@@ -48,6 +50,47 @@ window.createBotEngine = function(level = 'medium', options = {}) {
             clearTimeout(activeRequest.timeoutId);
         }
         activeRequest = null;
+    };
+
+    const createReadyPromise = () => {
+        readyPromise = new Promise((resolve, reject) => {
+            resolveReady = resolve;
+            rejectReady = reject;
+        });
+    };
+
+    const rejectEngineReady = (error) => {
+        if (rejectReady) {
+            rejectReady(error);
+        }
+        resolveReady = null;
+        rejectReady = null;
+    };
+
+    const hardResetEngineState = ({ error = null, terminateWorker = true } = {}) => {
+        const normalizedError = error instanceof Error ? error : (error ? new Error(String(error)) : new Error('engine reset'));
+
+        if (activeRequest?.reject) {
+            activeRequest.reject(normalizedError);
+        }
+        clearPendingRequest();
+
+        if (terminateWorker && worker) {
+            try {
+                worker.terminate();
+            } catch (terminateError) {
+                console.warn('Bot worker termination warning:', terminateError);
+            }
+        }
+
+        rejectEngineReady(normalizedError);
+        readyPromise = null;
+        resolveReady = null;
+        rejectReady = null;
+        worker = null;
+        initPromise = null;
+        enginePaths = null;
+        isReady = false;
     };
 
     const parseScoreFromInfoLine = (line) => {
@@ -117,43 +160,147 @@ window.createBotEngine = function(level = 'medium', options = {}) {
         worker.postMessage(command);
     };
 
-    const resolveEngineWorkerUrl = () => {
-        const scriptUrl = new URL(window.BOT_ENGINE_PATH, window.location.href);
-        const explicitWasmPath = window.BOT_ENGINE_WASM_PATH || scriptUrl.href.replace(/\.js(\?.*)?$/, '.wasm$1');
-        const wasmUrl = new URL(explicitWasmPath, window.location.href);
-        const workerHash = `${encodeURIComponent(wasmUrl.href)},worker`;
-        return `${scriptUrl.href}#${workerHash}`;
+    const uniqueResolvedUrls = (pathCandidates) => {
+        const urls = [];
+        const visited = new Set();
+
+        pathCandidates
+            .filter(Boolean)
+            .forEach((candidate) => {
+                try {
+                    const href = new URL(candidate, window.location.href).href;
+                    if (!visited.has(href)) {
+                        visited.add(href);
+                        urls.push(href);
+                    }
+                } catch (urlError) {
+                    console.warn('bot engine init failed: invalid URL candidate:', candidate, urlError);
+                }
+            });
+
+        return urls;
     };
 
-    const ensureInitialized = () => {
-        if (worker) return;
-        worker = new Worker(resolveEngineWorkerUrl());
-        worker.onmessage = onWorkerMessage;
-        worker.onerror = (error) => {
-            console.error('Stockfish worker error:', error);
-            rejectReady?.(error);
-            resolveReady = null;
-            rejectReady = null;
-            if (activeRequest?.reject) {
-                activeRequest.reject(error);
-            }
-            clearPendingRequest();
-        };
+    const probeUrlExists = async (url) => {
+        const fetchOptions = { cache: 'no-store' };
+        try {
+            const headResponse = await fetch(url, { ...fetchOptions, method: 'HEAD' });
+            if (headResponse.ok) return true;
+        } catch (headError) {
+            // Some static hosts do not support HEAD correctly; fallback to GET below.
+        }
 
-        send('uci');
-        send(`setoption name Skill Level value ${profile.skill}`);
-        send('isready');
+        try {
+            const getResponse = await fetch(url, { ...fetchOptions, method: 'GET' });
+            return getResponse.ok;
+        } catch (error) {
+            return false;
+        }
+    };
+
+    const pickFirstExistingUrl = async (urls, errorLabel) => {
+        for (const url of urls) {
+            // eslint-disable-next-line no-await-in-loop
+            const exists = await probeUrlExists(url);
+            if (exists) return url;
+        }
+        console.error(errorLabel, urls);
+        return null;
+    };
+
+    const resolveEnginePaths = async () => {
+        const scriptCandidates = uniqueResolvedUrls([
+            window.BOT_ENGINE_PATH,
+            'js/engine/stockfish-18-lite-single.js',
+            'js/stockfish-18-lite-single.js',
+            'stockfish-18-lite-single.js'
+        ]);
+        const scriptUrl = await pickFirstExistingUrl(scriptCandidates, 'worker script not found');
+        if (!scriptUrl) {
+            throw new Error('worker script not found');
+        }
+
+        const scriptUrlObject = new URL(scriptUrl);
+        const scriptBaseName = scriptUrlObject.pathname.split('/').pop() || 'stockfish-18-lite-single.js';
+        const scriptDirectory = scriptUrl.slice(0, scriptUrl.lastIndexOf('/') + 1);
+        const derivedWasmName = scriptBaseName.replace(/\.js(\?.*)?$/, '.wasm$1');
+        const wasmCandidates = uniqueResolvedUrls([
+            window.BOT_ENGINE_WASM_PATH,
+            scriptUrl.replace(/\.js(\?.*)?$/, '.wasm$1'),
+            `${scriptDirectory}${derivedWasmName}`,
+            'js/engine/stockfish-18-lite-single.wasm',
+            'js/stockfish-18-lite-single.wasm',
+            'stockfish-18-lite-single.wasm'
+        ]);
+        const wasmUrl = await pickFirstExistingUrl(wasmCandidates, 'wasm not found');
+        if (!wasmUrl) {
+            throw new Error('wasm not found');
+        }
+
+        return { scriptUrl, wasmUrl };
+    };
+
+    const buildWorkerUrl = (paths) => {
+        const workerHash = `${encodeURIComponent(paths.wasmUrl)},worker`;
+        return `${paths.scriptUrl}#${workerHash}`;
+    };
+
+    const ensureInitialized = async () => {
+        if (isReady && worker) return;
+        if (initPromise) return initPromise;
+
+        initPromise = (async () => {
+            enginePaths = await resolveEnginePaths();
+            createReadyPromise();
+            worker = new Worker(buildWorkerUrl(enginePaths));
+            worker.onmessage = onWorkerMessage;
+            worker.onerror = (error) => {
+                const workerError = error instanceof Error ? error : new Error('engine init failed: worker error');
+                console.error('engine init failed: worker error', {
+                    error,
+                    scriptUrl: enginePaths?.scriptUrl || null,
+                    wasmUrl: enginePaths?.wasmUrl || null
+                });
+                hardResetEngineState({ error: workerError });
+            };
+
+            send('uci');
+            send(`setoption name Skill Level value ${profile.skill}`);
+            send('isready');
+        })().catch((error) => {
+            console.error('engine init failed', error);
+            hardResetEngineState({ error, terminateWorker: false });
+            throw error;
+        });
+
+        return initPromise;
     };
 
     const waitForEngineReady = async () => {
-        ensureInitialized();
+        await ensureInitialized();
         if (isReady) return;
 
+        let timeoutId = null;
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Bot engine ready timeout')), ENGINE_READY_TIMEOUT_MS);
+            timeoutId = setTimeout(() => {
+                const timeoutError = new Error('ready timeout');
+                console.error('ready timeout', {
+                    timeoutMs: ENGINE_READY_TIMEOUT_MS,
+                    scriptUrl: enginePaths?.scriptUrl || null,
+                    wasmUrl: enginePaths?.wasmUrl || null
+                });
+                hardResetEngineState({ error: timeoutError });
+                reject(timeoutError);
+            }, ENGINE_READY_TIMEOUT_MS);
         });
 
-        await Promise.race([readyPromise, timeoutPromise]);
+        try {
+            await Promise.race([readyPromise, timeoutPromise]);
+        } finally {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        }
     };
 
     return {
@@ -179,7 +326,11 @@ window.createBotEngine = function(level = 'medium', options = {}) {
                     lastScoreType: null,
                     lastMateIn: null,
                     timeoutId: setTimeout(() => {
-                        reject(new Error('Bot engine search timeout'));
+                        console.error('search timeout', {
+                            timeoutMs: SEARCH_TIMEOUT_MS,
+                            fen
+                        });
+                        reject(new Error('search timeout'));
                         clearPendingRequest();
                     }, SEARCH_TIMEOUT_MS)
                 };
@@ -313,13 +464,11 @@ window.createBotEngine = function(level = 'medium', options = {}) {
                 if (worker) {
                     send('stop');
                     send('quit');
-                    worker.terminate();
                 }
             } catch (error) {
                 console.warn('Bot worker termination warning:', error);
             } finally {
-                worker = null;
-                clearPendingRequest();
+                hardResetEngineState();
             }
         }
     };
