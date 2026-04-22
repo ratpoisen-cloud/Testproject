@@ -90,6 +90,23 @@ window.setupGameControls = function(gameRef, roomId) {
     const isSelfTrainingMode = () => Boolean(window.isSelfTrainingMode?.());
     const isPassAndPlayMode = () => Boolean(window.isPassAndPlayStandardMode?.());
     const isLocalMode = () => Boolean(window.isLocalGameMode?.());
+    const waitForMs = (delayMs) => new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(delayMs) || 0)));
+    const getBotVisualThinkingDelayMs = ({ level, isFastEndgameHint } = {}) => {
+        const normalizedLevel = String(level || 'medium').toLowerCase();
+        const delayByLevelMs = {
+            easy: 700,
+            medium: 500,
+            hard: 320
+        };
+        const fallbackDelayMs = delayByLevelMs.medium;
+        const defaultDelayMs = delayByLevelMs[normalizedLevel] ?? fallbackDelayMs;
+
+        if (isFastEndgameHint) {
+            return Math.min(defaultDelayMs, 220);
+        }
+
+        return defaultDelayMs;
+    };
 
     window.requestBotMove = async function() {
         if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
