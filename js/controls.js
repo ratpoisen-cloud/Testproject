@@ -67,6 +67,44 @@ window.setupGameControls = function(gameRef, roomId) {
         window.clearSelection();
     };
 
+    const invalidatePendingConfirmFlow = ({ syncFen = null, skipBoardSync = false } = {}) => {
+        resetPendingMoveUI();
+        if (skipBoardSync) return;
+        if (typeof syncFen === 'string' && syncFen) {
+            window.updateBoardPosition(syncFen, true);
+            return;
+        }
+        if (window.game?.fen) {
+            window.updateBoardPosition(window.game.fen(), true);
+        }
+    };
+
+    const syncRoleFromRemoteAssignment = ({ assignedColor = null, remoteData = null } = {}) => {
+        if (isBotMode()) return;
+        window.playerColor = assignedColor === 'w' || assignedColor === 'b' ? assignedColor : null;
+        window.updatePlayerBadge?.();
+
+        if (typeof window.rebuildBoardWithCurrentState === 'function') {
+            window.rebuildBoardWithCurrentState();
+        } else if (window.board?.orientation) {
+            window.board.orientation(window.playerColor === 'b' ? 'black' : 'white');
+            if (window.game?.fen) {
+                window.updateBoardPosition(window.game.fen(), true);
+            }
+        }
+
+        const isMyTurn = Boolean(window.playerColor && window.game?.turn?.() === window.playerColor);
+        window.updateTurnIndicator?.(isMyTurn);
+        if (remoteData) {
+            window.updateUI?.(remoteData);
+        } else {
+            window.updateUI?.(window.lastGameUiSnapshot || { gameState: 'active' });
+        }
+        if (typeof window.refreshPresenceUI === 'function') {
+            window.refreshPresenceUI();
+        }
+    };
+
     const isFinishedGame = () => {
         if (typeof window.isGameFinished === 'function') {
             return window.isGameFinished();
@@ -146,11 +184,81 @@ window.setupGameControls = function(gameRef, roomId) {
         // Подтверждение хода
         setClickHandler('confirm-btn', async () => {
             if (!window.pendingMove) return;
+            const pendingMove = window.pendingMove;
+            const expectedBasePgn = pendingMove.basePgn ?? window.game.pgn();
+            const expectedBaseFen = pendingMove.baseFen ?? window.game.fen();
+            const expectedBaseTurn = pendingMove.baseTurn ?? window.game.turn();
+
+            if (!isBotMode()) {
+                if (!window.playerColor || (window.playerColor !== 'w' && window.playerColor !== 'b')) {
+                    invalidatePendingConfirmFlow();
+                    return;
+                }
+
+                if (window.game.turn() !== window.playerColor || expectedBaseTurn !== window.playerColor) {
+                    window.notify('Сейчас не ваш ход', 'info', 2200);
+                    invalidatePendingConfirmFlow();
+                    return;
+                }
+
+                const remoteSnapshot = await get(gameRef);
+                const remoteData = remoteSnapshot.val() || null;
+                if (!remoteData || remoteData.gameState === 'game_over') {
+                    window.notify('Партия уже завершена', 'info', 2200);
+                    invalidatePendingConfirmFlow();
+                    return;
+                }
+
+                const remotePlayers = remoteData.players || {};
+                const currentUid = window.currentUser?.uid || window.currentUser?.id || '';
+                if (currentUid) {
+                    const remoteAssignedColor = remotePlayers.white === currentUid
+                        ? 'w'
+                        : (remotePlayers.black === currentUid ? 'b' : null);
+                    if (remoteAssignedColor !== window.playerColor) {
+                        syncRoleFromRemoteAssignment({ assignedColor: remoteAssignedColor, remoteData });
+                        window.notify(remoteAssignedColor ? 'Синхронизировали ваш цвет в комнате' : 'Режим наблюдателя', 'info', 2200);
+                        invalidatePendingConfirmFlow();
+                        return;
+                    }
+                }
+
+                const remoteTurn = window.resolveTurnColorCode?.(remoteData);
+                if (remoteTurn && remoteTurn !== window.playerColor) {
+                    if (remoteData.pgn) {
+                        window.applyRemotePgnUpdate?.(remoteData.pgn);
+                        invalidatePendingConfirmFlow({ skipBoardSync: true });
+                    } else {
+                        invalidatePendingConfirmFlow({
+                            syncFen: (typeof remoteData.fen === 'string' && remoteData.fen) ? remoteData.fen : null
+                        });
+                    }
+                    window.notify('Ход соперника уже получен, обновили позицию', 'info', 2600);
+                    return;
+                }
+
+                const remotePgn = typeof remoteData.pgn === 'string' ? remoteData.pgn : '';
+                const remoteFen = typeof remoteData.fen === 'string' ? remoteData.fen : '';
+                const baseMismatch = remotePgn
+                    ? remotePgn !== expectedBasePgn
+                    : (remoteFen ? remoteFen !== expectedBaseFen : false);
+
+                if (baseMismatch) {
+                    if (remotePgn) {
+                        window.applyRemotePgnUpdate?.(remotePgn);
+                        invalidatePendingConfirmFlow({ skipBoardSync: true });
+                    } else {
+                        invalidatePendingConfirmFlow({ syncFen: remoteFen || null });
+                    }
+                    window.notify('Позиция устарела, ход отменён', 'warning', 2600);
+                    return;
+                }
+            }
 
             const moveResult = window.game.move({
-                from: window.pendingMove.from,
-                to: window.pendingMove.to,
-                promotion: window.pendingMove.promotion || 'q'
+                from: pendingMove.from,
+                to: pendingMove.to,
+                promotion: pendingMove.promotion || 'q'
             });
 
             if (!moveResult) {
