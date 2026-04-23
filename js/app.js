@@ -83,7 +83,7 @@ window.initBoardSettingsControls = function() {
                 const emoji = item.dataset.emoji || '⚡';
                 quickPhrasesMenu.classList.add('hidden');
 
-                if (window.isBotMode) {
+                if (window.isBotMode || window.isLocalVersusMode) {
                     window.notify('Быстрые фразы доступны только в онлайн-партии', 'info', 2200);
                     return;
                 }
@@ -183,8 +183,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
     const isBotMode = urlParams.get('bot') === '1';
+    const mode = (urlParams.get('mode') || '').toLowerCase();
+    const isLocalVersusMode = mode === 'versus';
 
-    if (roomId) {
+    if (isLocalVersusMode) {
+        window.setAppLoadingFlag('lobby', true);
+        window.initLobby();
+        window.initLocalVersusGame?.();
+    } else if (roomId) {
         window.setAppLoadingFlag('lobby', true);
         window.initGame(roomId);
     } else if (isBotMode) {

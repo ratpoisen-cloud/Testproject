@@ -8,6 +8,7 @@ window.pendingMove = null;
 window.selectedSquare = null;
 window.currentRoomId = null;
 window.isBotMode = false;
+window.isLocalVersusMode = false;
 window.botColor = null;
 window.botLevel = 'medium';
 window.botEngine = null;
@@ -85,6 +86,7 @@ window.applyImmediateGameOverState = function(partialData = {}) {
 };
 
 window.canUseBoardReactions = function(gameData = null) {
+    if (window.isLocalVersusMode) return false;
     if (!window.currentRoomId || !window.playerColor || !window.game) return false;
     if (!window.isGameFinished(gameData)) return true;
     return !window.isArchivedFinishedView;
@@ -513,6 +515,7 @@ window.exitReviewMode = function() {
     if (!window.game) return;
 
     window.updateBoardPosition(window.game.fen(), true);
+    window.syncLocalVersusBoardOrientation?.();
     const history = window.game.history({ verbose: true });
     if (history.length > 0 && window.highlightLastMove) {
         window.highlightLastMove(history[history.length - 1]);
@@ -787,17 +790,25 @@ window.playGameOverSoundForCurrentClient = function(gameData = window.lastGameUi
         return Promise.resolve();
     }
 
-    const finalSoundEvent = window.resolveEndgameSoundEventForCurrentClient?.({
-        game: window.game,
-        gameData
-    });
-
     const queue = [];
-    if (summary.termination === 'checkmate') {
-        queue.push('checkmate');
-    }
-    if (finalSoundEvent) {
-        queue.push(finalSoundEvent);
+    if (window.isLocalVersusMode) {
+        if (summary.termination === 'checkmate') {
+            queue.push('checkmate');
+        }
+        if (summary.winnerColor === 'w') queue.push('win_white');
+        if (summary.winnerColor === 'b') queue.push('win_black');
+    } else {
+        const finalSoundEvent = window.resolveEndgameSoundEventForCurrentClient?.({
+            game: window.game,
+            gameData
+        });
+
+        if (summary.termination === 'checkmate') {
+            queue.push('checkmate');
+        }
+        if (finalSoundEvent) {
+            queue.push(finalSoundEvent);
+        }
     }
 
     if (queue.length === 0) {
@@ -830,6 +841,15 @@ window.resolveMovePostSoundEvents = function(moveResult, options = {}) {
         typeof window.game.turn === 'function' &&
         window.playerColor === window.game.turn()
     );
+
+    if (window.isLocalVersusMode) {
+        if (isCheckmate) {
+            events.push('checkmate');
+            if (summary?.winnerColor === 'w') events.push('win_white');
+            if (summary?.winnerColor === 'b') events.push('win_black');
+        }
+        return events;
+    }
 
     if (moveResult.promotion) {
         events.push('promotion');
@@ -1008,6 +1028,7 @@ function getLobbyNodes() {
         hubOpenGamesBtn: document.getElementById('hub-open-games'),
         hubOpenPlayersBtn: document.getElementById('hub-open-players'),
         hubOpenBotGamesBtn: document.getElementById('hub-open-bot-games'),
+        hubOpenLocalVersusBtn: document.getElementById('hub-open-local-versus'),
         hubGamesInviteDot: document.getElementById('hub-games-invite-dot'),
         hubGamesInviteLabel: document.getElementById('hub-games-invite-label'),
         createGameBtn: document.getElementById('create-game-btn'),
@@ -2330,6 +2351,11 @@ window.initLobby = function() {
             window.renderBotGamesLobby?.();
         };
     }
+    if (nodes.hubOpenLocalVersusBtn) {
+        nodes.hubOpenLocalVersusBtn.onclick = () => {
+            window.initLocalVersusGame?.();
+        };
+    }
     nodes.backButtons.forEach((button) => {
         button.onclick = () => window.setLobbyScreen('hub');
     });
@@ -2637,10 +2663,15 @@ function initLocalGameState() {
         window.__gameWatchUnsubscribe();
         window.__gameWatchUnsubscribe = null;
     }
+    if (typeof window.__lobbyWatchUnsubscribe === 'function') {
+        window.__lobbyWatchUnsubscribe();
+        window.__lobbyWatchUnsubscribe = null;
+    }
     window.stopBotGame?.();
     window.game = new Chess();
     window.currentRoomId = null;
     window.isBotMode = false;
+    window.isLocalVersusMode = false;
     window.botColor = null;
     window.botLevel = 'medium';
     window.botEngine = null;
@@ -2669,6 +2700,16 @@ function initLocalGameState() {
     window.resetQuickPhraseUiState?.();
     window.shouldAutoEnterFinishedReview = false;
 }
+
+window.getLocalVersusOrientation = function() {
+    const turn = window.game?.turn?.();
+    return turn === 'b' ? 'black' : 'white';
+};
+
+window.syncLocalVersusBoardOrientation = function() {
+    if (!window.isLocalVersusMode || !window.board?.orientation) return;
+    window.board.orientation(window.getLocalVersusOrientation());
+};
 
 async function ensureGameExists(gameRef, roomId) {
     const gameCheck = await get(gameRef);
@@ -2742,6 +2783,7 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     initLocalGameState();
 
     window.isBotMode = true;
+    window.isLocalVersusMode = false;
     window.currentBotSessionId = `bot_session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     window.playerColor = normalizedColor;
     window.botColor = normalizedColor === 'w' ? 'b' : 'w';
@@ -2794,6 +2836,43 @@ window.initBotGame = function({ color = 'random', level = 'medium' } = {}) {
     window.markGameReady?.();
 };
 
+window.initLocalVersusGame = function() {
+    initLocalGameState();
+
+    window.isLocalVersusMode = true;
+    window.isBotMode = false;
+    window.playerColor = 'w';
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('mode', 'versus');
+    params.delete('room');
+    params.delete('bot');
+    params.delete('color');
+    params.delete('level');
+    params.delete('view');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+    window.setGameSectionVisibility();
+    const roomLink = document.getElementById('room-link');
+    if (roomLink) roomLink.value = '';
+
+    document.getElementById('game-modal')?.classList.add('hidden');
+    document.getElementById('takeback-request-box')?.classList.add('hidden');
+    document.getElementById('draw-request-box')?.classList.add('hidden');
+    document.getElementById('rematch-request-box')?.classList.add('hidden');
+    document.getElementById('promotion-choice-box')?.classList.add('hidden');
+
+    window.updatePlayerBadge?.();
+    window.initBoard(window.playerColor);
+    window.syncLocalVersusBoardOrientation?.();
+    window.setupGameControls(null, null);
+    window.syncReviewStateFromCurrentGame();
+    window.lastKnownGameState = 'active';
+    window.updateUI({ gameState: 'active', mode: 'local_versus' });
+    window.refreshPresenceUI?.();
+    window.markGameReady?.();
+};
+
 
 window.addEventListener('beforeunload', () => {
     window.stopBotGame?.();
@@ -2831,6 +2910,7 @@ window.initGame = async function(roomId) {
             markDirectInviteAsHandled(roomId);
         }
         window.playerColor = resolveAssignedColor(p, uid);
+        window.isLocalVersusMode = false;
         applyAssignedColorToBoard();
         subscribeToGameUpdates(gameRef);
         

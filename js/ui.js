@@ -60,6 +60,7 @@ window.updateUI = function(data) {
     
     const currentTurn = window.game?.turn?.();
     const isMyTurn = Boolean(window.playerColor && currentTurn && window.playerColor === currentTurn);
+    window.toggleLocalVersusUi?.();
     
     window.updateTurnIndicator(isMyTurn);
     window.updateOpponentHeader(data);
@@ -81,6 +82,17 @@ window.updateTurnIndicator = function(isMyTurn) {
     const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
     
     if (!turnStatus || !turnText) return;
+
+    if (window.isLocalVersusMode) {
+        if (!window.game || typeof window.game.game_over !== 'function') return;
+        const isFinishedGame = window.isGameFinished ? window.isGameFinished(window.lastGameUiSnapshot) : window.game.game_over();
+        if (!isFinishedGame) {
+            const turn = window.game.turn?.() === 'b' ? 'чёрных' : 'белых';
+            turnStatus.className = 'turn-status my-turn';
+            turnText.innerText = `Ход ${turn}`;
+            return;
+        }
+    }
 
     const clearCenterQuickPhraseTimers = () => {
         if (window.__centerQuickPhraseOutTimer) {
@@ -219,13 +231,16 @@ window.updateOpponentHeader = function(data) {
     const isBlackPlayer = window.playerColor === 'b';
     const isViewer = !isWhitePlayer && !isBlackPlayer;
     const isBotMode = Boolean(window.isBotMode || data?.mode === 'bot');
+    const isLocalVersusMode = Boolean(window.isLocalVersusMode || data?.mode === 'local_versus');
 
     let opponentName = 'Соперник';
     let opponentAvatar = '';
     let opponentUid = null;
     const isBotGame = isBotMode;
 
-    if (isBotMode) {
+    if (isLocalVersusMode) {
+        opponentName = '🤝 Вдвоём';
+    } else if (isBotMode) {
         const levelMap = { easy: 'Очень лёгкий', medium: 'Лёгкий', hard: 'Средний' };
         opponentName = `Бот (${levelMap[window.botLevel] || 'Лёгкий'})`;
     } else if (isWhitePlayer) {
@@ -244,7 +259,12 @@ window.updateOpponentHeader = function(data) {
     let presenceText = 'не в сети';
     let isInteractivePresence = true;
     let indicatorVariant = 'offline';
-    if (isViewer) {
+    if (isLocalVersusMode) {
+        window.__lastEnsuredOpponentUid = null;
+        presenceText = 'Локальная партия на одном устройстве';
+        indicatorVariant = 'offline';
+        isInteractivePresence = false;
+    } else if (isViewer) {
         window.__lastEnsuredOpponentUid = null;
         presenceText = 'Режим наблюдения';
         indicatorVariant = 'offline';
@@ -498,6 +518,7 @@ window.updateFinishedGameActions = function(data) {
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
+    const isLocalVersusMode = Boolean(window.isLocalVersusMode);
 
     gameSection?.classList.toggle('finished-viewer-mode', isFinishedGame);
 
@@ -508,19 +529,30 @@ window.updateFinishedGameActions = function(data) {
         finishedActions.classList.toggle('hidden', !isFinishedGame);
     }
 
-    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode);
-    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode);
+    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode || isLocalVersusMode);
+    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode || isLocalVersusMode);
     resignBtn?.classList.toggle('hidden', isFinishedGame);
     if (takebackBtn) {
-        takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode);
-        takebackBtn.disabled = isFinishedGame || isBotMode;
+        takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode || isLocalVersusMode);
+        takebackBtn.disabled = isFinishedGame || isBotMode || isLocalVersusMode;
     }
     if (isFinishedGame) {
         confirmMoveBox?.classList.add('hidden');
         takebackRequestBox?.classList.add('hidden');
         drawRequestBox?.classList.add('hidden');
     }
-    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode);
+    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode || isLocalVersusMode);
+};
+
+window.toggleLocalVersusUi = function() {
+    const isLocalVersusMode = Boolean(window.isLocalVersusMode);
+    document.querySelector('.game-share-box')?.classList.toggle('hidden', isLocalVersusMode);
+    document.getElementById('quick-phrases-toggle')?.classList.toggle('hidden', isLocalVersusMode);
+    document.getElementById('quick-phrases-menu')?.classList.add('hidden');
+    document.getElementById('takeback-request-box')?.classList.toggle('hidden', isLocalVersusMode);
+    document.getElementById('draw-request-box')?.classList.toggle('hidden', isLocalVersusMode);
+    document.getElementById('rematch-request-box')?.classList.toggle('hidden', isLocalVersusMode);
+    document.getElementById('game-opponent-presence')?.classList.toggle('hidden', isLocalVersusMode);
 };
 
 // Обновление модального окна окончания игры
