@@ -744,6 +744,13 @@ window.setupGameControls = function(gameRef, roomId) {
             inlineRematchBtn.onclick = runRematch;
         }
 
+        const inlineIchiAnalysisBtn = document.getElementById('inline-ichi-analysis-btn');
+        if (inlineIchiAnalysisBtn) {
+            inlineIchiAnalysisBtn.onclick = () => {
+                window.notify('Разбор с ИЧИ скоро появится', 'info', 2200);
+            };
+        }
+
         // Выход из модального окна
         setClickHandler('modal-exit-btn', () => {
             document.getElementById('game-modal').classList.add('hidden');
