@@ -60,7 +60,6 @@ window.updateUI = function(data) {
     
     const currentTurn = window.game?.turn?.();
     const isMyTurn = Boolean(window.playerColor && currentTurn && window.playerColor === currentTurn);
-    window.toggleLocalVersusUi?.();
     
     window.updateTurnIndicator(isMyTurn);
     window.updateOpponentHeader(data);
@@ -82,17 +81,6 @@ window.updateTurnIndicator = function(isMyTurn) {
     const quickPhrasesMenu = document.getElementById('quick-phrases-menu');
     
     if (!turnStatus || !turnText) return;
-
-    if (window.isLocalVersusMode) {
-        if (!window.game || typeof window.game.game_over !== 'function') return;
-        const isFinishedGame = window.isGameFinished ? window.isGameFinished(window.lastGameUiSnapshot) : window.game.game_over();
-        if (!isFinishedGame) {
-            const turn = window.game.turn?.() === 'b' ? 'чёрных' : 'белых';
-            turnStatus.className = 'turn-status my-turn';
-            turnText.innerText = `Ход ${turn}`;
-            return;
-        }
-    }
 
     const clearCenterQuickPhraseTimers = () => {
         if (window.__centerQuickPhraseOutTimer) {
@@ -219,9 +207,6 @@ window.updateTurnIndicator = function(isMyTurn) {
 };
 
 window.updateOpponentHeader = function(data) {
-    const opponentZoneEl = document.getElementById('game-opponent-zone');
-    const opponentMetaEl = document.querySelector('.game-opponent-meta');
-    const opponentPresenceWrapEl = document.querySelector('.game-opponent-presence-wrap');
     const opponentNameEl = document.getElementById('game-opponent-name');
     const opponentPresenceEl = document.getElementById('game-opponent-presence');
     const opponentPresenceTextEl = document.getElementById('game-opponent-presence-text');
@@ -234,21 +219,13 @@ window.updateOpponentHeader = function(data) {
     const isBlackPlayer = window.playerColor === 'b';
     const isViewer = !isWhitePlayer && !isBlackPlayer;
     const isBotMode = Boolean(window.isBotMode || data?.mode === 'bot');
-    const isLocalVersusMode = Boolean(window.isLocalVersusMode || data?.mode === 'local_versus');
-    opponentZoneEl?.classList.toggle('game-opponent-zone--local-versus', isLocalVersusMode);
-    opponentMetaEl?.classList.toggle('game-opponent-meta--compact', isLocalVersusMode);
-    opponentNameEl?.classList.toggle('game-opponent-name--badge', isLocalVersusMode);
-    opponentAvatarEl?.classList.toggle('hidden', isLocalVersusMode);
-    opponentPresenceWrapEl?.classList.toggle('hidden', isLocalVersusMode);
 
     let opponentName = 'Соперник';
     let opponentAvatar = '';
     let opponentUid = null;
     const isBotGame = isBotMode;
 
-    if (isLocalVersusMode) {
-        opponentName = '🤝 Вдвоём';
-    } else if (isBotMode) {
+    if (isBotMode) {
         const levelMap = { easy: 'Очень лёгкий', medium: 'Лёгкий', hard: 'Средний' };
         opponentName = `Бот (${levelMap[window.botLevel] || 'Лёгкий'})`;
     } else if (isWhitePlayer) {
@@ -267,12 +244,7 @@ window.updateOpponentHeader = function(data) {
     let presenceText = 'не в сети';
     let isInteractivePresence = true;
     let indicatorVariant = 'offline';
-    if (isLocalVersusMode) {
-        window.__lastEnsuredOpponentUid = null;
-        presenceText = 'Локальная партия на одном устройстве';
-        indicatorVariant = 'offline';
-        isInteractivePresence = false;
-    } else if (isViewer) {
+    if (isViewer) {
         window.__lastEnsuredOpponentUid = null;
         presenceText = 'Режим наблюдения';
         indicatorVariant = 'offline';
@@ -308,17 +280,15 @@ window.updateOpponentHeader = function(data) {
     opponentPresencePopoverEl.classList.add('hidden');
     opponentPresenceEl.setAttribute('aria-expanded', 'false');
 
-    if (!isLocalVersusMode) {
-        if (opponentAvatar) {
-            const avatarImage = document.createElement('img');
-            avatarImage.src = opponentAvatar;
-            avatarImage.alt = '';
-            avatarImage.loading = 'lazy';
-            opponentAvatarEl.replaceChildren(avatarImage);
-        } else {
-            const letter = (opponentName || '?').trim().charAt(0).toUpperCase() || '?';
-            opponentAvatarEl.textContent = letter;
-        }
+    if (opponentAvatar) {
+        const avatarImage = document.createElement('img');
+        avatarImage.src = opponentAvatar;
+        avatarImage.alt = '';
+        avatarImage.loading = 'lazy';
+        opponentAvatarEl.replaceChildren(avatarImage);
+    } else {
+        const letter = (opponentName || '?').trim().charAt(0).toUpperCase() || '?';
+        opponentAvatarEl.textContent = letter;
     }
 
     if (!window.__opponentPresencePopoverBound) {
@@ -524,12 +494,10 @@ window.updateFinishedGameActions = function(data) {
     const confirmMoveBox = document.getElementById('confirm-move-box');
     const takebackRequestBox = document.getElementById('takeback-request-box');
     const drawRequestBox = document.getElementById('draw-request-box');
-    const rematchRequestBox = document.getElementById('rematch-request-box');
     const shareBox = document.querySelector('.game-share-box');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
     const isBotMode = Boolean(window.isBotMode);
-    const isLocalVersusMode = Boolean(window.isLocalVersusMode);
 
     gameSection?.classList.toggle('finished-viewer-mode', isFinishedGame);
 
@@ -540,34 +508,19 @@ window.updateFinishedGameActions = function(data) {
         finishedActions.classList.toggle('hidden', !isFinishedGame);
     }
 
-    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode || isLocalVersusMode);
-    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode || isLocalVersusMode);
+    drawBtn?.classList.toggle('hidden', isFinishedGame || isBotMode);
+    drawBtn && (drawBtn.disabled = isFinishedGame || isBotMode);
     resignBtn?.classList.toggle('hidden', isFinishedGame);
     if (takebackBtn) {
-        takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode || isLocalVersusMode);
-        takebackBtn.disabled = isFinishedGame || isBotMode || isLocalVersusMode;
+        takebackBtn.classList.toggle('hidden', isFinishedGame || isBotMode);
+        takebackBtn.disabled = isFinishedGame || isBotMode;
     }
     if (isFinishedGame) {
         confirmMoveBox?.classList.add('hidden');
         takebackRequestBox?.classList.add('hidden');
         drawRequestBox?.classList.add('hidden');
     }
-    const shouldHideRematchRequest = !isFinishedGame || isBotMode || isLocalVersusMode || !window.currentRoomId;
-    rematchRequestBox?.classList.toggle('hidden', shouldHideRematchRequest);
-    if (shouldHideRematchRequest) {
-        window.pendingRematch = null;
-    }
-    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode || isLocalVersusMode);
-};
-
-window.toggleLocalVersusUi = function() {
-    const isLocalVersusMode = Boolean(window.isLocalVersusMode);
-    document.querySelector('.game-share-box')?.classList.toggle('hidden', isLocalVersusMode);
-    document.getElementById('quick-phrases-menu')?.classList.add('hidden');
-    document.getElementById('takeback-request-box')?.classList.toggle('hidden', isLocalVersusMode);
-    document.getElementById('draw-request-box')?.classList.toggle('hidden', isLocalVersusMode);
-    const shouldHideRematchRequest = isLocalVersusMode || Boolean(window.isBotMode) || !window.currentRoomId;
-    document.getElementById('rematch-request-box')?.classList.toggle('hidden', shouldHideRematchRequest);
+    shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode);
 };
 
 // Обновление модального окна окончания игры

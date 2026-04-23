@@ -1,11 +1,6 @@
 // ==================== КНОПКИ УПРАВЛЕНИЯ ====================
 
 window.setupGameControls = function(gameRef, roomId) {
-    if (typeof window.__rematchWatchUnsubscribe === 'function') {
-        window.__rematchWatchUnsubscribe();
-        window.__rematchWatchUnsubscribe = null;
-    }
-
     const setClickHandler = (id, handler) => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -23,10 +18,6 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const runRematch = async () => {
         hideElement('game-modal');
-        if (window.isLocalVersusMode) {
-            window.initLocalVersusGame?.();
-            return;
-        }
         if (window.isBotMode) {
             window.initBotGame({ color: window.playerColor, level: window.botLevel || 'medium' });
             return;
@@ -76,44 +67,6 @@ window.setupGameControls = function(gameRef, roomId) {
         window.clearSelection();
     };
 
-    const invalidatePendingConfirmFlow = ({ syncFen = null, skipBoardSync = false } = {}) => {
-        resetPendingMoveUI();
-        if (skipBoardSync) return;
-        if (typeof syncFen === 'string' && syncFen) {
-            window.updateBoardPosition(syncFen, true);
-            return;
-        }
-        if (window.game?.fen) {
-            window.updateBoardPosition(window.game.fen(), true);
-        }
-    };
-
-    const syncRoleFromRemoteAssignment = ({ assignedColor = null, remoteData = null } = {}) => {
-        if (isBotMode()) return;
-        window.playerColor = assignedColor === 'w' || assignedColor === 'b' ? assignedColor : null;
-        window.updatePlayerBadge?.();
-
-        if (typeof window.rebuildBoardWithCurrentState === 'function') {
-            window.rebuildBoardWithCurrentState();
-        } else if (window.board?.orientation) {
-            window.board.orientation(window.playerColor === 'b' ? 'black' : 'white');
-            if (window.game?.fen) {
-                window.updateBoardPosition(window.game.fen(), true);
-            }
-        }
-
-        const isMyTurn = Boolean(window.playerColor && window.game?.turn?.() === window.playerColor);
-        window.updateTurnIndicator?.(isMyTurn);
-        if (remoteData) {
-            window.updateUI?.(remoteData);
-        } else {
-            window.updateUI?.(window.lastGameUiSnapshot || { gameState: 'active' });
-        }
-        if (typeof window.refreshPresenceUI === 'function') {
-            window.refreshPresenceUI();
-        }
-    };
-
     const isFinishedGame = () => {
         if (typeof window.isGameFinished === 'function') {
             return window.isGameFinished();
@@ -122,7 +75,6 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     const isBotMode = () => Boolean(window.isBotMode);
-    const isLocalVersusMode = () => Boolean(window.isLocalVersusMode);
 
     window.requestBotMove = async function() {
         if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
@@ -168,7 +120,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
 
     const applyBotModeUiRestrictions = () => {
-        if (!isBotMode() && !isLocalVersusMode()) return;
+        if (!isBotMode()) return;
         document.querySelector('.game-share-box')?.classList.add('hidden');
         document.getElementById('draw-btn')?.classList.add('hidden');
         const drawBtn = document.getElementById('draw-btn');
@@ -194,81 +146,11 @@ window.setupGameControls = function(gameRef, roomId) {
         // Подтверждение хода
         setClickHandler('confirm-btn', async () => {
             if (!window.pendingMove) return;
-            const pendingMove = window.pendingMove;
-            const expectedBasePgn = pendingMove.basePgn ?? window.game.pgn();
-            const expectedBaseFen = pendingMove.baseFen ?? window.game.fen();
-            const expectedBaseTurn = pendingMove.baseTurn ?? window.game.turn();
-
-            if (!isBotMode() && !isLocalVersusMode()) {
-                if (!window.playerColor || (window.playerColor !== 'w' && window.playerColor !== 'b')) {
-                    invalidatePendingConfirmFlow();
-                    return;
-                }
-
-                if (window.game.turn() !== window.playerColor || expectedBaseTurn !== window.playerColor) {
-                    window.notify('Сейчас не ваш ход', 'info', 2200);
-                    invalidatePendingConfirmFlow();
-                    return;
-                }
-
-                const remoteSnapshot = await get(gameRef);
-                const remoteData = remoteSnapshot.val() || null;
-                if (!remoteData || remoteData.gameState === 'game_over') {
-                    window.notify('Партия уже завершена', 'info', 2200);
-                    invalidatePendingConfirmFlow();
-                    return;
-                }
-
-                const remotePlayers = remoteData.players || {};
-                const currentUid = window.currentUser?.uid || window.currentUser?.id || '';
-                if (currentUid) {
-                    const remoteAssignedColor = remotePlayers.white === currentUid
-                        ? 'w'
-                        : (remotePlayers.black === currentUid ? 'b' : null);
-                    if (remoteAssignedColor !== window.playerColor) {
-                        syncRoleFromRemoteAssignment({ assignedColor: remoteAssignedColor, remoteData });
-                        window.notify(remoteAssignedColor ? 'Синхронизировали ваш цвет в комнате' : 'Режим наблюдателя', 'info', 2200);
-                        invalidatePendingConfirmFlow();
-                        return;
-                    }
-                }
-
-                const remoteTurn = window.resolveTurnColorCode?.(remoteData);
-                if (remoteTurn && remoteTurn !== window.playerColor) {
-                    if (remoteData.pgn) {
-                        window.applyRemotePgnUpdate?.(remoteData.pgn);
-                        invalidatePendingConfirmFlow({ skipBoardSync: true });
-                    } else {
-                        invalidatePendingConfirmFlow({
-                            syncFen: (typeof remoteData.fen === 'string' && remoteData.fen) ? remoteData.fen : null
-                        });
-                    }
-                    window.notify('Ход соперника уже получен, обновили позицию', 'info', 2600);
-                    return;
-                }
-
-                const remotePgn = typeof remoteData.pgn === 'string' ? remoteData.pgn : '';
-                const remoteFen = typeof remoteData.fen === 'string' ? remoteData.fen : '';
-                const baseMismatch = remotePgn
-                    ? remotePgn !== expectedBasePgn
-                    : (remoteFen ? remoteFen !== expectedBaseFen : false);
-
-                if (baseMismatch) {
-                    if (remotePgn) {
-                        window.applyRemotePgnUpdate?.(remotePgn);
-                        invalidatePendingConfirmFlow({ skipBoardSync: true });
-                    } else {
-                        invalidatePendingConfirmFlow({ syncFen: remoteFen || null });
-                    }
-                    window.notify('Позиция устарела, ход отменён', 'warning', 2600);
-                    return;
-                }
-            }
 
             const moveResult = window.game.move({
-                from: pendingMove.from,
-                to: pendingMove.to,
-                promotion: pendingMove.promotion || 'q'
+                from: window.pendingMove.from,
+                to: window.pendingMove.to,
+                promotion: window.pendingMove.promotion || 'q'
             });
 
             if (!moveResult) {
@@ -286,9 +168,6 @@ window.setupGameControls = function(gameRef, roomId) {
             window.playMoveSoundSequence?.(moveResult, { allowVoiceLine: true });
 
             window.updateBoardPosition(window.game.fen(), true);
-            if (isLocalVersusMode()) {
-                window.syncLocalVersusBoardOrientation?.();
-            }
 
             const now = Date.now();
             const updateData = {
@@ -314,21 +193,6 @@ window.setupGameControls = function(gameRef, roomId) {
                 }
 
                 await window.requestBotMove?.();
-                return;
-            }
-
-            if (isLocalVersusMode()) {
-                if (window.game.game_over()) {
-                    const metadata = window.applyGameHeaders(window.game, {
-                        gameState: 'game_over',
-                        message: window.getGameResultMessage(window.game)
-                    });
-                    resetPendingMoveUI();
-                    window.updateUI({ gameState: 'game_over', message: metadata.message, mode: 'local_versus' });
-                    return;
-                }
-                resetPendingMoveUI();
-                window.updateUI({ gameState: 'active', mode: 'local_versus' });
                 return;
             }
 
@@ -384,21 +248,20 @@ window.setupGameControls = function(gameRef, roomId) {
                 danger: true
             });
             if (shouldResign) {
-                const resignColor = isLocalVersusMode() ? window.game.turn() : window.playerColor;
-                const winner = resignColor === 'w' ? 'Черные' : 'Белые';
+                const winner = window.playerColor === 'w' ? 'Черные' : 'Белые';
                 const players = isBotMode() ? null : await resolvePlayersForHeaders();
                 const metadata = window.applyGameHeaders(window.game, {
                     players,
                     gameState: 'game_over',
                     message: `${winner} победили (сдача)`,
-                    resign: resignColor
+                    resign: window.playerColor
                 });
 
                 if (isBotMode()) {
                     window.applyImmediateGameOverState?.({
                         gameState: 'game_over',
                         message: metadata.message,
-                        resign: resignColor,
+                        resign: window.playerColor,
                         mode: 'bot'
                     });
                     return;
@@ -408,12 +271,10 @@ window.setupGameControls = function(gameRef, roomId) {
                     gameState: 'game_over',
                     message: metadata.message,
                     pgn: window.game.pgn(),
-                    resign: resignColor
+                    resign: window.playerColor
                 };
                 window.applyImmediateGameOverState?.(updateData);
-                if (!isLocalVersusMode()) {
-                    await window.updateGame(gameRef, updateData);
-                }
+                await window.updateGame(gameRef, updateData);
             }
         });
 
@@ -444,7 +305,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Поделиться ссылкой
         setClickHandler('share-btn', async () => {
-            if (isBotMode() || isLocalVersusMode()) return;
+            if (isBotMode()) return;
             const link = document.getElementById('room-link').value;
             if (navigator.share) {
                 try {
@@ -505,7 +366,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
     // ===== Takeback =====
     const bindTakebackControls = () => {
-        if (isBotMode() || isLocalVersusMode()) return;
+        if (isBotMode()) return;
         let lastIncomingTakebackKey = '';
         // Запрос отмены хода
         setClickHandler('takeback-btn', () => {
@@ -595,7 +456,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
     // ===== Draw =====
     const bindDrawControls = () => {
-        if (isBotMode() || isLocalVersusMode()) return;
+        if (isBotMode()) return;
         let lastIncomingDrawKey = '';
         // Кнопка "Предложить ничью"
         setClickHandler('draw-btn', () => {
@@ -683,47 +544,22 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     const bindRematchControls = () => {
-        const requestBox = document.getElementById('rematch-request-box');
-        const resetRematchRequestUi = () => {
-            requestBox?.classList.add('hidden');
-            window.pendingRematch = null;
-        };
-        const isOnlineRematchContext = () => Boolean(
-            roomId
-            && window.currentRoomId === roomId
-            && !isBotMode()
-            && !isLocalVersusMode()
-            && (window.playerColor === 'w' || window.playerColor === 'b')
-            && window.currentUser?.uid
-        );
-        const isCurrentRoomFinished = () => (
-            window.currentRoomId === roomId
-            && window.lastGameUiSnapshot?.gameState === 'game_over'
-        );
-
-        if (!isOnlineRematchContext()) {
-            resetRematchRequestUi();
-            return;
-        }
+        if (isBotMode()) return;
         let lastIncomingRematchKey = '';
 
         const rematchRef = window.getRematchRef?.(roomId);
         if (typeof onValue !== 'undefined' && rematchRef) {
-            window.__rematchWatchUnsubscribe = onValue(rematchRef, (snap) => {
+            onValue(rematchRef, (snap) => {
                 const request = snap.val();
-                if (!isOnlineRematchContext()) {
-                    resetRematchRequestUi();
-                    return;
-                }
-                if (!request || !window.isRematchRequestRelevant?.(request) || !isCurrentRoomFinished()) {
-                    resetRematchRequestUi();
+                const requestBox = document.getElementById('rematch-request-box');
+                if (!request || !window.isRematchRequestRelevant?.(request) || isFinishedGame() === false) {
+                    requestBox?.classList.add('hidden');
+                    window.pendingRematch = null;
                     return;
                 }
 
-                const currentUid = window.currentUser?.uid || '';
                 const isIncoming = request.createdByUid
-                    && request.createdByUid !== currentUid
-                    && request.targetUid === currentUid
+                    && request.createdByUid !== window.currentUser?.uid
                     && !request.confirmedBy?.[window.playerColor];
 
                 if (isIncoming) {
@@ -739,15 +575,13 @@ window.setupGameControls = function(gameRef, roomId) {
                     return;
                 }
 
-                resetRematchRequestUi();
+                requestBox?.classList.add('hidden');
+                window.pendingRematch = request;
             });
         }
 
         setClickHandler('rematch-accept', async () => {
-            if (!isOnlineRematchContext() || !window.pendingRematch || !window.currentUser?.uid) {
-                resetRematchRequestUi();
-                return;
-            }
+            if (!window.pendingRematch || !window.currentUser?.uid) return;
             const newId = await window.confirmRematchForRoom(roomId, window.currentUser.uid);
             document.getElementById('rematch-request-box')?.classList.add('hidden');
             if (newId) {
@@ -756,10 +590,7 @@ window.setupGameControls = function(gameRef, roomId) {
         });
 
         setClickHandler('rematch-reject', async () => {
-            if (!isOnlineRematchContext() || !window.currentUser?.uid) {
-                resetRematchRequestUi();
-                return;
-            }
+            if (!window.currentUser?.uid) return;
             await window.declineRematchForRoom(roomId, window.currentUser.uid);
             document.getElementById('rematch-request-box')?.classList.add('hidden');
             window.pendingRematch = null;
@@ -777,13 +608,6 @@ window.setupGameControls = function(gameRef, roomId) {
         const inlineRematchBtn = document.getElementById('inline-rematch-btn');
         if (inlineRematchBtn) {
             inlineRematchBtn.onclick = runRematch;
-        }
-
-        const inlineIchiAnalysisBtn = document.getElementById('inline-ichi-analysis-btn');
-        if (inlineIchiAnalysisBtn) {
-            inlineIchiAnalysisBtn.onclick = () => {
-                window.notify('Разбор с ИЧИ скоро появится', 'info', 2200);
-            };
         }
 
         // Выход из модального окна
