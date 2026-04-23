@@ -744,7 +744,11 @@ window.reapplyPersistentBoardHighlights = function(forcedFen = null) {
 
 // Создание безопасного предпросмотра хода без изменения основной партии
 window.buildMovePreview = function(from, to, promotion = 'q') {
-    const previewGame = new Chess(window.game.fen());
+    if (!window.game || typeof window.game.fen !== 'function') return null;
+    const baseFen = window.game.fen();
+    const basePgn = window.game.pgn();
+    const baseTurn = window.game.turn();
+    const previewGame = new Chess(baseFen);
     const move = previewGame.move({ from, to, promotion });
 
     if (!move) return null;
@@ -754,6 +758,9 @@ window.buildMovePreview = function(from, to, promotion = 'q') {
         to,
         promotion,
         san: move.san,
+        baseFen,
+        basePgn,
+        baseTurn,
         previewFen: previewGame.fen()
     };
 };
