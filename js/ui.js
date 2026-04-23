@@ -219,6 +219,9 @@ window.updateTurnIndicator = function(isMyTurn) {
 };
 
 window.updateOpponentHeader = function(data) {
+    const opponentZoneEl = document.getElementById('game-opponent-zone');
+    const opponentMetaEl = document.querySelector('.game-opponent-meta');
+    const opponentPresenceWrapEl = document.querySelector('.game-opponent-presence-wrap');
     const opponentNameEl = document.getElementById('game-opponent-name');
     const opponentPresenceEl = document.getElementById('game-opponent-presence');
     const opponentPresenceTextEl = document.getElementById('game-opponent-presence-text');
@@ -232,6 +235,11 @@ window.updateOpponentHeader = function(data) {
     const isViewer = !isWhitePlayer && !isBlackPlayer;
     const isBotMode = Boolean(window.isBotMode || data?.mode === 'bot');
     const isLocalVersusMode = Boolean(window.isLocalVersusMode || data?.mode === 'local_versus');
+    opponentZoneEl?.classList.toggle('game-opponent-zone--local-versus', isLocalVersusMode);
+    opponentMetaEl?.classList.toggle('game-opponent-meta--compact', isLocalVersusMode);
+    opponentNameEl?.classList.toggle('game-opponent-name--badge', isLocalVersusMode);
+    opponentAvatarEl?.classList.toggle('hidden', isLocalVersusMode);
+    opponentPresenceWrapEl?.classList.toggle('hidden', isLocalVersusMode);
 
     let opponentName = 'Соперник';
     let opponentAvatar = '';
@@ -300,15 +308,17 @@ window.updateOpponentHeader = function(data) {
     opponentPresencePopoverEl.classList.add('hidden');
     opponentPresenceEl.setAttribute('aria-expanded', 'false');
 
-    if (opponentAvatar) {
-        const avatarImage = document.createElement('img');
-        avatarImage.src = opponentAvatar;
-        avatarImage.alt = '';
-        avatarImage.loading = 'lazy';
-        opponentAvatarEl.replaceChildren(avatarImage);
-    } else {
-        const letter = (opponentName || '?').trim().charAt(0).toUpperCase() || '?';
-        opponentAvatarEl.textContent = letter;
+    if (!isLocalVersusMode) {
+        if (opponentAvatar) {
+            const avatarImage = document.createElement('img');
+            avatarImage.src = opponentAvatar;
+            avatarImage.alt = '';
+            avatarImage.loading = 'lazy';
+            opponentAvatarEl.replaceChildren(avatarImage);
+        } else {
+            const letter = (opponentName || '?').trim().charAt(0).toUpperCase() || '?';
+            opponentAvatarEl.textContent = letter;
+        }
     }
 
     if (!window.__opponentPresencePopoverBound) {
@@ -547,12 +557,11 @@ window.updateFinishedGameActions = function(data) {
 window.toggleLocalVersusUi = function() {
     const isLocalVersusMode = Boolean(window.isLocalVersusMode);
     document.querySelector('.game-share-box')?.classList.toggle('hidden', isLocalVersusMode);
-    document.getElementById('quick-phrases-toggle')?.classList.toggle('hidden', isLocalVersusMode);
     document.getElementById('quick-phrases-menu')?.classList.add('hidden');
     document.getElementById('takeback-request-box')?.classList.toggle('hidden', isLocalVersusMode);
     document.getElementById('draw-request-box')?.classList.toggle('hidden', isLocalVersusMode);
-    document.getElementById('rematch-request-box')?.classList.toggle('hidden', isLocalVersusMode);
-    document.getElementById('game-opponent-presence')?.classList.toggle('hidden', isLocalVersusMode);
+    const shouldHideRematchRequest = isLocalVersusMode || Boolean(window.isBotMode) || !window.currentRoomId;
+    document.getElementById('rematch-request-box')?.classList.toggle('hidden', shouldHideRematchRequest);
 };
 
 // Обновление модального окна окончания игры

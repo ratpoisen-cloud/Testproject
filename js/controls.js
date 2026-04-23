@@ -1,6 +1,11 @@
 // ==================== КНОПКИ УПРАВЛЕНИЯ ====================
 
 window.setupGameControls = function(gameRef, roomId) {
+    if (typeof window.__rematchWatchUnsubscribe === 'function') {
+        window.__rematchWatchUnsubscribe();
+        window.__rematchWatchUnsubscribe = null;
+    }
+
     const setClickHandler = (id, handler) => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -678,22 +683,43 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     const bindRematchControls = () => {
-        if (isBotMode() || isLocalVersusMode()) return;
+        const requestBox = document.getElementById('rematch-request-box');
+        const resetRematchRequestUi = () => {
+            requestBox?.classList.add('hidden');
+            window.pendingRematch = null;
+        };
+        const isOnlineRematchContext = () => Boolean(
+            roomId
+            && window.currentRoomId === roomId
+            && !isBotMode()
+            && !isLocalVersusMode()
+            && (window.playerColor === 'w' || window.playerColor === 'b')
+            && window.currentUser?.uid
+        );
+
+        if (!isOnlineRematchContext()) {
+            resetRematchRequestUi();
+            return;
+        }
         let lastIncomingRematchKey = '';
 
         const rematchRef = window.getRematchRef?.(roomId);
         if (typeof onValue !== 'undefined' && rematchRef) {
-            onValue(rematchRef, (snap) => {
+            window.__rematchWatchUnsubscribe = onValue(rematchRef, (snap) => {
                 const request = snap.val();
-                const requestBox = document.getElementById('rematch-request-box');
+                if (!isOnlineRematchContext()) {
+                    resetRematchRequestUi();
+                    return;
+                }
                 if (!request || !window.isRematchRequestRelevant?.(request) || isFinishedGame() === false) {
-                    requestBox?.classList.add('hidden');
-                    window.pendingRematch = null;
+                    resetRematchRequestUi();
                     return;
                 }
 
+                const currentUid = window.currentUser?.uid || '';
                 const isIncoming = request.createdByUid
-                    && request.createdByUid !== window.currentUser?.uid
+                    && request.createdByUid !== currentUid
+                    && request.targetUid === currentUid
                     && !request.confirmedBy?.[window.playerColor];
 
                 if (isIncoming) {
@@ -709,13 +735,15 @@ window.setupGameControls = function(gameRef, roomId) {
                     return;
                 }
 
-                requestBox?.classList.add('hidden');
-                window.pendingRematch = request;
+                resetRematchRequestUi();
             });
         }
 
         setClickHandler('rematch-accept', async () => {
-            if (!window.pendingRematch || !window.currentUser?.uid) return;
+            if (!isOnlineRematchContext() || !window.pendingRematch || !window.currentUser?.uid) {
+                resetRematchRequestUi();
+                return;
+            }
             const newId = await window.confirmRematchForRoom(roomId, window.currentUser.uid);
             document.getElementById('rematch-request-box')?.classList.add('hidden');
             if (newId) {
@@ -724,7 +752,10 @@ window.setupGameControls = function(gameRef, roomId) {
         });
 
         setClickHandler('rematch-reject', async () => {
-            if (!window.currentUser?.uid) return;
+            if (!isOnlineRematchContext() || !window.currentUser?.uid) {
+                resetRematchRequestUi();
+                return;
+            }
             await window.declineRematchForRoom(roomId, window.currentUser.uid);
             document.getElementById('rematch-request-box')?.classList.add('hidden');
             window.pendingRematch = null;

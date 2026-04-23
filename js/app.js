@@ -73,6 +73,11 @@ window.initBoardSettingsControls = function() {
     if (quickPhrasesToggle && quickPhrasesMenu) {
         quickPhrasesToggle.addEventListener('click', (event) => {
             event.stopPropagation();
+            if (window.isBotMode || window.isLocalVersusMode || !window.currentRoomId) {
+                quickPhrasesMenu.classList.add('hidden');
+                window.notify('Доступно только в онлайн-партии', 'info', 2200);
+                return;
+            }
             quickPhrasesMenu.classList.toggle('hidden');
         });
 

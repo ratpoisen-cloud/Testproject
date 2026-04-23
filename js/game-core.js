@@ -2667,6 +2667,10 @@ function initLocalGameState() {
         window.__lobbyWatchUnsubscribe();
         window.__lobbyWatchUnsubscribe = null;
     }
+    if (typeof window.__rematchWatchUnsubscribe === 'function') {
+        window.__rematchWatchUnsubscribe();
+        window.__rematchWatchUnsubscribe = null;
+    }
     window.stopBotGame?.();
     window.game = new Chess();
     window.currentRoomId = null;
