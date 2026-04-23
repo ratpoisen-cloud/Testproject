@@ -696,6 +696,10 @@ window.setupGameControls = function(gameRef, roomId) {
             && (window.playerColor === 'w' || window.playerColor === 'b')
             && window.currentUser?.uid
         );
+        const isCurrentRoomFinished = () => (
+            window.currentRoomId === roomId
+            && window.lastGameUiSnapshot?.gameState === 'game_over'
+        );
 
         if (!isOnlineRematchContext()) {
             resetRematchRequestUi();
@@ -711,7 +715,7 @@ window.setupGameControls = function(gameRef, roomId) {
                     resetRematchRequestUi();
                     return;
                 }
-                if (!request || !window.isRematchRequestRelevant?.(request) || isFinishedGame() === false) {
+                if (!request || !window.isRematchRequestRelevant?.(request) || !isCurrentRoomFinished()) {
                     resetRematchRequestUi();
                     return;
                 }

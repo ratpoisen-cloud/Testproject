@@ -2697,6 +2697,7 @@ function initLocalGameState() {
     window.lastRenderedMoveHistoryLength = 0;
     window.resetGameSoundFlags?.();
     window.syncReviewStateFromCurrentGame();
+    window.lastGameUiSnapshot = null;
     window.activeReactions = [];
     window.reactionRateLimitState = { cycleKey: window.getReactionCycleKey(), count: 0 };
     window.activeQuickPhrase = null;
@@ -2915,11 +2916,11 @@ window.initGame = async function(roomId) {
         }
         window.playerColor = resolveAssignedColor(p, uid);
         window.isLocalVersusMode = false;
+        window.currentRoomId = roomId;
         applyAssignedColorToBoard();
         subscribeToGameUpdates(gameRef);
         
         window.setupGameControls(gameRef, roomId);
-        window.currentRoomId = roomId;
         window.refreshPresenceUI?.();
         window.markGameReady?.();
     } catch (error) {
