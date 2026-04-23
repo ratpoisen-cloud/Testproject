@@ -524,6 +524,7 @@ window.updateFinishedGameActions = function(data) {
     const confirmMoveBox = document.getElementById('confirm-move-box');
     const takebackRequestBox = document.getElementById('takeback-request-box');
     const drawRequestBox = document.getElementById('draw-request-box');
+    const rematchRequestBox = document.getElementById('rematch-request-box');
     const shareBox = document.querySelector('.game-share-box');
 
     const isFinishedGame = window.isGameFinished ? window.isGameFinished(data) : false;
@@ -550,6 +551,11 @@ window.updateFinishedGameActions = function(data) {
         confirmMoveBox?.classList.add('hidden');
         takebackRequestBox?.classList.add('hidden');
         drawRequestBox?.classList.add('hidden');
+    }
+    const shouldHideRematchRequest = !isFinishedGame || isBotMode || isLocalVersusMode || !window.currentRoomId;
+    rematchRequestBox?.classList.toggle('hidden', shouldHideRematchRequest);
+    if (shouldHideRematchRequest) {
+        window.pendingRematch = null;
     }
     shareBox?.classList.toggle('hidden', isFinishedGame || isBotMode || isLocalVersusMode);
 };
