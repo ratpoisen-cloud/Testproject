@@ -186,7 +186,9 @@ window.resetTransientBoardInteractionState = function() {
 
 window.rebuildBoardWithCurrentState = function() {
     const fen = window.game ? window.game.fen() : 'start';
-    const orientation = window.playerColor === 'b' ? 'black' : 'white';
+    const orientation = window.isLocalVersusMode
+        ? window.getLocalVersusOrientation?.()
+        : (window.playerColor === 'b' ? 'black' : 'white');
 
     if (window.board && typeof window.board.destroy === 'function') {
         window.board.destroy();
@@ -197,7 +199,7 @@ window.rebuildBoardWithCurrentState = function() {
     window.board.orientation(orientation);
     window.reapplyPersistentBoardHighlights?.(fen);
 
-    if (window.isMobile && window.playerColor) {
+    if (window.isMobile && (window.playerColor || window.isLocalVersusMode)) {
         window.attachMobileClickHandler();
     }
 
@@ -246,9 +248,12 @@ window.initBoard = function(playerColor) {
     window.updateCheckHighlight(window.game?.fen ? window.game.fen() : 'start');
     
     if (playerColor === 'b') window.board.orientation('black');
+    if (window.isLocalVersusMode) {
+        window.syncLocalVersusBoardOrientation?.();
+    }
     
     // Для мобильных устройств используем клики
-    if (window.isMobile && playerColor) {
+    if (window.isMobile && (playerColor || window.isLocalVersusMode)) {
         window.attachMobileClickHandler();
     }
 
@@ -489,16 +494,17 @@ window.handleDragStart = function(source, piece, position, orientation) {
         return false;
     }
 
-    if (window.game.game_over() || 
-        !window.playerColor || 
-        window.game.turn() !== window.playerColor || 
+    const activeColor = window.isLocalVersusMode ? window.game.turn() : window.playerColor;
+    if (window.game.game_over() ||
+        !activeColor ||
+        window.game.turn() !== activeColor ||
         window.pendingMove) {
         return false;
     }
     
     const pieceColor = piece.charAt(0);
-    if ((window.playerColor === 'w' && pieceColor === 'b') ||
-        (window.playerColor === 'b' && pieceColor === 'w')) {
+    if ((activeColor === 'w' && pieceColor === 'b') ||
+        (activeColor === 'b' && pieceColor === 'w')) {
         return false;
     }
     
@@ -513,11 +519,12 @@ window.handleDragStart = function(source, piece, position, orientation) {
 window.handleMouseoverSquare = function(square, piece) {
     if (window.isMobile) return;
     if (window.isReviewInteractionLocked()) return;
-    if (!window.playerColor || window.game.game_over() || window.pendingMove) return;
+    const activeColor = window.isLocalVersusMode ? window.game.turn() : window.playerColor;
+    if (!activeColor || window.game.game_over() || window.pendingMove) return;
     
     if (window.dragSourceSquare) return;
     
-    if (piece && piece.charAt(0) === window.playerColor && window.game.turn() === window.playerColor) {
+    if (piece && piece.charAt(0) === activeColor && window.game.turn() === activeColor) {
         window.showPossibleMoves(square);
     }
 };
@@ -568,7 +575,8 @@ window.handleDrop = function(source, target) {
 
     window.removeTemporaryHighlights();
     
-    if (window.game.game_over() || !window.playerColor || window.game.turn() !== window.playerColor || window.pendingMove) {
+    const activeColor = window.isLocalVersusMode ? window.game.turn() : window.playerColor;
+    if (window.game.game_over() || !activeColor || window.game.turn() !== activeColor || window.pendingMove) {
         window.dragSourceSquare = null;
         return 'snapback';
     }
@@ -627,8 +635,9 @@ window.handleMobileClick = function(square) {
     }
 
     if (window.game.game_over()) return;
-    if (!window.playerColor) return;
-    if (window.game.turn() !== window.playerColor) return;
+    const activeColor = window.isLocalVersusMode ? window.game.turn() : window.playerColor;
+    if (!activeColor) return;
+    if (window.game.turn() !== activeColor) return;
     if (window.pendingMove) return;
     
     const piece = window.game.get(square);
@@ -654,14 +663,14 @@ window.handleMobileClick = function(square) {
             document.getElementById('confirm-move-box').classList.remove('hidden');
             window.clearSelection();
         } else {
-            if (piece && piece.color === window.playerColor) {
+            if (piece && piece.color === activeColor) {
                 window.selectSquare(square);
             } else {
                 window.clearSelection();
             }
         }
     } else {
-        if (piece && piece.color === window.playerColor) {
+        if (piece && piece.color === activeColor) {
             window.selectSquare(square);
         }
     }
@@ -805,7 +814,7 @@ window.openPromotionChoice = function(from, to) {
     window.ensurePromotionChoiceBindings();
     window.pendingPromotionSelection = { from, to };
 
-    const color = window.playerColor === 'b' ? 'b' : 'w';
+    const color = window.isLocalVersusMode ? window.game.turn() : (window.playerColor === 'b' ? 'b' : 'w');
     options.querySelectorAll('[data-promotion-piece]').forEach((button) => {
         const piece = button.dataset.promotionPiece;
         const assetPath = window.getPieceAssetPath(piece, color);

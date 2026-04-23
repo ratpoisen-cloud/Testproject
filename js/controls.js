@@ -18,6 +18,10 @@ window.setupGameControls = function(gameRef, roomId) {
 
     const runRematch = async () => {
         hideElement('game-modal');
+        if (window.isLocalVersusMode) {
+            window.initLocalVersusGame?.();
+            return;
+        }
         if (window.isBotMode) {
             window.initBotGame({ color: window.playerColor, level: window.botLevel || 'medium' });
             return;
@@ -113,6 +117,7 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     const isBotMode = () => Boolean(window.isBotMode);
+    const isLocalVersusMode = () => Boolean(window.isLocalVersusMode);
 
     window.requestBotMove = async function() {
         if (!isBotMode() || !window.botEngine || !window.game || window.game.game_over()) return;
@@ -158,7 +163,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
 
     const applyBotModeUiRestrictions = () => {
-        if (!isBotMode()) return;
+        if (!isBotMode() && !isLocalVersusMode()) return;
         document.querySelector('.game-share-box')?.classList.add('hidden');
         document.getElementById('draw-btn')?.classList.add('hidden');
         const drawBtn = document.getElementById('draw-btn');
@@ -189,7 +194,7 @@ window.setupGameControls = function(gameRef, roomId) {
             const expectedBaseFen = pendingMove.baseFen ?? window.game.fen();
             const expectedBaseTurn = pendingMove.baseTurn ?? window.game.turn();
 
-            if (!isBotMode()) {
+            if (!isBotMode() && !isLocalVersusMode()) {
                 if (!window.playerColor || (window.playerColor !== 'w' && window.playerColor !== 'b')) {
                     invalidatePendingConfirmFlow();
                     return;
@@ -276,6 +281,9 @@ window.setupGameControls = function(gameRef, roomId) {
             window.playMoveSoundSequence?.(moveResult, { allowVoiceLine: true });
 
             window.updateBoardPosition(window.game.fen(), true);
+            if (isLocalVersusMode()) {
+                window.syncLocalVersusBoardOrientation?.();
+            }
 
             const now = Date.now();
             const updateData = {
@@ -301,6 +309,21 @@ window.setupGameControls = function(gameRef, roomId) {
                 }
 
                 await window.requestBotMove?.();
+                return;
+            }
+
+            if (isLocalVersusMode()) {
+                if (window.game.game_over()) {
+                    const metadata = window.applyGameHeaders(window.game, {
+                        gameState: 'game_over',
+                        message: window.getGameResultMessage(window.game)
+                    });
+                    resetPendingMoveUI();
+                    window.updateUI({ gameState: 'game_over', message: metadata.message, mode: 'local_versus' });
+                    return;
+                }
+                resetPendingMoveUI();
+                window.updateUI({ gameState: 'active', mode: 'local_versus' });
                 return;
             }
 
@@ -356,20 +379,21 @@ window.setupGameControls = function(gameRef, roomId) {
                 danger: true
             });
             if (shouldResign) {
-                const winner = window.playerColor === 'w' ? 'Черные' : 'Белые';
+                const resignColor = isLocalVersusMode() ? window.game.turn() : window.playerColor;
+                const winner = resignColor === 'w' ? 'Черные' : 'Белые';
                 const players = isBotMode() ? null : await resolvePlayersForHeaders();
                 const metadata = window.applyGameHeaders(window.game, {
                     players,
                     gameState: 'game_over',
                     message: `${winner} победили (сдача)`,
-                    resign: window.playerColor
+                    resign: resignColor
                 });
 
                 if (isBotMode()) {
                     window.applyImmediateGameOverState?.({
                         gameState: 'game_over',
                         message: metadata.message,
-                        resign: window.playerColor,
+                        resign: resignColor,
                         mode: 'bot'
                     });
                     return;
@@ -379,10 +403,12 @@ window.setupGameControls = function(gameRef, roomId) {
                     gameState: 'game_over',
                     message: metadata.message,
                     pgn: window.game.pgn(),
-                    resign: window.playerColor
+                    resign: resignColor
                 };
                 window.applyImmediateGameOverState?.(updateData);
-                await window.updateGame(gameRef, updateData);
+                if (!isLocalVersusMode()) {
+                    await window.updateGame(gameRef, updateData);
+                }
             }
         });
 
@@ -413,7 +439,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Поделиться ссылкой
         setClickHandler('share-btn', async () => {
-            if (isBotMode()) return;
+            if (isBotMode() || isLocalVersusMode()) return;
             const link = document.getElementById('room-link').value;
             if (navigator.share) {
                 try {
@@ -474,7 +500,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
     // ===== Takeback =====
     const bindTakebackControls = () => {
-        if (isBotMode()) return;
+        if (isBotMode() || isLocalVersusMode()) return;
         let lastIncomingTakebackKey = '';
         // Запрос отмены хода
         setClickHandler('takeback-btn', () => {
@@ -564,7 +590,7 @@ window.setupGameControls = function(gameRef, roomId) {
 
     // ===== Draw =====
     const bindDrawControls = () => {
-        if (isBotMode()) return;
+        if (isBotMode() || isLocalVersusMode()) return;
         let lastIncomingDrawKey = '';
         // Кнопка "Предложить ничью"
         setClickHandler('draw-btn', () => {
@@ -652,7 +678,7 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     const bindRematchControls = () => {
-        if (isBotMode()) return;
+        if (isBotMode() || isLocalVersusMode()) return;
         let lastIncomingRematchKey = '';
 
         const rematchRef = window.getRematchRef?.(roomId);

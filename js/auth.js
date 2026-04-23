@@ -23,6 +23,7 @@ window.setupAuth = function() {
     let hasResolvedInitialAuthState = false;
 
     const isBotModeRequested = () => new URLSearchParams(window.location.search).get('bot') === '1';
+    const isLocalVersusModeRequested = () => new URLSearchParams(window.location.search).get('mode') === 'versus';
 
     window.setAppAuthView = (isAuthorized) => {
         document.body.classList.toggle('auth-state', isAuthorized);
@@ -39,7 +40,7 @@ window.setupAuth = function() {
             return;
         }
 
-        if (isBotModeRequested()) {
+        if (isBotModeRequested() || isLocalVersusModeRequested()) {
             guestSection?.classList.add('hidden');
             gameSection?.classList.remove('hidden');
             lobbySection?.classList.add('hidden');
