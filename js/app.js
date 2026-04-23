@@ -73,11 +73,6 @@ window.initBoardSettingsControls = function() {
     if (quickPhrasesToggle && quickPhrasesMenu) {
         quickPhrasesToggle.addEventListener('click', (event) => {
             event.stopPropagation();
-            if (window.isBotMode || window.isLocalVersusMode || !window.currentRoomId) {
-                quickPhrasesMenu.classList.add('hidden');
-                window.notify('Доступно только в онлайн-партии', 'info', 2200);
-                return;
-            }
             quickPhrasesMenu.classList.toggle('hidden');
         });
 
@@ -88,7 +83,7 @@ window.initBoardSettingsControls = function() {
                 const emoji = item.dataset.emoji || '⚡';
                 quickPhrasesMenu.classList.add('hidden');
 
-                if (window.isBotMode || window.isLocalVersusMode) {
+                if (window.isBotMode) {
                     window.notify('Быстрые фразы доступны только в онлайн-партии', 'info', 2200);
                     return;
                 }
@@ -188,14 +183,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
     const isBotMode = urlParams.get('bot') === '1';
-    const mode = (urlParams.get('mode') || '').toLowerCase();
-    const isLocalVersusMode = mode === 'versus';
 
-    if (isLocalVersusMode) {
-        window.setAppLoadingFlag('lobby', true);
-        window.initLobby();
-        window.initLocalVersusGame?.();
-    } else if (roomId) {
+    if (roomId) {
         window.setAppLoadingFlag('lobby', true);
         window.initGame(roomId);
     } else if (isBotMode) {

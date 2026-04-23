@@ -310,33 +310,13 @@
 
     window.createGame = async function createGame(roomId, pgn, fen) {
         const now = Date.now();
-        const row = toDbGame(roomId, {
+        return window.set(window.getGameRef(roomId), {
             pgn,
             fen,
             gameState: 'active',
             createdAt: now,
             lastMoveTime: now
         });
-        const { error } = await supabase.from('games').insert(row);
-        if (!error) return { status: 'created', roomId };
-
-        const code = String(error.code || '');
-        const message = String(error.message || '').toLowerCase();
-        const isDuplicate = code === '23505' || message.includes('duplicate key');
-        if (isDuplicate) {
-            const { data: existingRoom, error: readError } = await supabase
-                .from('games')
-                .select('room_id,created_at')
-                .eq('room_id', roomId)
-                .maybeSingle();
-
-            if (readError) throw readError;
-            if (!existingRoom?.room_id) {
-                throw new Error(`createGame duplicate without readable room: ${roomId}`);
-            }
-            return { status: 'duplicate', roomId };
-        }
-        throw error;
     };
 
     // watchGames/watchGame/onValue имитируют Firebase realtime API,

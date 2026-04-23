@@ -49,10 +49,6 @@
     background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
 }
 
-.game-opponent-zone--local-versus {
-    justify-content: center;
-}
-
 .game-opponent-avatar {
     width: 30px;
     height: 30px;
@@ -80,11 +76,6 @@
     min-width: 0;
 }
 
-.game-opponent-meta--compact {
-    width: 100%;
-    text-align: center;
-}
-
 .game-opponent-name,
 .game-opponent-presence {
     margin: 0;
@@ -96,17 +87,6 @@
 .game-opponent-name {
     font-size: 0.8rem;
     line-height: 1.2;
-}
-
-.game-opponent-name--badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 0;
-    padding: 0;
-    border-radius: 0;
-    font-weight: 600;
-    background: transparent;
 }
 
 .game-opponent-presence-wrap {
