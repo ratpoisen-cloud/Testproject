@@ -21,6 +21,8 @@ window.setupAuth = function() {
     const USER_MENU_VIEWPORT_PADDING = 8;
     let isAvatarUploading = false;
     let hasResolvedInitialAuthState = false;
+    const AUTH_INIT_TIMEOUT_MS = 5000;
+    let authInitTimeoutId = null;
 
     const isBotModeRequested = () => new URLSearchParams(window.location.search).get('bot') === '1';
 
@@ -55,6 +57,14 @@ window.setupAuth = function() {
 
     const hideModalById = (id) => {
         document.getElementById(id)?.classList.add('hidden');
+    };
+
+    const handleSlowAuthInitialization = () => {
+        if (hasResolvedInitialAuthState) return;
+
+        console.warn(`[Auth] Initial auth state is taking longer than ${AUTH_INIT_TIMEOUT_MS}ms. Removing auth loading gate and waiting for Supabase auth callback.`);
+        window.notify('Авторизация загружается дольше обычного...', 'info', 4200);
+        window.setAppLoadingFlag?.('auth', false);
     };
 
     const cleanupGuestUiState = () => {
@@ -304,6 +314,11 @@ window.setupAuth = function() {
     });
 
     onAuthStateChanged(window.auth, (user) => {
+        if (authInitTimeoutId) {
+            clearTimeout(authInitTimeoutId);
+            authInitTimeoutId = null;
+        }
+
         hasResolvedInitialAuthState = true;
         window.currentUser = user;
 
@@ -444,5 +459,10 @@ window.setupAuth = function() {
         document.body.classList.remove('auth-state', 'guest-state');
         window.setAppLoadingFlag?.('auth', true);
         window.setAppLoadingFlag?.('lobby', false);
+
+        authInitTimeoutId = setTimeout(() => {
+            authInitTimeoutId = null;
+            handleSlowAuthInitialization();
+        }, AUTH_INIT_TIMEOUT_MS);
     }
 };
