@@ -315,7 +315,27 @@ window.setupGameControls = function(gameRef, roomId) {
                     resign: window.playerColor
                 };
                 window.applyImmediateGameOverState?.(updateData);
-                await window.updateGame(gameRef, updateData);
+
+                try {
+                    await window.resignGameAtomic(roomId, {
+                        uid: window.currentUser?.uid,
+                        playerColor: window.playerColor
+                    });
+                } catch (error) {
+                    console.error('[resign] failed:', error);
+
+                    const msg = String(error.message || '');
+
+                    if (msg.includes('Game already finished')) {
+                        window.notify('Игра уже завершена', 'warning');
+                    } else if (msg.includes('Not a player')) {
+                        window.notify('Вы не участник партии', 'error');
+                    } else {
+                        window.notify('Ошибка при сдаче партии', 'error');
+                    }
+
+                    return;
+                }
             }
         });
 
