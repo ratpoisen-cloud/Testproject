@@ -208,8 +208,49 @@ window.setupGameControls = function(gameRef, roomId) {
                 updateData.pgn = window.game.pgn();
             }
 
-            window.updateGame(gameRef, updateData);
-            resetPendingMoveUI();
+            try {
+                await window.applyMoveAtomic(roomId, {
+                    uid: window.currentUser?.uid,
+                    expectedVersion: window.lastGameUiSnapshot?.version ?? 0,
+                    pgn: updateData.pgn,
+                    fen: updateData.fen,
+                    turn: updateData.turn,
+                    lastMove: updateData.lastMove,
+                    gameOver: updateData.gameState === 'game_over',
+                    message: updateData.message || null
+                });
+
+                resetPendingMoveUI();
+
+            } catch (error) {
+                console.error('[confirmMove] applyMoveAtomic failed:', error);
+
+                // ОТКАТ ХОДА (КЛЮЧЕВОЙ МОМЕНТ)
+                window.game.undo();
+
+                window.pendingMove = null;
+                window.pendingPromotionSelection = null;
+
+                document.getElementById('confirm-move-box')?.classList.add('hidden');
+                document.getElementById('promotion-choice-box')?.classList.add('hidden');
+
+                window.clearSelection();
+                window.updateBoardPosition(window.game.fen(), true);
+
+                const msg = String(error.message || '');
+
+                if (msg.includes('Version mismatch')) {
+                    window.notify('Позиция устарела. Обновляем партию.', 'warning');
+                } else if (msg.includes('Not your turn')) {
+                    window.notify('Сейчас не ваш ход', 'warning');
+                } else if (msg.includes('Game already finished')) {
+                    window.notify('Игра уже завершена', 'warning');
+                } else {
+                    window.notify('Ошибка при отправке хода', 'error');
+                }
+
+                return;
+            }
         });
 
         // Отмена неподтвержденного хода - ПЛАВНЫЙ ВОЗВРАТ ФИГУРЫ
