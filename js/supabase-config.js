@@ -39,6 +39,41 @@
         };
     };
 
+    const AUTH_URL_SESSION_WAIT_MS = 5500;
+    const AUTH_URL_SESSION_POLL_MS = 250;
+
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const hasOauthSessionParamsInUrl = () => {
+        const searchParams = new URLSearchParams(window.location.search || '');
+        const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+        return [
+            'code',
+            'access_token',
+            'refresh_token',
+            'id_token',
+            'token_type',
+            'error',
+            'error_description'
+        ].some((key) => searchParams.has(key) || hashParams.has(key));
+    };
+
+    const waitForSessionFromRedirectUrl = async () => {
+        if (!hasOauthSessionParamsInUrl()) return null;
+
+        const startedAt = Date.now();
+        while (Date.now() - startedAt < AUTH_URL_SESSION_WAIT_MS) {
+            const { data, error } = await supabaseClient.auth.getSession();
+            if (!error && data?.session?.user) {
+                return data.session.user;
+            }
+            await delay(AUTH_URL_SESSION_POLL_MS);
+        }
+
+        console.warn(`[Auth] Supabase session was not ready from OAuth redirect URL within ${AUTH_URL_SESSION_WAIT_MS}ms.`);
+        return null;
+    };
+
     const mapAuthError = (err) => {
         if (!err) return new Error('Auth error');
         const message = typeof err.message === 'string' ? err.message : 'Auth error';
@@ -115,15 +150,24 @@
             callback(normalized);
         };
 
-        supabaseClient.auth.getUser().then(({ data, error }) => {
-            if (error) {
-                console.warn('Не удалось получить текущего пользователя', error);
+        (async () => {
+            const redirectUser = await waitForSessionFromRedirectUrl();
+            if (redirectUser) {
+                emitIfChanged(redirectUser);
+                return;
             }
-            emitIfChanged(data?.user || null);
-        }).catch((error) => {
-            console.warn('Ошибка при получении текущего пользователя', error);
-            emitIfChanged(null);
-        });
+
+            try {
+                const { data, error } = await supabaseClient.auth.getUser();
+                if (error) {
+                    console.warn('Не удалось получить текущего пользователя', error);
+                }
+                emitIfChanged(data?.user || null);
+            } catch (error) {
+                console.warn('Ошибка при получении текущего пользователя', error);
+                emitIfChanged(null);
+            }
+        })();
 
         const { data: listener } = supabaseClient.auth.onAuthStateChange((_event, session) => {
             emitIfChanged(session?.user || null);
