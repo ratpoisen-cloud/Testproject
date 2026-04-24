@@ -76,6 +76,7 @@
             players: row.players || null,
             pgn: row.pgn || '',
             fen: row.fen || 'start',
+            version: row.version ?? 0,
             gameState: row.game_state || 'active',
             message: row.message || null,
             lastMoveTime: row.last_move_time || row.created_at || null,
@@ -100,6 +101,7 @@
         if (Object.prototype.hasOwnProperty.call(row, 'players')) patch.players = row.players ?? null;
         if (Object.prototype.hasOwnProperty.call(row, 'pgn')) patch.pgn = row.pgn ?? '';
         if (Object.prototype.hasOwnProperty.call(row, 'fen')) patch.fen = row.fen ?? 'start';
+        if (Object.prototype.hasOwnProperty.call(row, 'version')) patch.version = row.version ?? 0;
         if (Object.prototype.hasOwnProperty.call(row, 'game_state')) patch.gameState = row.game_state ?? 'active';
         if (Object.prototype.hasOwnProperty.call(row, 'message')) patch.message = row.message ?? null;
         if (Object.prototype.hasOwnProperty.call(row, 'last_move_time')) patch.lastMoveTime = row.last_move_time ?? null;
@@ -262,8 +264,35 @@
         if (error) throw error;
     };
 
+    // Legacy path: сохраняется для обратной совместимости.
+    // После перехода на RPC не использовать для критичных мутаций хода.
     window.updateGame = function updateGame(gameRef, data) {
         return window.update(gameRef, data);
+    };
+
+    window.applyMoveAtomic = async function applyMoveAtomic(roomId, payload) {
+        if (!roomId) throw new Error('applyMoveAtomic: roomId is required');
+        if (!payload) throw new Error('applyMoveAtomic: payload is required');
+
+        const { data, error } = await supabase.rpc('apply_move_atomic', {
+            p_room_id: roomId,
+            p_uid: payload.uid,
+            p_expected_version: payload.expectedVersion,
+            p_next_pgn: payload.pgn,
+            p_next_fen: payload.fen,
+            p_next_turn: payload.turn,
+            p_last_move: payload.lastMove,
+            p_game_over: Boolean(payload.gameOver),
+            p_message: payload.message || null
+        });
+
+        if (error) {
+            console.error('[applyMoveAtomic] RPC error:', error);
+            throw error;
+        }
+
+        if (data) return fromDbGame(data);
+        return null;
     };
 
     // LEGACY-COMPAT helper (Firebase-like API shape).
