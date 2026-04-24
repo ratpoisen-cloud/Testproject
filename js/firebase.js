@@ -270,6 +270,20 @@
         return window.update(gameRef, data);
     };
 
+
+    window.resignGameAtomic = async function resignGameAtomic(roomId, payload) {
+        const { data, error } = await window.supabaseClient.rpc('resign_game_atomic', {
+            p_room_id: roomId,
+            p_uid: payload.uid,
+            p_player_color: payload.playerColor
+        });
+
+        if (error) {
+            throw error;
+        }
+
+        return data;
+    };
     window.applyMoveAtomic = async function applyMoveAtomic(roomId, payload) {
         if (!roomId) throw new Error('applyMoveAtomic: roomId is required');
         if (!payload) throw new Error('applyMoveAtomic: payload is required');
