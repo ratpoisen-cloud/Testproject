@@ -59,6 +59,58 @@ window.markGameReady = function() {
     window.setAppLoadingFlag('lobby', false);
 };
 
+window.__uiActionLocks = window.__uiActionLocks || {};
+
+window.withUiActionLock = async function withUiActionLock(key, action, options = {}) {
+    if (!key || typeof action !== 'function') return;
+
+    if (window.__uiActionLocks[key]) {
+        return;
+    }
+
+    window.__uiActionLocks[key] = true;
+
+    const buttons = Array.isArray(options.buttons)
+        ? options.buttons.filter(Boolean)
+        : options.button
+            ? [options.button]
+            : [];
+
+    const previousButtonStates = buttons.map((btn) => ({
+        btn,
+        disabled: btn.disabled,
+        text: btn.innerText
+    }));
+
+    buttons.forEach((btn) => {
+        btn.disabled = true;
+        btn.classList?.add('is-loading');
+        if (options.loadingText) {
+            btn.innerText = options.loadingText;
+        }
+    });
+
+    if (options.showAppLoading) {
+        window.setAppLoadingFlag?.(options.loadingFlag || 'lobby', true);
+    }
+
+    try {
+        return await action();
+    } finally {
+        previousButtonStates.forEach(({ btn, disabled, text }) => {
+            btn.disabled = disabled;
+            btn.innerText = text;
+            btn.classList?.remove('is-loading');
+        });
+
+        if (options.showAppLoading) {
+            window.setAppLoadingFlag?.(options.loadingFlag || 'lobby', false);
+        }
+
+        window.__uiActionLocks[key] = false;
+    }
+};
+
 window.initBoardSettingsControls = function() {
     if (window.__boardSettingsControlsInitialized) return;
 
