@@ -292,6 +292,32 @@
 
         return data ? fromDbGame(data) : null;
     };
+
+
+    window.resolveDrawAtomic = async function resolveDrawAtomic(roomId, payload) {
+        if (!roomId) {
+            throw new Error('resolveDrawAtomic: roomId is required');
+        }
+        if (!payload || typeof payload !== 'object') {
+            throw new Error('resolveDrawAtomic: payload is required');
+        }
+
+        const { data, error } = await supabase.rpc('resolve_draw_atomic', {
+            p_room_id: roomId,
+            p_uid: payload.uid,
+            p_action: payload.action,
+            p_actor_name: payload.actorName || null,
+            p_pgn_on_accept: payload.pgnOnAccept || null
+        });
+
+        if (error) {
+            console.error('[resolveDrawAtomic] RPC error:', error);
+            throw error;
+        }
+
+        return data ? fromDbGame(data) : null;
+    };
+
     window.applyMoveAtomic = async function applyMoveAtomic(roomId, payload) {
         if (!roomId) throw new Error('applyMoveAtomic: roomId is required');
         if (!payload) throw new Error('applyMoveAtomic: payload is required');
