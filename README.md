@@ -1,18 +1,11 @@
 Мой проект шахмат онлайн
 
-## Supabase RPC для takeback
+## Обновление: атомарная сдача партии (RPC)
 
-В проекте используется серверная атомарная логика отката хода через RPC:
-- SQL функция: `public.resolve_takeback_atomic(...)` (файл `supabase-schema.sql`)
-- Клиентский вызов: `window.resolveTakebackAtomic(roomId, payload)` (файл `js/firebase.js`)
-- UI-интеграция кнопок takeback: `js/controls.js`
+Для онлайн-режима сдача партии на фронте переведена на серверный RPC `resign_game_atomic`.
 
-### Поддерживаемые действия
-- `request` — отправить запрос на откат
-- `accept` — принять откат (с передачей `fenAfterUndo` и `pgnAfterUndo`)
-- `reject` — отклонить запрос
-
-### Типовые ошибки RPC
-- `No takeback request`
-- `Game already finished`
-- `Auth uid mismatch`
+- Фронт вызывает `window.resignGameAtomic(roomId, { uid, playerColor })`.
+- Перед вызовом есть локальная валидация `roomId` и `payload`.
+- При ошибке RPC показываются пользовательские уведомления (например, `Game already finished`, `Not a player`, `Color mismatch`, `Auth uid mismatch`).
+- После успешного RPC фронт **не делает дополнительный `updateGame`**: финальное состояние подтягивается через realtime.
+- `bot mode` остаётся на отдельной ветке и не использует RPC-сдачу онлайн-комнаты.

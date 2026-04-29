@@ -338,12 +338,10 @@ $$;
 revoke all on function public.join_game_player_with_color(text, text, text, text) from public;
 grant execute on function public.join_game_player_with_color(text, text, text, text) to authenticated;
 
-create or replace function public.resolve_takeback_atomic(
+create or replace function public.resign_game_atomic(
   p_room_id text,
   p_uid text,
-  p_action text,
-  p_fen_after_undo text default null,
-  p_pgn_after_undo text default null
+  p_player_color text
 )
 returns public.games
 language plpgsql
@@ -352,12 +350,14 @@ set search_path = public
 as $$
 declare
   v_game public.games%rowtype;
+  v_message text;
 begin
   if auth.uid() is null or auth.uid()::text <> p_uid then
     raise exception 'Auth uid mismatch';
   end if;
 
-  select * into v_game
+  select *
+  into v_game
   from public.games
   where room_id = p_room_id
   for update;
@@ -375,56 +375,37 @@ begin
     raise exception 'Not a player';
   end if;
 
-  if p_action = 'request' then
-    update public.games
-    set takeback_request = jsonb_build_object(
-        'from', p_uid,
-        'timestamp', floor(extract(epoch from now()) * 1000)
-    )
-    where room_id = p_room_id
-    returning * into v_game;
-
-    return v_game;
+  if p_player_color not in ('w', 'b') then
+    raise exception 'Invalid player color';
   end if;
 
-  if p_action = 'reject' then
-    if v_game.takeback_request is null then
-      raise exception 'No takeback request';
-    end if;
-
-    update public.games
-    set takeback_request = null
-    where room_id = p_room_id
-    returning * into v_game;
-
-    return v_game;
+  if (p_player_color = 'w' and v_game.players->>'white' <> p_uid)
+     or (p_player_color = 'b' and v_game.players->>'black' <> p_uid) then
+    raise exception 'Color mismatch';
   end if;
 
-  if p_action = 'accept' then
-    if v_game.takeback_request is null then
-      raise exception 'No takeback request';
-    end if;
-
-    if p_fen_after_undo is null or p_pgn_after_undo is null then
-      raise exception 'Missing undo state';
-    end if;
-
-    update public.games
-    set
-      fen = p_fen_after_undo,
-      pgn = p_pgn_after_undo,
-      takeback_request = null,
-      version = coalesce(version, 0) + 1,
-      last_move_time = floor(extract(epoch from now()) * 1000)
-    where room_id = p_room_id
-    returning * into v_game;
-
-    return v_game;
+  if p_player_color = 'w' then
+    v_message := 'Черные победили (сдача)';
+  else
+    v_message := 'Белые победили (сдача)';
   end if;
 
-  raise exception 'Invalid action';
+  update public.games
+  set
+    game_state = 'game_over',
+    message = v_message,
+    resign = p_player_color,
+    draw_request = null,
+    takeback_request = null,
+    version = coalesce(version, 0) + 1,
+    last_move_time = floor(extract(epoch from now()) * 1000)
+  where room_id = p_room_id
+  returning * into v_game;
+
+  return v_game;
 end;
 $$;
 
-revoke all on function public.resolve_takeback_atomic(text, text, text, text, text) from public;
-grant execute on function public.resolve_takeback_atomic(text, text, text, text, text) to authenticated;
+revoke all on function public.resign_game_atomic(text, text, text) from public;
+
+grant execute on function public.resign_game_atomic(text, text, text) to authenticated;
