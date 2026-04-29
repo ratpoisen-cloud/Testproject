@@ -520,7 +520,18 @@ window.setupGameControls = function(gameRef, roomId) {
                 return;
             }
             if (window.pendingTakeback) {
+                const history = window.game.history();
+                const previousFen = window.game.fen();
+
+                const currentTurn = window.game.turn();
+                const shouldUndoTwoMoves =
+                    history.length >= 2 &&
+                    currentTurn === window.playerColor;
+
                 window.game.undo();
+                if (shouldUndoTwoMoves) {
+                    window.game.undo();
+                }
 
                 try {
                     await window.resolveTakebackAtomic(roomId, {
@@ -538,7 +549,9 @@ window.setupGameControls = function(gameRef, roomId) {
                     console.error('[takeback] accept failed:', error);
 
                     // rollback: вернуть локальный ход обратно, если RPC не принял откат
-                    window.game.undo();
+                    if (previousFen && typeof window.game.load === 'function') {
+                        window.game.load(previousFen);
+                    }
                     window.updateBoardPosition(window.game.fen(), true);
 
                     const msg = String(error.message || '');
