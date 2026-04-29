@@ -272,17 +272,25 @@
 
 
     window.resignGameAtomic = async function resignGameAtomic(roomId, payload) {
-        const { data, error } = await window.supabaseClient.rpc('resign_game_atomic', {
+        if (!roomId) {
+            throw new Error('resignGameAtomic: roomId is required');
+        }
+        if (!payload || typeof payload !== 'object') {
+            throw new Error('resignGameAtomic: payload is required');
+        }
+
+        const { data, error } = await supabase.rpc('resign_game_atomic', {
             p_room_id: roomId,
             p_uid: payload.uid,
             p_player_color: payload.playerColor
         });
 
         if (error) {
+            console.error('[resignGameAtomic] RPC error:', error);
             throw error;
         }
 
-        return data;
+        return data ? fromDbGame(data) : null;
     };
     window.applyMoveAtomic = async function applyMoveAtomic(roomId, payload) {
         if (!roomId) throw new Error('applyMoveAtomic: roomId is required');
