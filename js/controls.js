@@ -322,7 +322,7 @@ window.setupGameControls = function(gameRef, roomId) {
                         playerColor: window.playerColor
                     });
                 } catch (error) {
-                    console.error('[resign] failed:', error);
+                    console.error('[resign] resignGameAtomic failed:', error);
 
                     const msg = String(error.message || '');
 
@@ -330,6 +330,10 @@ window.setupGameControls = function(gameRef, roomId) {
                         window.notify('Игра уже завершена', 'warning');
                     } else if (msg.includes('Not a player')) {
                         window.notify('Вы не участник партии', 'error');
+                    } else if (msg.includes('Color mismatch')) {
+                        window.notify('Ошибка цвета игрока', 'error');
+                    } else if (msg.includes('Auth uid mismatch')) {
+                        window.notify('Ошибка авторизации', 'error');
                     } else {
                         window.notify('Ошибка при сдаче партии', 'error');
                     }
