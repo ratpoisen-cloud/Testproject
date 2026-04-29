@@ -491,7 +491,12 @@ window.setupGameControls = function(gameRef, roomId) {
                     return;
                 }
 
-                if (request.from !== window.playerColor && !request.answered) {
+                const isOwnTakebackRequest =
+                    request.from === window.playerColor ||
+                    request.fromUid === window.currentUser?.uid ||
+                    request.from === window.currentUser?.uid;
+
+                if (!isOwnTakebackRequest && !request.answered) {
                     const requestKey = `${request.timestamp || ''}:${request.from || ''}`;
                     if (requestKey && requestKey !== lastIncomingTakebackKey) {
                         window.SoundManager?.play?.('modal_open');
@@ -539,6 +544,8 @@ window.setupGameControls = function(gameRef, roomId) {
                     const msg = String(error.message || '');
                     if (msg.includes('No takeback request')) {
                         window.notify('Запрос на откат уже неактуален', 'warning');
+                    } else if (msg.includes('Cannot accept own takeback request')) {
+                        window.notify('Нельзя принять собственный запрос на откат', 'warning');
                     } else if (msg.includes('Missing undo state')) {
                         window.notify('Ошибка состояния отката', 'error');
                     } else if (msg.includes('Game already finished')) {
@@ -578,6 +585,8 @@ window.setupGameControls = function(gameRef, roomId) {
                 const msg = String(error.message || '');
                 if (msg.includes('No takeback request')) {
                     window.notify('Запрос на откат уже неактуален', 'warning');
+                } else if (msg.includes('Cannot reject own takeback request')) {
+                    window.notify('Нельзя отклонить собственный запрос на откат', 'warning');
                 } else if (msg.includes('Game already finished')) {
                     window.notify('Игра уже завершена', 'warning');
                 } else if (msg.includes('Not a player')) {
