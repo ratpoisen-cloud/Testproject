@@ -338,6 +338,114 @@ $$;
 revoke all on function public.join_game_player_with_color(text, text, text, text) from public;
 grant execute on function public.join_game_player_with_color(text, text, text, text) to authenticated;
 
+
+create or replace function public.resolve_takeback_atomic(
+  p_room_id text,
+  p_uid text,
+  p_action text,
+  p_fen_after_undo text default null,
+  p_pgn_after_undo text default null
+)
+returns public.games
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_game public.games%rowtype;
+begin
+  if auth.uid() is null or auth.uid()::text <> p_uid then
+    raise exception 'Auth uid mismatch';
+  end if;
+
+  select *
+  into v_game
+  from public.games
+  where room_id = p_room_id
+  for update;
+
+  if not found then
+    raise exception 'Game not found';
+  end if;
+
+  if v_game.game_state = 'game_over' then
+    raise exception 'Game already finished';
+  end if;
+
+  if v_game.players->>'white' <> p_uid
+     and v_game.players->>'black' <> p_uid then
+    raise exception 'Not a player';
+  end if;
+
+  if p_action = 'request' then
+    if v_game.takeback_request is not null then
+      raise exception 'Takeback already requested';
+    end if;
+
+    update public.games
+    set
+      takeback_request = jsonb_build_object(
+        'from', p_uid,
+        'timestamp', floor(extract(epoch from now()) * 1000)
+      ),
+      version = coalesce(version, 0) + 1
+    where room_id = p_room_id
+    returning * into v_game;
+
+    return v_game;
+  end if;
+
+  if p_action = 'reject' then
+    if v_game.takeback_request is null then
+      raise exception 'No takeback request';
+    end if;
+
+    update public.games
+    set
+      takeback_request = null,
+      version = coalesce(version, 0) + 1
+    where room_id = p_room_id
+    returning * into v_game;
+
+    return v_game;
+  end if;
+
+  if p_action = 'accept' then
+    if v_game.takeback_request is null then
+      raise exception 'No takeback request';
+    end if;
+
+    if p_fen_after_undo is null or p_pgn_after_undo is null then
+      raise exception 'Missing undo state';
+    end if;
+
+    update public.games
+    set
+      fen = p_fen_after_undo,
+      pgn = p_pgn_after_undo,
+      takeback_request = null,
+      draw_request = null,
+      version = coalesce(version, 0) + 1,
+      last_move_time = floor(extract(epoch from now()) * 1000)
+    where room_id = p_room_id
+    returning * into v_game;
+
+    return v_game;
+  end if;
+
+  raise exception 'Invalid action';
+end;
+$$;
+
+revoke all on function public.resolve_takeback_atomic(
+  text, text, text, text, text
+) from public;
+
+grant execute on function public.resolve_takeback_atomic(
+  text, text, text, text, text
+) to authenticated;
+
+
 create or replace function public.resign_game_atomic(
   p_room_id text,
   p_uid text,
