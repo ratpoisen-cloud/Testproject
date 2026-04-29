@@ -176,11 +176,9 @@ window.isReviewInteractionLocked = function() {
 window.resetTransientBoardInteractionState = function() {
     window.dragSourceSquare = null;
     window.selectedSquare = null;
-    window.pendingMove = null;
     window.pendingPromotionSelection = null;
     window.removeHighlights();
     window.closeBoardReactionPicker?.();
-    document.getElementById('confirm-move-box')?.classList.add('hidden');
     document.getElementById('promotion-choice-box')?.classList.add('hidden');
 };
 
@@ -491,8 +489,7 @@ window.handleDragStart = function(source, piece, position, orientation) {
 
     if (window.game.game_over() || 
         !window.playerColor || 
-        window.game.turn() !== window.playerColor || 
-        window.pendingMove) {
+        window.game.turn() !== window.playerColor) {
         return false;
     }
     
@@ -513,7 +510,7 @@ window.handleDragStart = function(source, piece, position, orientation) {
 window.handleMouseoverSquare = function(square, piece) {
     if (window.isMobile) return;
     if (window.isReviewInteractionLocked()) return;
-    if (!window.playerColor || window.game.game_over() || window.pendingMove) return;
+    if (!window.playerColor || window.game.game_over()) return;
     
     if (window.dragSourceSquare) return;
     
@@ -567,8 +564,13 @@ window.handleDrop = function(source, target) {
     }
 
     window.removeTemporaryHighlights();
+
+    if (window.__uiActionLocks?.['move-confirm']) {
+        window.dragSourceSquare = null;
+        return;
+    }
     
-    if (window.game.game_over() || !window.playerColor || window.game.turn() !== window.playerColor || window.pendingMove) {
+    if (window.game.game_over() || !window.playerColor || window.game.turn() !== window.playerColor) {
         window.dragSourceSquare = null;
         return 'snapback';
     }
@@ -580,23 +582,22 @@ window.handleDrop = function(source, target) {
     }
 
     const preview = window.buildMovePreview(source, target, 'q');
-    
+
     if (!preview) {
         window.dragSourceSquare = null;
         return 'snapback';
     }
-    
-    // Сохраняем ход
-    window.pendingMove = preview;
-    
-    // Показываем ход на доске
-    window.updateBoardPosition(preview.previewFen, true);
-    
-    // Показываем оверлей подтверждения
-    document.getElementById('confirm-move-box')?.classList.remove('hidden');
-    
+
+    window.commitMoveImmediately?.({
+        from: source,
+        to: target,
+        promotion: 'q'
+    }).catch((error) => {
+        console.error('[handleDrop] commitMoveImmediately failed:', error);
+    });
+
     window.dragSourceSquare = null;
-    return 'snapback';
+    return;
 };
 
 // ==================== МОБИЛЬНАЯ ЛОГИКА (клики) ====================
@@ -629,8 +630,8 @@ window.handleMobileClick = function(square) {
     if (window.game.game_over()) return;
     if (!window.playerColor) return;
     if (window.game.turn() !== window.playerColor) return;
-    if (window.pendingMove) return;
-    
+    if (window.__uiActionLocks?.['move-confirm']) return;
+
     const piece = window.game.get(square);
     
     if (window.selectedSquare) {
@@ -646,12 +647,15 @@ window.handleMobileClick = function(square) {
         }
 
         const preview = window.buildMovePreview(window.selectedSquare, square, 'q');
-        
+
         if (preview) {
-            window.pendingMove = preview;
-            // Показываем ход на доске
-            window.updateBoardPosition(preview.previewFen, true);
-            document.getElementById('confirm-move-box').classList.remove('hidden');
+            window.commitMoveImmediately?.({
+                from: window.selectedSquare,
+                to: square,
+                promotion: 'q'
+            }).catch((error) => {
+                console.error('[handleMobileClick] commitMoveImmediately failed:', error);
+            });
             window.clearSelection();
         } else {
             if (piece && piece.color === window.playerColor) {
@@ -774,6 +778,7 @@ window.ensurePromotionChoiceBindings = function() {
         button.addEventListener('click', () => {
             const selectedPiece = button.dataset.promotionPiece;
             const pending = window.pendingPromotionSelection;
+            if (window.__uiActionLocks?.['move-confirm']) return;
             if (!pending || !selectedPiece) return;
 
             const preview = window.buildMovePreview(pending.from, pending.to, selectedPiece);
@@ -782,9 +787,13 @@ window.ensurePromotionChoiceBindings = function() {
             window.pendingPromotionSelection = null;
             if (!preview) return;
 
-            window.pendingMove = preview;
-            window.updateBoardPosition(preview.previewFen, true);
-            document.getElementById('confirm-move-box')?.classList.remove('hidden');
+            window.commitMoveImmediately?.({
+                from: pending.from,
+                to: pending.to,
+                promotion: selectedPiece
+            }).catch((error) => {
+                console.error('[promotion] commitMoveImmediately failed:', error);
+            });
             window.clearSelection?.();
         });
     });

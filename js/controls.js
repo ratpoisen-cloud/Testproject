@@ -60,9 +60,6 @@ window.setupGameControls = function(gameRef, roomId) {
     };
 
     const resetPendingMoveUI = () => {
-        window.pendingMove = null;
-        window.pendingPromotionSelection = null;
-        hideElement('confirm-move-box');
         hideElement('promotion-choice-box');
         window.clearSelection();
     };
@@ -141,34 +138,23 @@ window.setupGameControls = function(gameRef, roomId) {
         return Boolean(players.white && players.black);
     };
 
-    // ===== Confirm / Cancel move =====
-    const bindPendingMoveControls = () => {
-        // Подтверждение хода
-        setClickHandler('confirm-btn', () => {
-            const confirmBtn = document.getElementById('confirm-btn');
-            window.withUiActionLock('move-confirm', async () => {
-                if (!window.pendingMove) return;
-
+    // ===== Immediate move commit =====
+    window.commitMoveImmediately = async (movePayload) => {
+        return window.withUiActionLock('move-confirm', async () => {
             const moveResult = window.game.move({
-                from: window.pendingMove.from,
-                to: window.pendingMove.to,
-                promotion: window.pendingMove.promotion || 'q'
+                from: movePayload.from,
+                to: movePayload.to,
+                promotion: movePayload.promotion || 'q'
             });
 
             if (!moveResult) {
-                window.pendingMove = null;
-                hideElement('confirm-move-box');
                 window.updateBoardPosition(window.game.fen(), true);
                 window.clearSelection();
-                return;
+                return null;
             }
 
-            if (window.highlightLastMove) {
-                window.highlightLastMove(moveResult);
-            }
-
+            window.highlightLastMove?.(moveResult);
             window.playMoveSoundSequence?.(moveResult, { allowVoiceLine: true });
-
             window.updateBoardPosition(window.game.fen(), true);
 
             const now = Date.now();
@@ -177,12 +163,11 @@ window.setupGameControls = function(gameRef, roomId) {
                 fen: window.game.fen(),
                 turn: window.game.turn(),
                 lastMove: now,
-                lastMoveTime: now // Добавляем время последнего хода для сортировки
+                lastMoveTime: now
             };
 
             if (isBotMode()) {
                 window.syncReviewStateFromCurrentGame?.();
-                resetPendingMoveUI();
                 window.updateUI({ gameState: window.game.game_over() ? 'game_over' : 'active', mode: 'bot' });
 
                 if (window.game.game_over()) {
@@ -191,11 +176,11 @@ window.setupGameControls = function(gameRef, roomId) {
                         message: window.getGameResultMessage(window.game)
                     });
                     window.updateGameModal({ gameState: 'game_over', message: metadata.message });
-                    return;
+                    return moveResult;
                 }
 
                 await window.requestBotMove?.();
-                return;
+                return moveResult;
             }
 
             if (window.game.game_over()) {
@@ -221,21 +206,10 @@ window.setupGameControls = function(gameRef, roomId) {
                     gameOver: updateData.gameState === 'game_over',
                     message: updateData.message || null
                 });
-
-                resetPendingMoveUI();
-
             } catch (error) {
-                console.error('[confirmMove] applyMoveAtomic failed:', error);
+                console.error('[commitMoveImmediately] applyMoveAtomic failed:', error);
 
-                // ОТКАТ ХОДА (КЛЮЧЕВОЙ МОМЕНТ)
                 window.game.undo();
-
-                window.pendingMove = null;
-                window.pendingPromotionSelection = null;
-
-                document.getElementById('confirm-move-box')?.classList.add('hidden');
-                document.getElementById('promotion-choice-box')?.classList.add('hidden');
-
                 window.clearSelection();
                 window.updateBoardPosition(window.game.fen(), true);
 
@@ -251,31 +225,10 @@ window.setupGameControls = function(gameRef, roomId) {
                     window.notify('Ошибка при отправке хода', 'error');
                 }
 
-                return;
+                return null;
             }
-            }, {
-                button: confirmBtn,
-                loadingText: 'Ход...'
-            });
-        });
 
-        // Отмена неподтвержденного хода - ПЛАВНЫЙ ВОЗВРАТ ФИГУРЫ
-        setClickHandler('cancel-move-btn', () => {
-            if (window.pendingMove) {
-                window.pendingMove = null;
-                hideElement('confirm-move-box');
-
-                // Плавно возвращаем доску в исходное состояние
-                if (window.isMobile) {
-                    // На мобиле просто обновляем позицию
-                    window.updateBoardPosition(window.game.fen(), true);
-                } else {
-                    // На десктопе возвращаем с анимацией
-                    window.board.position(window.game.fen(), true);
-                }
-
-                window.clearSelection();
-            }
+            return moveResult;
         });
     };
 
@@ -840,7 +793,6 @@ window.setupGameControls = function(gameRef, roomId) {
 
     applyBotModeUiRestrictions();
 
-    bindPendingMoveControls();
     bindSessionControls();
     bindReviewControls();
     bindTakebackControls();
