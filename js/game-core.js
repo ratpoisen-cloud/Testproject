@@ -2905,70 +2905,114 @@ function getCurrentUserDisplayName() {
     return window.currentUser?.displayName || window.currentUser?.email?.split('@')[0] || 'Игрок';
 }
 
-window.sendDrawRequest = async function(gameRef, roomId) {
+window.sendDrawRequest = async function sendDrawRequest(gameRef, roomId) {
     if (window.isGameFinished?.()) {
         hideDrawRequestBox();
         window.pendingDraw = null;
-        window.notify("Игра уже окончена", "warning");
+        window.notify('Игра уже окончена', 'warning');
         return;
     }
 
-    const currentTurn = window.game.turn();
-    const request = {
-        from: window.playerColor,
-        fromName: getCurrentUserDisplayName(),
-        timestamp: Date.now(),
-        turn: currentTurn
-    };
-    
-    await window.updateGame(gameRef, { drawRequest: request });
-    window.notify("Запрос на ничью отправлен сопернику", "success");
+    try {
+        await window.resolveDrawAtomic(roomId, {
+            uid: window.currentUser?.uid,
+            action: 'request',
+            actorName: window.getUserName?.(window.currentUser) || 'Игрок'
+        });
+
+        window.notify('Предложение ничьей отправлено', 'success');
+    } catch (error) {
+        console.error('[draw] request failed:', error);
+
+        const msg = String(error.message || '');
+        if (msg.includes('Game already finished')) {
+            window.notify('Игра уже завершена', 'warning');
+        } else if (msg.includes('Not a player')) {
+            window.notify('Вы не участник партии', 'error');
+        } else if (msg.includes('Auth uid mismatch')) {
+            window.notify('Ошибка авторизации', 'error');
+        } else {
+            window.notify('Не удалось предложить ничью', 'error');
+        }
+    }
 };
 
 // Функция принятия ничьей
-window.acceptDraw = async function(gameRef, roomId) {
+window.acceptDraw = async function acceptDraw(gameRef, roomId) {
     if (window.isGameFinished?.()) {
         hideDrawRequestBox();
         window.pendingDraw = null;
-        window.notify("Игра уже окончена", "warning");
+        window.notify('Игра уже окончена', 'warning');
         return;
     }
 
-    const players = (await get(window.getPlayersRef(roomId))).val() || null;
-    const metadata = window.applyGameHeaders(window.game, {
-        players,
-        gameState: 'game_over',
-        message: 'Ничья по соглашению'
-    });
-    const updateData = {
-        gameState: 'game_over',
-        message: metadata.message,
-        pgn: window.game.pgn(),
-        drawRequest: null
-    };
-    window.applyImmediateGameOverState({
-        ...updateData,
-        players
-    });
-    await window.updateGame(gameRef, updateData);
-    hideDrawRequestBox();
-    window.pendingDraw = null;
-    window.notify("Игра закончилась ничьей", "success");
+    try {
+        await window.resolveDrawAtomic(roomId, {
+            uid: window.currentUser?.uid,
+            action: 'accept',
+            pgnOnAccept: window.game?.pgn?.() || null
+        });
+
+        window.applyImmediateGameOverState?.({
+            gameState: 'game_over',
+            message: 'Ничья по соглашению',
+            pgn: window.game?.pgn?.() || null
+        });
+        hideDrawRequestBox();
+        window.pendingDraw = null;
+        window.notify('Ничья принята', 'success');
+    } catch (error) {
+        console.error('[draw] accept failed:', error);
+
+        const msg = String(error.message || '');
+        if (msg.includes('No draw request')) {
+            window.notify('Предложение ничьей уже неактуально', 'warning');
+        } else if (msg.includes('Cannot accept own draw request')) {
+            window.notify('Нельзя принять собственное предложение', 'warning');
+        } else if (msg.includes('Game already finished')) {
+            window.notify('Игра уже завершена', 'warning');
+        } else if (msg.includes('Auth uid mismatch')) {
+            window.notify('Ошибка авторизации', 'error');
+        } else {
+            window.notify('Не удалось принять ничью', 'error');
+        }
+    }
 };
 
 // Функция отклонения ничьей
-window.rejectDraw = async function(gameRef, roomId) {
+window.rejectDraw = async function rejectDraw(gameRef, roomId) {
     if (window.isGameFinished?.()) {
         hideDrawRequestBox();
         window.pendingDraw = null;
-        window.notify("Игра уже окончена", "warning");
+        window.notify('Игра уже окончена', 'warning');
         return;
     }
 
-    await window.updateGame(gameRef, { drawRequest: null });
-    hideDrawRequestBox();
-    window.pendingDraw = null;
-    window.notify("Соперник отклонил запрос на ничью", "info");
+    try {
+        await window.resolveDrawAtomic(roomId, {
+            uid: window.currentUser?.uid,
+            action: 'reject'
+        });
+
+        hideDrawRequestBox();
+        window.pendingDraw = null;
+        window.notify('Предложение ничьей отклонено', 'info');
+    } catch (error) {
+        console.error('[draw] reject failed:', error);
+
+        const msg = String(error.message || '');
+        if (msg.includes('No draw request')) {
+            window.notify('Предложение ничьей уже неактуально', 'warning');
+        } else if (msg.includes('Cannot reject own draw request')) {
+            window.notify('Нельзя отклонить собственное предложение', 'warning');
+        } else if (msg.includes('Game already finished')) {
+            window.notify('Игра уже завершена', 'warning');
+        } else if (msg.includes('Auth uid mismatch')) {
+            window.notify('Ошибка авторизации', 'error');
+        } else {
+            window.notify('Не удалось отклонить ничью', 'error');
+        }
+    }
 };
 // Функция массового удаления завершённых игр
 function isFinishedGameForUser(data, userId) {
