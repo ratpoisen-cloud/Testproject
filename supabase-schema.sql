@@ -353,6 +353,8 @@ set search_path = public
 as $$
 declare
   v_game public.games%rowtype;
+  v_color text;
+  v_turn_after_undo text;
 begin
   if auth.uid() is null or auth.uid()::text <> p_uid then
     raise exception 'Auth uid mismatch';
@@ -372,8 +374,11 @@ begin
     raise exception 'Game already finished';
   end if;
 
-  if v_game.players->>'white' <> p_uid
-     and v_game.players->>'black' <> p_uid then
+  if v_game.players->>'white' = p_uid then
+    v_color := 'w';
+  elsif v_game.players->>'black' = p_uid then
+    v_color := 'b';
+  else
     raise exception 'Not a player';
   end if;
 
@@ -385,7 +390,8 @@ begin
     update public.games
     set
       takeback_request = jsonb_build_object(
-        'from', p_uid,
+        'from', v_color,
+        'fromUid', p_uid,
         'timestamp', floor(extract(epoch from now()) * 1000)
       ),
       version = coalesce(version, 0) + 1
@@ -398,6 +404,11 @@ begin
   if p_action = 'reject' then
     if v_game.takeback_request is null then
       raise exception 'No takeback request';
+    end if;
+
+    if v_game.takeback_request->>'fromUid' = p_uid
+       or v_game.takeback_request->>'from' = v_color then
+      raise exception 'Cannot reject own takeback request';
     end if;
 
     update public.games
@@ -415,14 +426,26 @@ begin
       raise exception 'No takeback request';
     end if;
 
+    if v_game.takeback_request->>'fromUid' = p_uid
+       or v_game.takeback_request->>'from' = v_color then
+      raise exception 'Cannot accept own takeback request';
+    end if;
+
     if p_fen_after_undo is null or p_pgn_after_undo is null then
       raise exception 'Missing undo state';
+    end if;
+
+    v_turn_after_undo := split_part(p_fen_after_undo, ' ', 2);
+
+    if v_turn_after_undo not in ('w', 'b') then
+      raise exception 'Invalid undo turn';
     end if;
 
     update public.games
     set
       fen = p_fen_after_undo,
       pgn = p_pgn_after_undo,
+      turn = v_turn_after_undo,
       takeback_request = null,
       draw_request = null,
       version = coalesce(version, 0) + 1,
