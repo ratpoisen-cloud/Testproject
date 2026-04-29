@@ -144,8 +144,10 @@ window.setupGameControls = function(gameRef, roomId) {
     // ===== Confirm / Cancel move =====
     const bindPendingMoveControls = () => {
         // Подтверждение хода
-        setClickHandler('confirm-btn', async () => {
-            if (!window.pendingMove) return;
+        setClickHandler('confirm-btn', () => {
+            const confirmBtn = document.getElementById('confirm-btn');
+            window.withUiActionLock('move-confirm', async () => {
+                if (!window.pendingMove) return;
 
             const moveResult = window.game.move({
                 from: window.pendingMove.from,
@@ -251,6 +253,10 @@ window.setupGameControls = function(gameRef, roomId) {
 
                 return;
             }
+            }, {
+                button: confirmBtn,
+                loadingText: 'Ход...'
+            });
         });
 
         // Отмена неподтвержденного хода - ПЛАВНЫЙ ВОЗВРАТ ФИГУРЫ
@@ -289,24 +295,26 @@ window.setupGameControls = function(gameRef, roomId) {
                 danger: true
             });
             if (shouldResign) {
-                const winner = window.playerColor === 'w' ? 'Черные' : 'Белые';
-                const players = isBotMode() ? null : await resolvePlayersForHeaders();
-                const metadata = window.applyGameHeaders(window.game, {
-                    players,
-                    gameState: 'game_over',
-                    message: `${winner} победили (сдача)`,
-                    resign: window.playerColor
-                });
-
-                if (isBotMode()) {
-                    window.applyImmediateGameOverState?.({
+                const resignBtn = document.getElementById('resign-btn');
+                await window.withUiActionLock('resign-game', async () => {
+                    const winner = window.playerColor === 'w' ? 'Черные' : 'Белые';
+                    const players = isBotMode() ? null : await resolvePlayersForHeaders();
+                    const metadata = window.applyGameHeaders(window.game, {
+                        players,
                         gameState: 'game_over',
-                        message: metadata.message,
-                        resign: window.playerColor,
-                        mode: 'bot'
+                        message: `${winner} победили (сдача)`,
+                        resign: window.playerColor
                     });
-                    return;
-                }
+
+                    if (isBotMode()) {
+                        window.applyImmediateGameOverState?.({
+                            gameState: 'game_over',
+                            message: metadata.message,
+                            resign: window.playerColor,
+                            mode: 'bot'
+                        });
+                        return;
+                    }
 
                 const updateData = {
                     gameState: 'game_over',
@@ -316,12 +324,12 @@ window.setupGameControls = function(gameRef, roomId) {
                 };
                 window.applyImmediateGameOverState?.(updateData);
 
-                try {
-                    await window.resignGameAtomic(roomId, {
-                        uid: window.currentUser?.uid,
-                        playerColor: window.playerColor
-                    });
-                } catch (error) {
+                    try {
+                        await window.resignGameAtomic(roomId, {
+                            uid: window.currentUser?.uid,
+                            playerColor: window.playerColor
+                        });
+                    } catch (error) {
                     console.error('[resign] resignGameAtomic failed:', error);
 
                     const msg = String(error.message || '');
@@ -338,8 +346,12 @@ window.setupGameControls = function(gameRef, roomId) {
                         window.notify('Ошибка при сдаче партии', 'error');
                     }
 
-                    return;
-                }
+                        return;
+                    }
+                }, {
+                    button: resignBtn,
+                    loadingText: 'Сдаюсь...'
+                });
             }
         });
 
@@ -512,14 +524,20 @@ window.setupGameControls = function(gameRef, roomId) {
         }
 
         // Принять отмену
-        setClickHandler('takeback-accept', async () => {
-            if (isFinishedGame()) {
-                document.getElementById('takeback-request-box')?.classList.add('hidden');
-                window.pendingTakeback = null;
-                window.notify("Игра уже окончена", "warning");
-                return;
-            }
-            if (window.pendingTakeback) {
+        setClickHandler('takeback-accept', () => {
+            const acceptBtn = document.getElementById('takeback-accept');
+            const rejectBtn = document.getElementById('takeback-reject');
+            const pendingTakeback = window.pendingTakeback;
+            document.getElementById('takeback-request-box')?.classList.add('hidden');
+            window.withUiActionLock('takeback-accept', async () => {
+                if (isFinishedGame()) {
+                    window.pendingTakeback = null;
+                    window.notify("Игра уже окончена", "warning");
+                    return;
+                }
+                if (!pendingTakeback) return;
+
+                window.pendingTakeback = pendingTakeback;
                 const history = window.game.history();
                 const previousFen = window.game.fen();
 
@@ -573,22 +591,31 @@ window.setupGameControls = function(gameRef, roomId) {
 
                     return;
                 }
-            }
+            }, {
+                buttons: [acceptBtn, rejectBtn],
+                loadingText: '...'
+            });
         });
 
         // Отклонить отмену
-        setClickHandler('takeback-reject', async () => {
-            if (isFinishedGame()) {
-                document.getElementById('takeback-request-box')?.classList.add('hidden');
-                window.pendingTakeback = null;
-                window.notify("Игра уже окончена", "warning");
-                return;
-            }
-            try {
-                await window.resolveTakebackAtomic(roomId, {
-                    uid: window.currentUser?.uid,
-                    action: 'reject'
-                });
+        setClickHandler('takeback-reject', () => {
+            const acceptBtn = document.getElementById('takeback-accept');
+            const rejectBtn = document.getElementById('takeback-reject');
+            const pendingTakeback = window.pendingTakeback;
+            document.getElementById('takeback-request-box')?.classList.add('hidden');
+            window.withUiActionLock('takeback-reject', async () => {
+                if (isFinishedGame()) {
+                    window.pendingTakeback = null;
+                    window.notify("Игра уже окончена", "warning");
+                    return;
+                }
+                if (!pendingTakeback) return;
+                window.pendingTakeback = pendingTakeback;
+                try {
+                    await window.resolveTakebackAtomic(roomId, {
+                        uid: window.currentUser?.uid,
+                        action: 'reject'
+                    });
 
                 document.getElementById('takeback-request-box')?.classList.add('hidden');
                 window.pendingTakeback = null;
@@ -610,8 +637,12 @@ window.setupGameControls = function(gameRef, roomId) {
                     window.notify('Не удалось отклонить откат', 'error');
                 }
 
-                return;
-            }
+                    return;
+                }
+            }, {
+                buttons: [acceptBtn, rejectBtn],
+                loadingText: '...'
+            });
         });
     };
 
@@ -679,28 +710,44 @@ window.setupGameControls = function(gameRef, roomId) {
 
         // Принять ничью
         setClickHandler('draw-accept', () => {
-            if (isFinishedGame()) {
-                document.getElementById('draw-request-box')?.classList.add('hidden');
-                window.pendingDraw = null;
-                window.notify("Игра уже окончена", "warning");
-                return;
-            }
-            if (window.pendingDraw) {
-                window.acceptDraw(gameRef, roomId);
-            }
+            const acceptBtn = document.getElementById('draw-accept');
+            const rejectBtn = document.getElementById('draw-reject');
+            const pendingDraw = window.pendingDraw;
+            document.getElementById('draw-request-box')?.classList.add('hidden');
+            window.withUiActionLock('draw-accept', async () => {
+                if (isFinishedGame()) {
+                    window.pendingDraw = null;
+                    window.notify("Игра уже окончена", "warning");
+                    return;
+                }
+                if (!pendingDraw) return;
+                window.pendingDraw = pendingDraw;
+                await window.acceptDraw(gameRef, roomId);
+            }, {
+                buttons: [acceptBtn, rejectBtn],
+                loadingText: '...'
+            });
         });
 
         // Отклонить ничью
         setClickHandler('draw-reject', () => {
-            if (isFinishedGame()) {
-                document.getElementById('draw-request-box')?.classList.add('hidden');
-                window.pendingDraw = null;
-                window.notify("Игра уже окончена", "warning");
-                return;
-            }
-            if (window.pendingDraw) {
-                window.rejectDraw(gameRef, roomId);
-            }
+            const acceptBtn = document.getElementById('draw-accept');
+            const rejectBtn = document.getElementById('draw-reject');
+            const pendingDraw = window.pendingDraw;
+            document.getElementById('draw-request-box')?.classList.add('hidden');
+            window.withUiActionLock('draw-reject', async () => {
+                if (isFinishedGame()) {
+                    window.pendingDraw = null;
+                    window.notify("Игра уже окончена", "warning");
+                    return;
+                }
+                if (!pendingDraw) return;
+                window.pendingDraw = pendingDraw;
+                await window.rejectDraw(gameRef, roomId);
+            }, {
+                buttons: [acceptBtn, rejectBtn],
+                loadingText: '...'
+            });
         });
     };
 

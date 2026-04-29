@@ -380,8 +380,20 @@ window.setupAuth = function() {
         document.body.classList.remove('email-modal-open');
     };
 
-    document.getElementById('login-google').onclick = handleGoogleLogin;
-    document.getElementById('guest-login-google').onclick = handleGoogleLogin;
+    const loginGoogleBtn = document.getElementById('login-google');
+    const guestLoginGoogleBtn = document.getElementById('guest-login-google');
+    const googleLoginHandler = () => {
+        window.withUiActionLock('auth-google-login', async () => {
+            await handleGoogleLogin();
+        }, {
+            buttons: [loginGoogleBtn, guestLoginGoogleBtn],
+            loadingText: 'Входим...',
+            showAppLoading: true,
+            loadingFlag: 'auth'
+        });
+    };
+    if (loginGoogleBtn) loginGoogleBtn.onclick = googleLoginHandler;
+    if (guestLoginGoogleBtn) guestLoginGoogleBtn.onclick = googleLoginHandler;
 
     document.getElementById('login-email-trigger').onclick = openEmailModal;
     document.getElementById('guest-login-email').onclick = openEmailModal;
@@ -389,61 +401,87 @@ window.setupAuth = function() {
     document.getElementById('close-email-modal').onclick = closeEmailModal;
 
     // Вход по Email
-    document.getElementById('login-email-btn').onclick = async () => {
-        const email = document.getElementById('email-input').value.trim();
-        const pass = document.getElementById('password-input').value;
-        if (!email || !pass) return showError("Введите почту и пароль");
+    const loginEmailBtnEl = document.getElementById('login-email-btn');
+    if (loginEmailBtnEl) loginEmailBtnEl.onclick = () => {
+        const loginEmailBtn = document.getElementById('login-email-btn');
+        const registerEmailBtn = document.getElementById('register-email-btn');
+        window.withUiActionLock('auth-email-login', async () => {
+            const email = document.getElementById('email-input').value.trim();
+            const pass = document.getElementById('password-input').value;
+            if (!email || !pass) return showError("Введите почту и пароль");
 
-        try {
-            await signInWithEmailAndPassword(window.auth, email, pass);
-            closeEmailModal();
-            document.getElementById('email-input').value = '';
-            document.getElementById('password-input').value = '';
-        } catch (err) {
-            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
-                showError("Неверная почта или пароль");
-            } else {
-                showError("Ошибка входа: " + err.message);
+            try {
+                await signInWithEmailAndPassword(window.auth, email, pass);
+                closeEmailModal();
+                document.getElementById('email-input').value = '';
+                document.getElementById('password-input').value = '';
+            } catch (err) {
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+                    showError("Неверная почта или пароль");
+                } else {
+                    showError("Ошибка входа: " + err.message);
+                }
             }
-        }
+        }, {
+            buttons: [loginEmailBtn, registerEmailBtn],
+            loadingText: 'Входим...',
+            showAppLoading: true,
+            loadingFlag: 'auth'
+        });
     };
 
     // Регистрация по Email
-    document.getElementById('register-email-btn').onclick = async () => {
-        const email = document.getElementById('email-input').value.trim();
-        const pass = document.getElementById('password-input').value;
-        
-        if (!email) return showError("Введите почту");
-        if (pass.length < 6) return showError("Пароль должен быть от 6 символов");
+    const registerEmailBtnEl = document.getElementById('register-email-btn');
+    if (registerEmailBtnEl) registerEmailBtnEl.onclick = () => {
+        const loginEmailBtn = document.getElementById('login-email-btn');
+        const registerEmailBtn = document.getElementById('register-email-btn');
+        window.withUiActionLock('auth-email-register', async () => {
+            const email = document.getElementById('email-input').value.trim();
+            const pass = document.getElementById('password-input').value;
 
-        try {
-            const authResult = await createUserWithEmailAndPassword(window.auth, email, pass);
-            closeEmailModal();
-            document.getElementById('email-input').value = '';
-            document.getElementById('password-input').value = '';
+            if (!email) return showError("Введите почту");
+            if (pass.length < 6) return showError("Пароль должен быть от 6 символов");
 
-            // Supabase: при включенном Email Confirmation сессия может не создаться сразу
-            if (!authResult?.session) {
-                window.notify('Аккаунт создан. Подтвердите email, затем выполните вход.', 'info', 3600);
-                return;
+            try {
+                const authResult = await createUserWithEmailAndPassword(window.auth, email, pass);
+                closeEmailModal();
+                document.getElementById('email-input').value = '';
+                document.getElementById('password-input').value = '';
+
+                // Supabase: при включенном Email Confirmation сессия может не создаться сразу
+                if (!authResult?.session) {
+                    window.notify('Аккаунт создан. Подтвердите email, затем выполните вход.', 'info', 3600);
+                    return;
+                }
+
+                window.notify("Аккаунт успешно создан!", "success");
+            } catch (err) {
+                if (err.code === 'auth/email-already-in-use') {
+                    showError("Эта почта уже зарегистрирована");
+                } else {
+                    showError("Ошибка регистрации: " + err.message);
+                }
             }
-
-            window.notify("Аккаунт успешно создан!", "success");
-        } catch (err) {
-            if (err.code === 'auth/email-already-in-use') {
-                showError("Эта почта уже зарегистрирована");
-            } else {
-                showError("Ошибка регистрации: " + err.message);
-            }
-        }
+        }, {
+            buttons: [loginEmailBtn, registerEmailBtn],
+            loadingText: 'Создаём...',
+            showAppLoading: true,
+            loadingFlag: 'auth'
+        });
     };
 
     // Выход
-    logoutBtn.onclick = () => {
-        signOut(window.auth)
-            .catch((err) => {
-                window.notify('Ошибка выхода: ' + (err?.message || err), 'error', 3600);
-            });
+    if (logoutBtn) logoutBtn.onclick = () => {
+        window.withUiActionLock('auth-logout', async () => {
+            await signOut(window.auth);
+        }, {
+            button: logoutBtn,
+            loadingText: 'Выходим...',
+            showAppLoading: true,
+            loadingFlag: 'auth'
+        }).catch((err) => {
+            window.notify('Ошибка выхода: ' + (err?.message || err), 'error', 3600);
+        });
     };
 
     userMenuLobbyBtn?.addEventListener('click', () => {
