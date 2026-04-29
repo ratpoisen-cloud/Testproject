@@ -541,13 +541,15 @@ window.setupGameControls = function(gameRef, roomId) {
                 const history = window.game.history();
                 const previousFen = window.game.fen();
 
-                const currentTurn = window.game.turn();
+                const requesterColor = pendingTakeback.from;
+                const currentTurnBeforeUndo = window.game.turn();
                 const shouldUndoTwoMoves =
                     history.length >= 2 &&
-                    currentTurn === window.playerColor;
+                    requesterColor &&
+                    currentTurnBeforeUndo === requesterColor;
+                const undoCount = shouldUndoTwoMoves ? 2 : 1;
 
-                window.game.undo();
-                if (shouldUndoTwoMoves) {
+                for (let i = 0; i < undoCount; i++) {
                     window.game.undo();
                 }
 
