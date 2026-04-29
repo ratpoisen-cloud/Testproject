@@ -434,7 +434,7 @@ window.setupGameControls = function(gameRef, roomId) {
         if (isBotMode()) return;
         let lastIncomingTakebackKey = '';
         // Запрос отмены хода
-        setClickHandler('takeback-btn', () => {
+        setClickHandler('takeback-btn', async () => {
             if (isFinishedGame()) {
                 document.getElementById('takeback-request-box')?.classList.add('hidden');
                 window.pendingTakeback = null;
@@ -445,8 +445,31 @@ window.setupGameControls = function(gameRef, roomId) {
                 window.notify("Нет ходов для отмены", "warning");
                 return;
             }
-            window.updateGame(gameRef, { takebackRequest: { from: window.playerColor, timestamp: Date.now() } });
-            window.notify("Запрос отправлен сопернику", "success");
+            try {
+                await window.resolveTakebackAtomic(roomId, {
+                    uid: window.currentUser?.uid,
+                    action: 'request'
+                });
+
+                window.notify('Запрос отправлен сопернику', 'success');
+            } catch (error) {
+                console.error('[takeback] request failed:', error);
+
+                const msg = String(error.message || '');
+                if (msg.includes('Takeback already requested')) {
+                    window.notify('Запрос на откат уже отправлен', 'warning');
+                } else if (msg.includes('Game already finished')) {
+                    window.notify('Игра уже завершена', 'warning');
+                } else if (msg.includes('Not a player')) {
+                    window.notify('Вы не участник партии', 'error');
+                } else if (msg.includes('Auth uid mismatch')) {
+                    window.notify('Ошибка авторизации', 'error');
+                } else {
+                    window.notify('Не удалось отправить запрос на откат', 'error');
+                }
+
+                return;
+            }
         });
 
         // Слушатель запроса отмены
@@ -484,7 +507,7 @@ window.setupGameControls = function(gameRef, roomId) {
         }
 
         // Принять отмену
-        setClickHandler('takeback-accept', () => {
+        setClickHandler('takeback-accept', async () => {
             if (isFinishedGame()) {
                 document.getElementById('takeback-request-box')?.classList.add('hidden');
                 window.pendingTakeback = null;
@@ -493,29 +516,80 @@ window.setupGameControls = function(gameRef, roomId) {
             }
             if (window.pendingTakeback) {
                 window.game.undo();
-                window.updateGame(gameRef, {
-                    pgn: window.game.pgn(),
-                    fen: window.game.fen(),
-                    takebackRequest: null
-                });
-                document.getElementById('takeback-request-box').classList.add('hidden');
-                window.pendingTakeback = null;
-                window.clearSelection();
-                window.updateBoardPosition(window.game.fen(), true);
+
+                try {
+                    await window.resolveTakebackAtomic(roomId, {
+                        uid: window.currentUser?.uid,
+                        action: 'accept',
+                        fenAfterUndo: window.game.fen(),
+                        pgnAfterUndo: window.game.pgn()
+                    });
+
+                    document.getElementById('takeback-request-box')?.classList.add('hidden');
+                    window.pendingTakeback = null;
+                    window.clearSelection();
+                    window.updateBoardPosition(window.game.fen(), true);
+                } catch (error) {
+                    console.error('[takeback] accept failed:', error);
+
+                    // rollback: вернуть локальный ход обратно, если RPC не принял откат
+                    window.game.undo();
+                    window.updateBoardPosition(window.game.fen(), true);
+
+                    const msg = String(error.message || '');
+                    if (msg.includes('No takeback request')) {
+                        window.notify('Запрос на откат уже неактуален', 'warning');
+                    } else if (msg.includes('Missing undo state')) {
+                        window.notify('Ошибка состояния отката', 'error');
+                    } else if (msg.includes('Game already finished')) {
+                        window.notify('Игра уже завершена', 'warning');
+                    } else if (msg.includes('Not a player')) {
+                        window.notify('Вы не участник партии', 'error');
+                    } else if (msg.includes('Auth uid mismatch')) {
+                        window.notify('Ошибка авторизации', 'error');
+                    } else {
+                        window.notify('Не удалось принять откат', 'error');
+                    }
+
+                    return;
+                }
             }
         });
 
         // Отклонить отмену
-        setClickHandler('takeback-reject', () => {
+        setClickHandler('takeback-reject', async () => {
             if (isFinishedGame()) {
                 document.getElementById('takeback-request-box')?.classList.add('hidden');
                 window.pendingTakeback = null;
                 window.notify("Игра уже окончена", "warning");
                 return;
             }
-            window.updateGame(gameRef, { takebackRequest: null });
-            document.getElementById('takeback-request-box').classList.add('hidden');
-            window.pendingTakeback = null;
+            try {
+                await window.resolveTakebackAtomic(roomId, {
+                    uid: window.currentUser?.uid,
+                    action: 'reject'
+                });
+
+                document.getElementById('takeback-request-box')?.classList.add('hidden');
+                window.pendingTakeback = null;
+            } catch (error) {
+                console.error('[takeback] reject failed:', error);
+
+                const msg = String(error.message || '');
+                if (msg.includes('No takeback request')) {
+                    window.notify('Запрос на откат уже неактуален', 'warning');
+                } else if (msg.includes('Game already finished')) {
+                    window.notify('Игра уже завершена', 'warning');
+                } else if (msg.includes('Not a player')) {
+                    window.notify('Вы не участник партии', 'error');
+                } else if (msg.includes('Auth uid mismatch')) {
+                    window.notify('Ошибка авторизации', 'error');
+                } else {
+                    window.notify('Не удалось отклонить откат', 'error');
+                }
+
+                return;
+            }
         });
     };
 

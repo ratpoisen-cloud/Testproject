@@ -318,6 +318,32 @@
         return data ? fromDbGame(data) : null;
     };
 
+
+
+    window.resolveTakebackAtomic = async function resolveTakebackAtomic(roomId, payload) {
+        if (!roomId) {
+            throw new Error('resolveTakebackAtomic: roomId is required');
+        }
+        if (!payload || typeof payload !== 'object') {
+            throw new Error('resolveTakebackAtomic: payload is required');
+        }
+
+        const { data, error } = await supabase.rpc('resolve_takeback_atomic', {
+            p_room_id: roomId,
+            p_uid: payload.uid,
+            p_action: payload.action,
+            p_fen_after_undo: payload.fenAfterUndo || null,
+            p_pgn_after_undo: payload.pgnAfterUndo || null
+        });
+
+        if (error) {
+            console.error('[resolveTakebackAtomic] RPC error:', error);
+            throw error;
+        }
+
+        return data ? fromDbGame(data) : null;
+    };
+
     window.applyMoveAtomic = async function applyMoveAtomic(roomId, payload) {
         if (!roomId) throw new Error('applyMoveAtomic: roomId is required');
         if (!payload) throw new Error('applyMoveAtomic: payload is required');
