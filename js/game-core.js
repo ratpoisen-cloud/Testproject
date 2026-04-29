@@ -4,7 +4,6 @@
 // Переменные состояния игры
 window.game = null;
 window.playerColor = null;
-window.pendingMove = null;
 window.selectedSquare = null;
 window.currentRoomId = null;
 window.isBotMode = false;
@@ -955,9 +954,8 @@ window.applyRemotePgnUpdate = function(pgn) {
 
     window.syncReviewStateFromCurrentGame();
 
-    window.pendingMove = null;
     window.dragSourceSquare = null;
-    document.getElementById('confirm-move-box').classList.add('hidden');
+    document.getElementById('confirm-move-box')?.classList.add('hidden');
     window.removeHighlights?.();
 
     if (window.reviewMode) {
